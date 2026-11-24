@@ -21,9 +21,10 @@
 <main>
   <section class="card" data-login>
     <h2>登录</h2>
-    <p class="note">输入管理口令（部署时设置的 ADMIN_TOKEN）。口令只保存在这个浏览器标签页里，关掉就清除。连续输错 5 次会锁 1 小时。</p>
+    <p class="note">输入管理口令（部署时设置的 ADMIN_TOKEN）和手机验证器（Google Authenticator 等）上的 6 位数字。登录后 8 小时有效，只保存在这个浏览器标签页里，关掉就清除。连续输错 5 次会锁 1 小时。</p>
     <form data-login-form>
       <label>管理口令 <input type="password" autocomplete="current-password" data-token required minlength="24"></label>
+      <label>手机验证器上的 6 位数字 <input inputmode="numeric" autocomplete="one-time-code" pattern="\d{6}" maxlength="6" data-totp required></label>
       <button type="submit">进入</button>
     </form>
     <p class="msg" data-login-msg role="status"></p>
@@ -117,6 +118,18 @@
       <p class="note">换密钥需要发布新版应用（旧应用只认旧公钥），所以平时不要换。私钥丢了的话，旧应用就收不到新配置了。</p>
       <button type="button" data-gen-keys>生成新密钥</button>
       <pre data-pubkey hidden></pre>
+    </div>
+    <div class="card">
+      <h2>两步验证（登录后台用）</h2>
+      <p>第一次部署时做一次：点下面的按钮生成一个两步验证密钥。</p>
+      <ol>
+        <li>在手机上打开 Google Authenticator（或 Microsoft Authenticator），选"输入设置密钥"，账户名填"清真寺后台"，密钥填显示出来的那串字母。</li>
+        <li>在电脑上运行 <code>npx wrangler secret put ADMIN_TOTP</code>，粘贴同一串字母。</li>
+        <li>以后登录后台，除了口令，还要输入手机上显示的 6 位数字。</li>
+      </ol>
+      <p class="note">换手机前先把验证器迁移到新手机；丢了的话重新生成一个、重新设置 ADMIN_TOTP 即可（旧的立即失效）。</p>
+      <button type="button" data-gen-totp>生成两步验证密钥</button>
+      <pre data-totp-secret hidden></pre>
     </div>
   </section>
 </main>

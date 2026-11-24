@@ -61,6 +61,8 @@ const PAGES = [
   ['city', '#/city'],
   ['times', '#/times'],
   ['qada', '#/pray/qada'],
+  ['streak', '#/streak', 0, '?weather=clear&now=2026-12-18T15:20', null, { streak: { cur: 9, best: 12, last: '2026-12-17', grace: ['2026-12-10'], titles: [3, 7], prev: 0 } }],
+  ['circle', '#/circle'],
   // 俄罗斯城市（第 6 项：预先写入的设置）
   ['home-moscow', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'moscow' }],
   ['home-spb-summer', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'spb' }],
@@ -84,8 +86,13 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   for (const [name, hash, clicks, q, clickSel, preset] of PAGES) {
     await page.goto(base + 'index.html?preset=1&weather=clear');
-    const settings = preset || LANG ? { ...(preset || {}), ...(LANG ? { lang: LANG } : {}) } : null;
-    await page.evaluate((p) => (p ? localStorage.setItem('masjid:settings', JSON.stringify(p)) : localStorage.clear()), settings);
+    const { streak, ...rest } = preset || {};
+    const settings = preset || LANG ? { ...rest, ...(LANG ? { lang: LANG } : {}) } : null;
+    await page.evaluate(([p, st]) => {
+      localStorage.clear();
+      if (p) localStorage.setItem('masjid:settings', JSON.stringify(p));
+      if (st) localStorage.setItem('masjid:streak', JSON.stringify(st));
+    }, [settings, streak || null]);
     await page.goto(base + 'index.html' + (q || query) + hash);
     await page.waitForLoadState('networkidle');
     for (let i = 0; i < (clicks || 0); i++) await page.click('[data-next]');

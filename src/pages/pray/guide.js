@@ -8,6 +8,8 @@ import { PRAYERS } from '../../core/prayer-times.js';
 import { ymdKey } from '../../core/clock.js';
 import { togglePrayed, prayedOn } from '../../core/prayed.js';
 import { markGuideDone } from '../../core/usage.js';
+import { celebrate } from '../../ui/streak-ui.js';
+import { softToast } from '../../core/reminder.js';
 
 const unitName = (u) => t(...unitLabel(u).name);
 
@@ -91,9 +93,15 @@ export function guidePage(ctx, prayerKey, unitId) {
       const mark = stage.querySelector('[data-mark]');
       if (mark)
         mark.addEventListener('click', () => {
-          togglePrayed(ymdKey(ctx.sched.today), prayerKey, true);
+          const day = ymdKey(ctx.sched.today);
+          const res = togglePrayed(day, prayerKey, true);
           mark.textContent = t('guide.marked');
           mark.disabled = true;
+          if (res) {
+            celebrate(res, softToast);
+            ctx.resync();
+            import('../../core/circle.js').then((m) => m.syncCheckin(day)).catch(() => {});
+          }
         });
       stage.querySelector('[data-restart]').addEventListener('click', () => {
         i = 0;

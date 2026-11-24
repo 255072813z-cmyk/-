@@ -6,7 +6,7 @@
 import { timesFor, PRAYERS } from './prayer-times.js';
 import { fastTimes } from './ramadan.js';
 import { toHijri } from './hijri.js';
-import { addDays, localParts, fmtHM } from './clock.js';
+import { addDays, localParts, fmtHM, ymdKey } from './clock.js';
 import { t } from '../i18n/index.js';
 
 export const NOTIFY_DAYS = 7;
@@ -16,10 +16,12 @@ export const DEFAULT_NOTIFY = {
   advance: 0, // 提前几分钟（0 = 准时）
   ramadan: true, // 斋月里提醒封斋饭和开斋
   jumuah: true, // 星期五晌礼前 1 小时提醒主麻
+  streak: true, // 晚上还没打卡时提醒一次
 };
+export const STREAK_HOUR = 21; // 当地晚上 9 点（宵礼还没到时，改到宵礼后 30 分钟）
 export const JUMUAH_WARN_MIN = 60;
 
-/** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，6 封斋饭，7 开斋，8 主麻），同一条提醒重排时编号不变 */
+/** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，6 封斋饭，7 开斋，8 主麻，9 打卡），同一条提醒重排时编号不变 */
 export function notifId(ymd, idx) {
   return (ymd.y * 10000 + ymd.m * 100 + ymd.d) * 10 + idx;
 }
@@ -52,6 +54,14 @@ export function buildSchedule(city, now, settings) {
         route: '#/pray/guide/' + p,
       });
     });
+    // 晚上还没打卡：提醒一次。今天已经打卡就不排（打卡时会重新排一遍）
+    if (n.streak && !(i === 0 && settings.checkedToday)) {
+      const nine = Date.UTC(ymd.y, ymd.m - 1, ymd.d, STREAK_HOUR) - city.utcOffset * 3600e3;
+      const at = new Date(Math.max(nine, times.isha.getTime() + 30 * 60000));
+      const sameDay = localParts(at, city.utcOffset).d === ymd.d;
+      if (at > now && sameDay)
+        out.push({ id: notifId(ymd, 9), at, title: t('notify.streakTitle'), body: t('notify.streakBody'), kind: 'streak', route: '#/' });
+    }
     if (n.jumuah && ymd.wd === 5) {
       const at = new Date(times.dhuhr.getTime() - JUMUAH_WARN_MIN * 60000);
       if (at > now) out.push({ id: notifId(ymd, 8), at, title: t('notify.jumuahTitle'), body: t('notify.jumuahBody', { time: fmtHM(times.dhuhr, city.utcOffset) }), kind: 'jumuah', route: '#/pray' });
@@ -137,7 +147,9 @@ export function syncNotifications(ctx) {
       } catch (e) {
         /* 苹果没有频道 */
       }
-      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust });
+      const { streakStatus } = await import('./streak.js');
+      const checkedToday = streakStatus(ymdKey(localParts(ctx.now, ctx.city.utcOffset))).today;
+      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust, checkedToday });
       if (list.length)
         await ln.schedule({
           notifications: list.map((x) => ({

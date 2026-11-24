@@ -24,11 +24,11 @@ const LABELS = {
 const label = (k, v) => (k === 'c' ? CITY[v] || (v === 'other' ? '其他/未知' : v) : (LABELS[k] && LABELS[k][v]) || v);
 
 // ---- 登录 ----
-let token = sessionStorage.getItem('admin-token') || '';
+let token = sessionStorage.getItem('admin-session') || ''; // 登录后拿到的 8 小时会话（不是口令本身）
 async function api(path, opts = {}) {
   const r = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), authorization: 'Bearer ' + token }, cache: 'no-store', credentials: 'omit' });
   if (r.status === 401 || r.status === 429) {
-    const why = r.status === 429 ? '输错次数太多，已锁定 1 小时。' : '口令不对。';
+    const why = r.status === 429 ? '输错次数太多，已锁定 1 小时。' : '登录已过期，请重新登录。';
     logout(why);
     throw new Error(why);
   }
@@ -36,7 +36,7 @@ async function api(path, opts = {}) {
 }
 function logout(msg = '') {
   token = '';
-  sessionStorage.removeItem('admin-token');
+  sessionStorage.removeItem('admin-session');
   $('[data-login]').hidden = false;
   $('.tabs').hidden = true;
   $('[data-logout]').hidden = true;
@@ -55,12 +55,25 @@ async function enter() {
   $('[data-logout]').hidden = false;
   show('stats');
 }
-$('[data-login-form]').addEventListener('submit', (e) => {
+$('[data-login-form]').addEventListener('submit', async (e) => {
   e.preventDefault();
-  token = $('[data-token]').value.trim();
-  sessionStorage.setItem('admin-token', token);
+  const pass = $('[data-token]').value.trim();
+  const totp = $('[data-totp]').value.trim();
   $('[data-token]').value = '';
-  enter();
+  $('[data-totp]').value = '';
+  try {
+    const r = await fetch('/admin/api/login', { method: 'POST', headers: { authorization: 'Bearer ' + pass, 'content-type': 'application/json' }, body: JSON.stringify({ totp }), cache: 'no-store', credentials: 'omit' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      logout(r.status === 429 ? '输错次数太多，已锁定 1 小时。' : j.error === 'bad-totp' ? '6 位数字不对（注意手机时间要准）。' : j.error === 'totp-not-configured' ? '服务器还没设置两步验证（ADMIN_TOTP），见"密钥"页。' : '口令不对。');
+      return;
+    }
+    token = j.session;
+    sessionStorage.setItem('admin-session', token);
+    enter();
+  } catch (err) {
+    logout('连不上服务器。');
+  }
 });
 $('[data-logout]').addEventListener('click', () => logout());
 
@@ -442,6 +455,26 @@ $('[data-gen-keys]').addEventListener('click', async () => {
   const pre = $('[data-pubkey]');
   pre.hidden = false;
   pre.textContent = JSON.stringify(publicJwk);
+});
+
+// 两步验证密钥：在浏览器里随机生成（不经过服务器）
+$('[data-gen-totp]').addEventListener('click', () => {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const b = crypto.getRandomValues(new Uint8Array(20));
+  let bits = 0;
+  let val = 0;
+  let out = '';
+  for (const x of b) {
+    val = (val << 8) | x;
+    bits += 8;
+    while (bits >= 5) {
+      out += A[(val >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  const pre = $('[data-totp-secret]');
+  pre.hidden = false;
+  pre.textContent = out.match(/.{1,4}/g).join(' ') + '\n\n' + `otpauth://totp/Masjid%20Admin?secret=${out}&issuer=Masjid`;
 });
 
 if (token) enter();

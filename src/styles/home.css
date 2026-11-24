@@ -197,3 +197,33 @@ details.method summary { color: var(--green); }
 .share-card .btn, .hadith-card .btn { justify-self: start; }
 .page.home .hadith-card { order: 7; }
 .page.home .share-card { order: 8; }
+
+/* 坚持打卡卡片 */
+.page.home .streak-card { order: 4; }
+.streak-card { display: grid; gap: 8px; padding: 14px 16px; }
+.streak-top { display: flex; align-items: center; gap: 10px; }
+.streak-lamp svg { width: 34px; height: 34px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.streak-lamp .lamp-flame { fill: var(--line); stroke: none; }
+.streak-lamp.is-lit svg { stroke: var(--gold); }
+.streak-lamp.is-lit .lamp-flame { fill: var(--lamp); }
+.streak-n { font-family: var(--font-zh-serif); font-weight: 700; font-size: 1.25rem; color: var(--ink); }
+.streak-state { margin-left: auto; font-size: 0.85rem; color: var(--green); font-weight: 600; }
+.streak-week { list-style: none; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 0; padding: 0; }
+.sw { display: grid; justify-items: center; gap: 4px; }
+.sw-d { font-size: 0.72rem; color: var(--muted); }
+.sw-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); }
+.sw-done .sw-dot { background: var(--green); border-color: var(--green); }
+.sw-grace .sw-dot { background: var(--gold-soft); border-color: var(--gold); }
+.sw-missed .sw-dot { background: var(--bg-2); border-style: dashed; }
+.sw-today .sw-dot { border-color: var(--green); border-width: 3px; }
+.streak-hint { margin: 0; color: var(--ink-2); font-size: 0.92rem; }
+
+/* 解锁称号的庆祝 */
+.celebrate { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50; display: grid; place-items: center; background: rgba(15, 26, 22, 0.55); padding: 16px; }
+.celebrate-card { background: var(--card); border-radius: var(--radius); padding: 24px 20px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); animation: pop 0.35s ease-out; }
+.celebrate-card h2 { font-size: 1.6rem; color: var(--green); margin: 4px 0 8px; }
+.celebrate-k { color: var(--gold-ink); font-weight: 700; margin: 8px 0 0; }
+.celebrate-star { color: var(--gold); display: inline-block; animation: spin 1.2s ease-out; }
+@keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes spin { from { transform: rotate(-90deg) scale(0.6); } to { transform: rotate(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .celebrate-card, .celebrate-star { animation: none; } }

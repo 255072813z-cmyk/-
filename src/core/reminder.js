@@ -47,3 +47,14 @@ export function showToast(prayer, ctx) {
   layer.querySelector('[data-close]').addEventListener('click', close);
   layer.querySelector('a').addEventListener('click', close);
 }
+
+/** 一句轻声的提示（几秒后自己消失） */
+export function softToast(text) {
+  const layer = document.querySelector('.toast-layer');
+  if (!layer) return;
+  layer.innerHTML = `<div class="toast" role="status"><div class="toast-text"><span></span></div></div>`;
+  layer.querySelector('span').textContent = text;
+  setTimeout(() => {
+    if (layer.querySelector('span') && layer.querySelector('span').textContent === text) layer.innerHTML = '';
+  }, 5000);
+}

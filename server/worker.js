@@ -25,6 +25,9 @@ import { sanitizeConfig, verifyEnvelope } from '../shared/remote-config.js';
 import { parseHit, parseErr, addHit, addErr, mergeDay, emptyDay } from '../shared/stats.js';
 import { CITY_DATA } from '../src/content/cities-data.js';
 import { ASSETS } from './admin-assets.js';
+import { Circle, parseCircleReq, newCode, isCode } from './circle.js';
+import { verifyTotp, makeSession, checkSession } from './totp.js';
+export { Circle };
 
 const CITY_IDS = CITY_DATA.map((c) => c.id);
 // 手机应用（Capacitor）的页面来源；网站地址在 wrangler.toml 的 ALLOWED_ORIGINS 里填
@@ -33,7 +36,7 @@ const APP_ORIGINS = ['https://localhost', 'capacitor://localhost', 'http://local
 // 限流规则：每个 IP 每 60 秒最多多少次（与 wrangler.toml 里的 ratelimits 一致）。
 // 塔吉克斯坦、俄罗斯的手机网络常常很多人共用一个 IP，所以公开接口给得宽一些。
 const LIMITS = { RL_PUBLIC: 300, RL_ADMIN: 30 };
-const RULES = { hit: 'RL_PUBLIC', err: 'RL_PUBLIC', config: 'RL_PUBLIC', counts: 'RL_PUBLIC', room: 'RL_PUBLIC', admin: 'RL_ADMIN' };
+const RULES = { hit: 'RL_PUBLIC', err: 'RL_PUBLIC', config: 'RL_PUBLIC', counts: 'RL_PUBLIC', room: 'RL_PUBLIC', circle: 'RL_PUBLIC', admin: 'RL_ADMIN' };
 
 const SECURITY_HEADERS = {
   'x-content-type-options': 'nosniff',
@@ -138,15 +141,28 @@ async function admin(request, env, url, ip) {
   if (!url.pathname.startsWith('/admin/api/')) return respond('not found', 404);
 
   const want = env.ADMIN_TOKEN || '';
+  // 两步验证是必须的：没有设置 ADMIN_TOTP 时后台不开放
   if (want.length < 24) return respond({ error: 'admin-not-configured' }, 503);
+  if (!env.ADMIN_TOTP) return respond({ error: 'totp-not-configured' }, 503);
   const ipKey = hex(await sha256('masjid:' + ip)).slice(0, 16); // 只在内存里用来计数，不保存
   const lock = await (await hubCall(env, '/auth', { ip: ipKey })).json();
   if (lock.locked) return respond({ error: 'locked' }, 429, { 'retry-after': '3600' });
   const got = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!sameBytes(await sha256(got), await sha256(want))) {
+  const fail = async (error = 'unauthorized') => {
     await hubCall(env, '/auth', { ip: ipKey, fail: true });
-    return respond({ error: 'unauthorized' }, 401);
+    return respond({ error }, 401);
+  };
+  const serverKey = 'admin:' + want + ':' + env.ADMIN_TOTP; // 会话签名用；换口令或两步验证密钥后，旧会话全部失效
+
+  // 登录：管理口令 + 手机验证器上的 6 位数字 → 8 小时的会话
+  if (url.pathname === '/admin/api/login' && request.method === 'POST') {
+    const body = await readLimited(request, 256);
+    if (!sameBytes(await sha256(got), await sha256(want))) return fail();
+    if (!(await verifyTotp(env.ADMIN_TOTP, body && body.totp))) return fail('bad-totp');
+    return respond({ session: await makeSession(serverKey) }, 200, { 'cache-control': 'no-store' });
   }
+  // 其余接口：只认登录后拿到的会话（光有口令不够）
+  if (!(await checkSession(serverKey, got))) return fail();
 
   if (url.pathname === '/admin/api/stats' && request.method === 'GET') {
     const days = Math.min(400, Math.max(1, Number(url.searchParams.get('days')) || 30));
@@ -220,6 +236,28 @@ export default {
       if (!item) return respond(null, 400, cors(env, origin));
       await hubCall(env, '/' + kind, { today, item });
       return respond(null, 204, cors(env, origin));
+    }
+
+    // 亲友圈：POST /circle/<操作>
+    const cm = path.match(/^\/circle\/(create|join|state|checkin|hide|rename|nudge|remove|lock|leave)$/);
+    if (cm && request.method === 'POST') {
+      if (!originOk(env, origin)) return respond({ error: 'forbidden' }, 403);
+      if (await limited(env, 'circle', ip)) return respond({ error: 'too-many' }, 429, cors(env, origin));
+      const today = statDay();
+      const req = parseCircleReq(cm[1], await readLimited(request, 1024), today);
+      if (!req) return respond({ error: 'bad' }, 400, cors(env, origin));
+      // 新建：生成一个没被用过的邀请码
+      if (req.op === 'create') {
+        for (let i = 0; i < 5; i++) {
+          req.code = newCode();
+          const r = await env.CIRCLE.get(env.CIRCLE.idFromName(req.code)).fetch('https://circle/', { method: 'POST', body: JSON.stringify({ req, today }) });
+          if (r.status !== 409) return respond(await r.text(), r.status, { 'content-type': 'application/json; charset=utf-8', ...cors(env, origin) });
+        }
+        return respond({ error: 'busy' }, 503, cors(env, origin));
+      }
+      if (!isCode(req.code)) return respond({ error: 'bad' }, 400, cors(env, origin));
+      const r = await env.CIRCLE.get(env.CIRCLE.idFromName(req.code)).fetch('https://circle/', { method: 'POST', body: JSON.stringify({ req, today }) });
+      return respond(await r.text(), r.status, { 'content-type': 'application/json; charset=utf-8', ...cors(env, origin) });
     }
 
     const m = path.match(/^\/room\/([a-z]+)$/);

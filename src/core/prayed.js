@@ -1,6 +1,7 @@
-// "已礼"记录：每番拜礼完，在首页点一下。只给自己看，存在这台手机上：不计分、不排名、不算连续天数。
+// "已礼"记录：每番拜礼完，在首页点一下。只存在这台手机上：不计分、不排名。记下任何一番，当天就算打卡（见 streak.js）。
 import { load, save } from './storage.js';
 import { PRAYERS } from './prayer-times.js';
+import { checkIn } from './streak.js';
 
 const KEEP = 60; // 只留最近 60 天
 
@@ -21,9 +22,14 @@ export function prayedCount(dayKey) {
   return Object.keys(prayedOn(dayKey)).length;
 }
 
-/** 点一下：记下或取消 */
+/** 有记录的日子（用来画打卡格子） */
+export function prayedDays() {
+  return new Set(Object.entries(all()).filter(([, v]) => Array.isArray(v) && v.length).map(([k]) => k));
+}
+
+/** 点一下：记下或取消。记下时顺便打卡，返回打卡结果（连续天数、新称号等） */
 export function togglePrayed(dayKey, prayer, on) {
-  if (!PRAYERS.includes(prayer)) return;
+  if (!PRAYERS.includes(prayer)) return null;
   const a = all();
   const set = new Set(Array.isArray(a[dayKey]) ? a[dayKey].filter((p) => PRAYERS.includes(p)) : []);
   if (on == null ? !set.has(prayer) : on) set.add(prayer);
@@ -32,4 +38,5 @@ export function togglePrayed(dayKey, prayer, on) {
   const keys = Object.keys(a).sort();
   for (const k of keys.slice(0, Math.max(0, keys.length - KEEP))) delete a[k];
   save('prayed', a);
+  return set.has(prayer) ? checkIn(dayKey) : null;
 }

@@ -17,6 +17,8 @@ import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
 import { platform } from '../core/api.js';
 import { ymdKey } from '../core/clock.js';
 import { prayedOn, togglePrayed } from '../core/prayed.js';
+import { streakCard, celebrate } from '../ui/streak-ui.js';
+import { softToast } from '../core/reminder.js';
 import { shareText, shareLink } from '../core/share.js';
 import { L } from '../i18n/index.js';
 
@@ -109,7 +111,8 @@ function shareCard() {
   return `<section class="card share-card">
     <p class="athome-t">${t('share.title')}</p>
     <p class="athome-s">${t('share.sub')}</p>
-    <button type="button" class="btn btn-primary btn-sm" data-share-app>${t('share.btn')}</button>
+    <div class="step-btns"><button type="button" class="btn btn-primary btn-sm" data-share-app>${t('share.btn')}</button>
+    <a class="btn btn-ghost btn-sm" href="#/circle">${t('circle.title')} →</a></div>
     <p class="note" data-share-msg aria-live="polite"></p>
   </section>`;
 }
@@ -308,6 +311,7 @@ export function homePage(ctx) {
     <div class="notice-slot">${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
     <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
+    ${streakCard(ymdKey(ctx.sched.today))}
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
     <div data-winter>${winterCard(ctx)}</div>
     <a class="card card-link athome" href="#/pray">
@@ -336,10 +340,19 @@ export function homePage(ctx) {
       el.querySelectorAll('[data-prayed]').forEach((b) =>
         b.addEventListener('click', () => {
           const on = b.getAttribute('aria-pressed') !== 'true';
-          togglePrayed(ymdKey(ctx.sched.today), b.dataset.prayed, on);
+          const day = ymdKey(ctx.sched.today);
+          const res = togglePrayed(day, b.dataset.prayed, on);
           b.classList.toggle('is-on', on);
           b.setAttribute('aria-pressed', String(on));
           if (on && navigator.vibrate) navigator.vibrate(20);
+          // 打卡：更新卡片，解锁称号时庆祝；今晚的"还没打卡"提醒随之取消
+          const card = el.querySelector('[data-streak]');
+          if (card) card.outerHTML = streakCard(day);
+          if (res) {
+            celebrate(res, softToast);
+            ctx.resync();
+            import('../core/circle.js').then((m) => m.syncCheckin(day)).catch(() => {});
+          }
         }),
       );
       const ok = el.querySelector('[data-city-ok]');

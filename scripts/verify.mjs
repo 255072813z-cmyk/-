@@ -306,6 +306,31 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForTimeout(800);
   const tg = await page.textContent('.tabbar');
   check('设置里切换成塔吉克语，界面立即变', /Имрӯз/.test(tg), tg.replace(/\s+/g, ' ').trim());
+  // 坚持打卡：已连续 6 天（昨天打过），今天点一番"已礼" → 连续 7 天，解锁"一周"并庆祝
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20');
+  await page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem('masjid:settings') || '{}');
+    localStorage.setItem('masjid:settings', JSON.stringify({ ...st, lang: 'zh' }));
+    localStorage.setItem('masjid:streak', JSON.stringify({ cur: 6, best: 6, last: '2026-12-17', grace: [], titles: [3], prev: 0 }));
+    localStorage.removeItem('masjid:prayed');
+  });
+  await page.reload();
+  await page.waitForTimeout(500);
+  const before = (await page.textContent('[data-streak] .streak-n')) || '';
+  await page.click('[data-prayed="fajr"]');
+  await page.waitForTimeout(400);
+  const cele = await page.locator('.celebrate').count();
+  const celeText = cele ? await page.textContent('.celebrate h2') : '';
+  if (cele) await page.click('[data-cele-ok]');
+  const after = (await page.textContent('[data-streak] .streak-n')) || '';
+  check('打卡：连续 6 天 → 点"已礼"变 7 天，解锁"一周"并庆祝', /6/.test(before) && /7/.test(after) && cele === 1 && /一周/.test(celeText), `${before.trim()} → ${after.trim()}，${celeText}`);
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/streak');
+  await page.waitForTimeout(500);
+  const got = await page.locator('.title-item.is-got').count();
+  check('"我的坚持"页：已解锁 2 个称号（起步、一周）', got === 2, `${got} 个`);
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/circle');
+  await page.waitForTimeout(400);
+  check('没有后台时，亲友圈说明"上线后可用"，不报错', /上线后可用/.test(await page.textContent('#app')));
   check('以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }

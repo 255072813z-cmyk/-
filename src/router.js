@@ -9,6 +9,8 @@
 //   #/city                   选择城市
 //   #/times[/月份偏移]       本月时间表（可分享、打印）
 //   #/pray/qada              补礼记录
+//   #/streak                 我的坚持（连续天数、称号）
+//   #/circle                 亲友圈
 //   #/ramadan                斋月：封斋/开斋、打卡、节日
 //   #/ramadan/tarawih        间歇拜
 //   #/ramadan/quran          古兰经 30 天读完
@@ -32,6 +34,8 @@ const LAZY = {
   city: () => import('./pages/city.js').then((m) => m.cityPage),
   times: () => import('./pages/times.js').then((m) => m.timesPage),
   qada: () => import('./pages/pray/qada.js').then((m) => m.qadaPage),
+  streak: () => import('./pages/streak.js').then((m) => m.streakPage),
+  circle: () => import('./pages/circle.js').then((m) => m.circlePage),
   ramadan: () => import('./pages/ramadan/index.js').then((m) => m.ramadanPage),
   tarawih: () => import('./pages/ramadan/tarawih.js').then((m) => m.tarawihPage),
   quran: () => import('./pages/ramadan/quran.js').then((m) => m.quranPage),
@@ -78,6 +82,10 @@ export function resolveRoute(path, ctx) {
       return lazy('settings', ctx, []);
     case 'city':
       return lazy('city', ctx, []);
+    case 'streak':
+      return lazy('streak', ctx, []);
+    case 'circle':
+      return lazy('circle', ctx, []);
     case 'times':
       return lazy('times', ctx, [parts[1]]);
     case 'masjid':

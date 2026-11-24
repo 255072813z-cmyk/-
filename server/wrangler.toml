@@ -13,6 +13,11 @@ class_name = "Room"
 name = "HUB"
 class_name = "Hub"
 
+# 亲友圈：每个圈一个实例（按邀请码），只存昵称、最后打卡日、连续天数、收到的预设提醒
+[[durable_objects.bindings]]
+name = "CIRCLE"
+class_name = "Circle"
+
 # 免费套餐需要 SQLite 版的 Durable Object
 [[migrations]]
 tag = "v1"
@@ -21,6 +26,10 @@ new_sqlite_classes = ["Room"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["Hub"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["Circle"]
 
 # 防火墙：按 IP 限流（Cloudflare 自带，计数不落盘）。period 只能是 10 或 60 秒。
 [[ratelimits]]

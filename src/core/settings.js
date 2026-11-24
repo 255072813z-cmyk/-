@@ -53,6 +53,7 @@ export function normalizeSettings(saved) {
     advance: [0, 5, 10, 15].includes(Number(n.advance)) ? Number(n.advance) : 0,
     ramadan: bool(n.ramadan, true),
     jumuah: bool(n.jumuah, true),
+    streak: bool(n.streak, true),
   };
   out.hijriAdjust = int(Number(s.hijriAdjust), -2, 2, 0);
   // 老版本里调过伊斯兰历的用户，视为手动调整

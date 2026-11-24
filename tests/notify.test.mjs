@@ -73,3 +73,15 @@ test('主麻日提醒：星期五晌礼前 1 小时，一周一条；可以关�
   const off = buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, notify: { ...DEFAULT_NOTIFY, jumuah: false } });
   assert.equal(off.filter((x) => x.kind === 'jumuah').length, 0);
 });
+
+test('打卡提醒：晚上 9 点（宵礼前就推到宵礼后）；今天已打卡就不排', () => {
+  const list = buildSchedule(city, at(2026, 12, 1, 3, 0), base);
+  const s = list.filter((x) => x.kind === 'streak');
+  assert.equal(s.length, 7);
+  assert.equal(s[0].at.getTime(), Date.UTC(2026, 11, 1, 21 - 5, 0));
+  const done = buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, checkedToday: true });
+  assert.equal(done.filter((x) => x.kind === 'streak').length, 6);
+  assert.ok(list.length <= 64, `总数 ${list.length}`);
+  const off = buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, notify: { ...DEFAULT_NOTIFY, streak: false } });
+  assert.equal(off.filter((x) => x.kind === 'streak').length, 0);
+});

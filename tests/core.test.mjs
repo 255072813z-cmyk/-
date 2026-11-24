@@ -127,3 +127,39 @@ test('第一次打开：按手机时区猜城市，并请用户确认；老用�
   assert.equal(old.city, 'khujand');
   assert.equal(old.cityConfirmed, true);
 });
+
+test('坚持打卡：连续天数、每周宽限一天、断了重新开始、称号保留', async () => {
+  const mem = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) } };
+  try {
+    const { checkIn, streakStatus, weekCells } = await import('../src/core/streak.js');
+    // 2026-11-02 是星期一
+    for (const d of ['2026-11-02', '2026-11-03', '2026-11-04']) checkIn(d);
+    let r = checkIn('2026-11-04');
+    assert.equal(r.cur, 3, '同一天打两次只算一次');
+    // 漏了 11-05（星期四），11-06 打卡：用掉本周宽限，连续不断
+    r = checkIn('2026-11-06');
+    assert.equal(r.cur, 4);
+    assert.deepEqual(r.usedGrace, ['2026-11-05']);
+    // 同一周再漏一天（11-07），11-08 打卡：本周宽限已用，重新开始
+    r = checkIn('2026-11-08');
+    assert.equal(r.cur, 1);
+    assert.equal(r.restartedFrom, 4);
+    assert.ok(r.titles.includes(3), '已解锁的称号保留');
+    assert.equal(r.best, 4);
+    // 下一周：连续 7 天解锁"一周"
+    for (const d of ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13']) r = checkIn(d);
+    r = checkIn('2026-11-14');
+    assert.equal(r.cur, 7);
+    assert.equal(r.newTitle, 7);
+    // 还没打卡时：昨天打了就还连着
+    assert.equal(streakStatus('2026-11-15').cur, 7);
+    assert.equal(streakStatus('2026-11-15').today, false);
+    // 漏了好几天：显示 0
+    assert.equal(streakStatus('2026-11-25').cur, 0);
+    const cells = weekCells('2026-11-11', new Set(['2026-11-09', '2026-11-10']));
+    assert.deepEqual(cells.map((c) => c.st), ['done', 'done', 'today', 'future', 'future', 'future', 'future']);
+  } finally {
+    delete globalThis.window;
+  }
+});

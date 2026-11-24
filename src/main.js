@@ -1,13 +1,6 @@
 // 应用入口：路由、底部导航、每秒走时、到点提醒
 import '@fontsource/amiri/arabic-400.css';
 import '@fontsource/amiri/arabic-700.css';
-// 塔吉克语、俄语用的西里尔字母字体（含 ӣ ӯ ҳ қ ҷ ғ）。只有页面上出现西里尔字母时才会下载。
-import '@fontsource/noto-sans/cyrillic-400.css';
-import '@fontsource/noto-sans/cyrillic-ext-400.css';
-import '@fontsource/noto-sans/cyrillic-700.css';
-import '@fontsource/noto-sans/cyrillic-ext-700.css';
-import '@fontsource/noto-serif/cyrillic-700.css';
-import '@fontsource/noto-serif/cyrillic-ext-700.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/home.css';
@@ -83,6 +76,8 @@ function refreshSchedule() {
 function applyPrefs() {
   const s = ctx.settings;
   document.documentElement.dataset.fs = String(s.fontScale || 0);
+  // 塔吉克语、俄语：加载西里尔字母字体（中文界面不下载，首屏更快）
+  if (s.lang !== 'zh') import('./styles/cyrillic.js').catch(() => {});
   setLang(s.lang);
   if (getLang() !== s.lang) {
     // 词典还没下载：下载好再切换（期间先显示原来的语言）

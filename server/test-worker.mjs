@@ -4,10 +4,12 @@ import { Miniflare } from 'miniflare';
 import { generateKeys, signBody, verifyEnvelope, sanitizeConfig } from '../shared/remote-config.js';
 import { CITY_DATA } from '../src/content/cities-data.js';
 import { weekOf } from '../shared/stats.js';
+import { totpAt } from './totp.js';
 
 const repo = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const SITE = 'https://example.org';
 const TOKEN = 'test-admin-token-0123456789abcdef';
+const TOTP = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
 const keys = await generateKeys();
 const other = await generateKeys();
 
@@ -17,13 +19,15 @@ const mf = new Miniflare({
   modulesRoot: repo,
   modulesRules: [{ type: 'ESModule', include: ['**/*.js'] }],
   compatibilityDate: '2025-06-01',
-  durableObjects: { ROOMS: 'Room', HUB: 'Hub' },
-  bindings: { ALLOWED_ORIGINS: SITE, ADMIN_TOKEN: TOKEN, CONFIG_PUBLIC_KEY: JSON.stringify(keys.publicJwk) },
+  durableObjects: { ROOMS: 'Room', HUB: 'Hub', CIRCLE: 'Circle' },
+  bindings: { ALLOWED_ORIGINS: SITE, ADMIN_TOKEN: TOKEN, ADMIN_TOTP: TOTP, CONFIG_PUBLIC_KEY: JSON.stringify(keys.publicJwk) },
 });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const get = (path, init = {}) => mf.dispatchFetch('http://localhost' + path, init);
 const asIp = (ip, init = {}) => ({ ...init, headers: { 'cf-connecting-ip': ip, ...(init.headers || {}) } });
-const adminH = (tok = TOKEN, ip = '10.0.0.1', extra = {}) => ({ authorization: 'Bearer ' + tok, 'cf-connecting-ip': ip, ...extra });
+let SESSION = '';
+const adminH = (tok = SESSION, ip = '10.0.0.1', extra = {}) => ({ authorization: 'Bearer ' + tok, 'cf-connecting-ip': ip, ...extra });
+const login = (pass, code, ip = '10.0.0.1') => get('/admin/api/login', { method: 'POST', headers: { authorization: 'Bearer ' + pass, 'cf-connecting-ip': ip, 'content-type': 'application/json' }, body: JSON.stringify({ totp: code }) });
 
 async function connect(room, origin = SITE) {
   const res = await get('/room/' + room, { headers: { Upgrade: 'websocket', Origin: origin } });
@@ -93,6 +97,16 @@ ok('刷消息的连接被断开', flood.closed === 1008, String(flood.closed));
 const r404 = await get('/nope');
 ok('未知地址 404', r404.status === 404);
 ok('响应带安全头', r404.headers.get('x-content-type-options') === 'nosniff' && r404.headers.get('x-frame-options') === 'DENY' && r404.headers.get('referrer-policy') === 'no-referrer');
+
+// ---- 管理后台登录：口令 + 两步验证 ----
+const code = await totpAt(TOTP, Math.floor(Date.now() / 30000));
+ok('只有口令、没有 6 位数字不能登录', (await login(TOKEN, '000000', '10.0.0.7')).status === 401);
+ok('6 位数字对、口令不对也不能登录', (await login('wrong-token-wrong-token-wrong', code, '10.0.0.8')).status === 401);
+const lr = await login(TOKEN, code);
+SESSION = (await lr.json()).session || '';
+ok('口令 + 6 位数字可以登录，拿到 8 小时会话', lr.status === 200 && /^\d{13}\./.test(SESSION));
+ok('光有口令不能直接调用后台接口', (await get('/admin/api/stats', { headers: adminH(TOKEN, '10.0.0.9') })).status === 401);
+ok('伪造的会话不行', (await get('/admin/api/stats', { headers: adminH(String(Date.now() + 3600e3) + '.' + 'A'.repeat(43), '10.0.0.10') })).status === 401);
 
 // ---- 远程配置 ----
 ok('还没发布配置时 /config 204', (await get('/config')).status === 204);
@@ -176,7 +190,51 @@ let lockStatus = 0;
 for (let i = 0; i < 6; i++) lockStatus = (await get('/admin/api/stats', { headers: adminH('wrong-token-wrong-token-wrong', '10.2.0.1') })).status;
 ok('连续输错口令被锁', lockStatus === 429, String(lockStatus));
 ok('锁住后口令对了也进不去', (await get('/admin/api/stats', { headers: adminH(TOKEN, '10.2.0.1') })).status === 429);
-ok('别的来源不受影响', (await get('/admin/api/stats', { headers: adminH(TOKEN, '10.3.0.1') })).status === 200);
+ok('别的来源不受影响', (await get('/admin/api/stats', { headers: adminH(SESSION, '10.3.0.1') })).status === 200);
+
+// ---- 亲友圈 ----
+const rnd = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((x) => x.toString(16).padStart(2, '0')).join('');
+const userA = { uid: rnd(16), secret: rnd(32) };
+const userB = { uid: rnd(16), secret: rnd(32) };
+const circ = async (op, body, ip = '10.5.0.1') => {
+  const r = await get('/circle/' + op, { method: 'POST', headers: { Origin: SITE, 'cf-connecting-ip': ip }, body: JSON.stringify(body) });
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+const made = await circ('create', { ...userA, nick: '阿卜杜拉' });
+const ccode = made.body && made.body.code;
+ok('建一个亲友圈，拿到 10 位邀请码', made.status === 200 && /^[A-Z2-9]{10}$/.test(ccode || ''), JSON.stringify(made.body));
+ok('网址做昵称不行', (await circ('join', { ...userB, code: ccode, nick: 'www.spam.ru' })).status === 400);
+const joined = await circ('join', { ...userB, code: ccode, nick: 'Фарход' });
+ok('用邀请码加入', joined.status === 200 && joined.body.members.length === 2);
+ok('邀请码错了加不进去', (await circ('join', { uid: rnd(16), secret: rnd(32), code: 'ABCDEFGHJK', nick: 'x' })).status === 404);
+const tday = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
+ok('打卡：记下今天和连续天数', (await circ('checkin', { ...userB, code: ccode, day: tday, streak: 12 })).status === 200);
+ok('日期离谱的打卡被拒', (await circ('checkin', { ...userB, code: ccode, day: '2020-01-01', streak: 1 })).status === 400);
+const stA = await circ('state', { ...userA, code: ccode });
+const bView = stA.body.members.find((m) => !m.me);
+ok('亲友看到"今天打卡了"和连续天数', bView && bView.day === tday && bView.streak === 12 && bView.nick === 'Фарход');
+ok('看不到对方的编号和密钥', !JSON.stringify(stA.body).includes(userB.uid) && !JSON.stringify(stA.body).includes(userB.secret));
+ok('别人的密钥冒充不了', (await circ('state', { uid: userB.uid, secret: rnd(32), code: ccode })).status === 401);
+await circ('hide', { ...userB, code: ccode, hide: true });
+ok('隐藏后亲友看不到连续天数', (await circ('state', { ...userA, code: ccode })).body.members.find((m) => !m.me).streak === null);
+ok('发预设提醒', (await circ('nudge', { ...userA, code: ccode, to: bView.mid, kind: 'remind' })).status === 200);
+ok('不能发自定义文字', (await circ('nudge', { ...userA, code: ccode, to: bView.mid, kind: '加我微信' })).status === 400);
+await circ('nudge', { ...userA, code: ccode, to: bView.mid, kind: 'dua' });
+await circ('nudge', { ...userA, code: ccode, to: bView.mid, kind: 'salam' });
+ok('一天给同一个人最多 3 条', (await circ('nudge', { ...userA, code: ccode, to: bView.mid, kind: 'congrats' })).status === 429);
+await circ('checkin', { ...userB, code: ccode, day: tday, streak: 12, hide: true });
+const stB = await circ('state', { ...userB, code: ccode });
+ok('收到提醒（中间的打卡请求不会把它读掉），看过就清空', stB.body.inbox.length === 3 && stB.body.inbox[0].nick === '阿卜杜拉' && (await circ('state', { ...userB, code: ccode })).body.inbox.length === 0);
+ok('不是圈主不能锁圈', (await circ('lock', { ...userB, code: ccode, locked: true })).status === 403);
+ok('圈主可以锁圈', (await circ('lock', { ...userA, code: ccode, locked: true })).status === 200);
+ok('锁了之后新人加不进来', (await circ('join', { uid: rnd(16), secret: rnd(32), code: ccode, nick: 'Новый' })).status === 403);
+await circ('lock', { ...userA, code: ccode, locked: false });
+let full = 0;
+for (let i = 0; i < 19; i++) if ((await circ('join', { uid: rnd(16), secret: rnd(32), code: ccode, nick: 'm' + i }, '10.6.0.' + i)).status === 403) full++;
+ok('一个圈最多 20 人', full === 1, `满员被拒 ${full} 次`);
+ok('圈主移出成员', (await circ('remove', { ...userA, code: ccode, to: bView.mid })).status === 200 && (await circ('state', { ...userB, code: ccode })).status === 401);
+ok('退出亲友圈', (await circ('leave', { ...userA, code: ccode })).status === 200);
+ok('别的网站来源不能用亲友圈', (await get('/circle/state', { method: 'POST', headers: { Origin: 'https://evil.example' }, body: JSON.stringify({ ...userA, code: ccode }) })).status === 403);
 
 console.log(out.join('\n'));
 console.log(process.exitCode ? '有失败项' : `全部 ${out.length} 项通过`);
