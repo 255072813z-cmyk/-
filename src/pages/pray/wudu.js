@@ -4,11 +4,13 @@ import { wuduFigure, ICONS, star8 } from '../../ui/art.js';
 import { reciteCard } from '../../ui/recite.js';
 import { load, save } from '../../core/storage.js';
 import { t } from '../../i18n/index.js';
+import { ymdKey } from '../../core/clock.js';
+import { earn } from '../../ui/cheer.js';
 
 const LEVEL_CLS = { fard: 'lv-fard', sunnah: 'lv-sunnah', mustahab: 'lv-opt' };
 const list = (prefix, n) => Array.from({ length: n }, (_, i) => `<li>${t(`${prefix}.${i + 1}`)}</li>`).join('');
 
-export function wuduPage() {
+export function wuduPage(ctx) {
   let i = Math.max(0, Math.min(Math.floor(Number(load('wudu:step', 0))) || 0, WUDU_STEPS.length - 1));
   const html = `
   <div class="page wudu">
@@ -59,7 +61,11 @@ export function wuduPage() {
     const nx = box.querySelector('[data-next]');
     if (nx) nx.addEventListener('click', () => go(el, 1));
     const fin = box.querySelector('[data-finish]');
-    if (fin) fin.addEventListener('click', () => save('wudu:step', 0));
+    if (fin)
+      fin.addEventListener('click', () => {
+        save('wudu:step', 0);
+        earn('wudu', ymdKey(ctx.sched.today));
+      });
   }
   function go(el, d) {
     i = Math.max(0, Math.min(WUDU_STEPS.length - 1, i + d));

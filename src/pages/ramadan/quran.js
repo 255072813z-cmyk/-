@@ -4,6 +4,8 @@ import { ramadanStatus } from '../../core/ramadan.js';
 import { load, save } from '../../core/storage.js';
 import { ICONS, star8 } from '../../ui/art.js';
 import { t } from '../../i18n/index.js';
+import { ymdKey } from '../../core/clock.js';
+import { earn } from '../../ui/cheer.js';
 
 export function quranPage(ctx) {
   const st = ramadanStatus(ctx.sched.today, ctx.hijriAdjust);
@@ -54,6 +56,7 @@ export function quranPage(ctx) {
         if (cb.checked) cur.push(+cb.dataset.juz);
         save(key, cur.sort((a, b) => a - b));
         draw(el);
+        if (new Set(cur).size >= 30) earn('quran', ymdKey(ctx.sched.today));
         const again = el.querySelector(`[data-juz="${cb.dataset.juz}"]`);
         if (again) again.focus();
       }),

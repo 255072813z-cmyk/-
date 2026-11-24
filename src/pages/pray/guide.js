@@ -8,7 +8,8 @@ import { PRAYERS } from '../../core/prayer-times.js';
 import { ymdKey } from '../../core/clock.js';
 import { togglePrayed, prayedOn } from '../../core/prayed.js';
 import { markGuideDone } from '../../core/usage.js';
-import { celebrate } from '../../ui/streak-ui.js';
+import { cheer } from '../../ui/cheer.js';
+import { onPrayed, onGuideDone } from '../../core/badges.js';
 import { softToast } from '../../core/reminder.js';
 
 const unitName = (u) => t(...unitLabel(u).name);
@@ -90,6 +91,11 @@ export function guidePage(ctx, prayerKey, unitId) {
     if (i >= steps.length) {
       stage.innerHTML = finishHTML();
       markGuideDone(ymdKey(ctx.sched.today));
+      // 跟着做完：第一次、第 30 次各解锁一个徽章（泰拉威的一组不算一次完整的礼拜）
+      if (!isTarawih) {
+        const got = onGuideDone(ymdKey(ctx.sched.today));
+        if (got.length) cheer({ badges: got });
+      }
       const mark = stage.querySelector('[data-mark]');
       if (mark)
         mark.addEventListener('click', () => {
@@ -98,7 +104,7 @@ export function guidePage(ctx, prayerKey, unitId) {
           mark.textContent = t('guide.marked');
           mark.disabled = true;
           if (res) {
-            celebrate(res, softToast);
+            cheer({ streak: res, badges: onPrayed(day, prayedOn(day)), todayKey: day }, softToast);
             ctx.resync();
             import('../../core/circle.js').then((m) => m.syncCheckin(day)).catch(() => {});
           }

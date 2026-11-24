@@ -3,8 +3,10 @@ import { TASBIH, TASBIH_100 } from '../../content/recitations.js';
 import { load, save } from '../../core/storage.js';
 import { star8 } from '../../ui/art.js';
 import { t, L, TR } from '../../i18n/index.js';
+import { ymdKey } from '../../core/clock.js';
+import { earn } from '../../ui/cheer.js';
 
-export function tasbihPage() {
+export function tasbihPage(ctx) {
   let st = load('tasbih', { phase: 0, count: 0 }); // phase 0-2 三句，3 = 第 100 句
   if (!st || !Number.isInteger(st.phase) || st.phase < 0 || st.phase > 3 || !Number.isInteger(st.count) || st.count < 0 || st.count > 33) st = { phase: 0, count: 0 };
 
@@ -65,6 +67,7 @@ export function tasbihPage() {
       if (st.count >= cur.count) st = { phase: st.phase + 1, count: 0 };
       save('tasbih', st);
       draw(el);
+      if (st.phase === 3) earn('tasbih', ymdKey(ctx.sched.today)); // 三句各 33 遍念完，只剩最后一句
       const tap = el.querySelector('[data-tap]');
       if (tap) tap.focus();
     });

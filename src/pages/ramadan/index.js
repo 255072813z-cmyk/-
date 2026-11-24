@@ -6,6 +6,9 @@ import { load, save } from '../../core/storage.js';
 import { ramadanScene, star8 } from '../../ui/art.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
+import { ymdKey } from '../../core/clock.js';
+import { cheer } from '../../ui/cheer.js';
+import { onFast } from '../../core/badges.js';
 import { dateShort, durHTML, cityName } from '../../i18n/format.js';
 
 const dur = (ms) => durHTML(ms, true);
@@ -156,8 +159,15 @@ export function ramadanPage(ctx) {
         if (!cur[d]) delete cur[d];
         save(logKey, cur);
         redrawDays(el);
+        fastBadges(cur);
       }),
     );
+  }
+
+  // 第一天封斋、一个斋月记下 29 天：解锁徽章
+  function fastBadges(cur) {
+    const got = onFast(ymdKey(ctx.sched.today), cur);
+    if (got.length) cheer({ badges: got });
   }
 
   let lastPhase = f.phase;
@@ -169,10 +179,17 @@ export function ramadanPage(ctx) {
       if (b)
         b.addEventListener('click', () => {
           const cur = load(logKey, {});
-          if (cur[st.day] === 'yes') delete cur[st.day];
+          const was = cur[st.day] === 'yes';
+          if (was) delete cur[st.day];
           else cur[st.day] = 'yes';
           save(logKey, cur);
           redrawDays(el);
+          if (!was) {
+            const today = el.querySelector('[data-today]');
+            if (today) today.classList.add('is-pop');
+            if (navigator.vibrate) navigator.vibrate(20);
+          }
+          fastBadges(cur);
         });
     },
     tick(c) {

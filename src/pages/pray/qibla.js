@@ -74,6 +74,7 @@ export function qiblaPage(ctx) {
         </div>
         <div class="dial-wrap" data-dial>${dial(b)}</div>
         <p class="turn" data-turn aria-live="polite">${hasSensor ? t('qibla.tapStart') : t('qibla.noSensor')}</p>
+        <p class="note portrait-hint" data-portrait hidden>${t('qibla.portrait')}</p>
         ${hasSensor ? `<button class="btn btn-primary btn-wide" type="button" data-start>${t('qibla.start')}</button>` : ''}
         <p class="note">${t(c.declination < 0 ? 'qibla.distanceW' : 'qibla.distance', { city: cityName(c), km: Math.round(km).toLocaleString(LANGS[getLang()].locale), decl: Math.abs(c.declination) })}</p>
         ${c.id === 'here' && c.nearKm > 150 ? `<p class="note">${t('city.farNote', { name: t('city.' + c.near), km: c.nearKm.toLocaleString(LANGS[getLang()].locale) })}</p>` : ''}
@@ -112,8 +113,12 @@ export function qiblaPage(ctx) {
         let smooth = null;
         btn.hidden = true;
         turn.textContent = t('qibla.reading');
+        if (stop) stop(); // 出错后再点一次：先停掉上一次的监听，不重复
+        const hint = el.querySelector('[data-portrait]');
         stop = startCompass({
-          onHeading(mag) {
+          onHeading(mag, screenAngle) {
+            // 横屏时各家手机、浏览器对方向的修正不一致，请用户竖着拿（竖屏最准）
+            if (hint) hint.hidden = !screenAngle;
             const heading = (mag + c.declination + 360) % 360; // 磁北 → 真北
             // 平滑一下，避免指针乱抖
             if (smooth == null) smooth = heading;

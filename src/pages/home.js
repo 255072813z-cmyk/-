@@ -17,7 +17,7 @@ import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
 import { platform } from '../core/api.js';
 import { ymdKey } from '../core/clock.js';
 import { prayedOn, togglePrayed } from '../core/prayed.js';
-import { streakCard, celebrate } from '../ui/streak-ui.js';
+import { streakCard } from '../ui/streak-ui.js';
 import { softToast } from '../core/reminder.js';
 import { shareText, shareLink } from '../core/share.js';
 import { L } from '../i18n/index.js';
@@ -141,7 +141,12 @@ function bindShare(root, ctx) {
       say(h, await shareText(text));
     });
   const a = root.querySelector('[data-share-app]');
-  if (a) a.addEventListener('click', async () => say(a, await shareText(t('share.msg', { app: t('app.name'), link: link() }).trim())));
+  if (a)
+    a.addEventListener('click', async () => {
+      const r = await shareText(t('share.msg', { app: t('app.name'), link: link() }).trim());
+      say(a, r);
+      if (r === 'shared' || r === 'copied') import('../ui/cheer.js').then((m) => m.earn('share', ymdKey(ctx.sched.today))).catch(() => {});
+    });
 }
 
 /** 手机应用里还没允许通知时，在首页直接请用户开启（很多老人不会去翻设置） */
@@ -344,12 +349,21 @@ export function homePage(ctx) {
           const res = togglePrayed(day, b.dataset.prayed, on);
           b.classList.toggle('is-on', on);
           b.setAttribute('aria-pressed', String(on));
-          if (on && navigator.vibrate) navigator.vibrate(20);
-          // 打卡：更新卡片，解锁称号时庆祝；今晚的"还没打卡"提醒随之取消
+          if (on) {
+            // 打勾弹一下、漾出一圈（动画在 CSS 里；减少动态效果时 CSS 不放）
+            b.classList.remove('is-pop');
+            void b.offsetWidth;
+            b.classList.add('is-pop');
+            if (navigator.vibrate) navigator.vibrate(20);
+          }
+          // 打卡：更新卡片；今天第一次打卡放"又坚持了一天"，解锁称号、徽章时庆祝；今晚的"还没打卡"提醒随之取消
           const card = el.querySelector('[data-streak]');
-          if (card) card.outerHTML = streakCard(day);
+          if (card) card.outerHTML = streakCard(day, !!(res && res.fresh));
           if (res) {
-            celebrate(res, softToast);
+            // 动画和徽章按需加载，首页打开更快
+            Promise.all([import('../ui/cheer.js'), import('../core/badges.js')])
+              .then(([c, bd]) => c.cheer({ streak: res, badges: bd.onPrayed(day, prayedOn(day)), todayKey: day }, softToast))
+              .catch(() => softToast(t('streak.doneToday')));
             ctx.resync();
             import('../core/circle.js').then((m) => m.syncCheckin(day)).catch(() => {});
           }

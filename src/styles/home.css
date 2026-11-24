@@ -142,6 +142,9 @@ details.method summary { color: var(--green); }
 .page.home .athome { order: 7; }
 .page.home .to-masjid { order: 7; }
 .to-masjid { display: grid; gap: 2px; padding: 18px; background: var(--gold-soft); border-color: var(--gold); }
+/* 浅色卡片上借用 athome 的标题样式时，换成深色字（白字在米色卡片上看不见） */
+.qada-link .athome-t, .city-set .athome-t, .share-card .athome-t, .circle-link .athome-t { color: var(--green); }
+.qada-link .athome-s, .city-set .athome-s, .share-card .athome-s, .circle-link .athome-s { color: var(--ink-2); }
 .to-masjid .athome-t { color: var(--gold-ink); }
 .to-masjid .athome-s { color: var(--ink-2); }
 .page.home .privacy { order: 8; }
@@ -218,12 +221,81 @@ details.method summary { color: var(--green); }
 .sw-today .sw-dot { border-color: var(--green); border-width: 3px; }
 .streak-hint { margin: 0; color: var(--ink-2); font-size: 0.92rem; }
 
-/* 解锁称号的庆祝 */
-.celebrate { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50; display: grid; place-items: center; background: rgba(15, 26, 22, 0.55); padding: 16px; }
-.celebrate-card { background: var(--card); border-radius: var(--radius); padding: 24px 20px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); animation: pop 0.35s ease-out; }
-.celebrate-card h2 { font-size: 1.6rem; color: var(--green); margin: 4px 0 8px; }
+/* 坚持称号的小标签（首页卡片、我的坚持页） */
+.streak-title { justify-self: start; display: inline-block; font-size: 0.78rem; font-weight: 700; color: var(--gold-ink); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 2px 10px; }
+
+/* ===== 动画（参考多邻国）：系统"减少动态效果"时全部关掉，见文件末尾 ===== */
+
+/* 打勾：弹一下，漾出一圈，勾画出来 */
+.prow-check { position: relative; }
+.prow-check.is-pop { animation: check-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.prow-check.is-pop::after { content: ''; position: absolute; top: -2px; right: -2px; bottom: -2px; left: -2px; border-radius: 50%; border: 2px solid var(--green); animation: ripple 0.6s ease-out forwards; pointer-events: none; }
+.prow-check.is-pop svg path { stroke-dasharray: 24; animation: draw 0.35s 0.08s ease-out backwards; }
+@keyframes check-pop { 0% { transform: scale(0.8); } 55% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes ripple { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.9); opacity: 0; } }
+@keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+
+/* 首页卡片刚打卡：灯亮起来、今天的圆点弹一下 */
+.streak-card.is-new .streak-lamp { animation: lamp-on 0.9s ease-out; }
+.streak-card.is-new .streak-lamp.is-lit .lamp-flame { animation: flame 1.6s ease-out; }
+.streak-card.is-new .sw.is-today .sw-dot { animation: dot-pop 0.5s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+.sw-done.is-today .sw-dot { box-shadow: 0 0 0 3px var(--green-soft); }
+@keyframes lamp-on { 0% { transform: scale(0.9) rotate(-6deg); filter: none; } 40% { transform: scale(1.15) rotate(4deg); filter: drop-shadow(0 0 8px var(--lamp)); } 100% { transform: none; filter: drop-shadow(0 0 3px var(--lamp)); } }
+@keyframes flame { 0% { opacity: 0.2; } 30% { opacity: 1; } 60% { opacity: 0.7; } 100% { opacity: 1; } }
+@keyframes dot-pop { 0% { transform: scale(0.4); } 100% { transform: scale(1); } }
+.streak-lamp.is-lit svg { filter: drop-shadow(0 0 3px var(--lamp)); }
+
+/* 今天第一次打卡：底部弹出"又坚持了一天" */
+.cheer-sheet { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(15, 26, 22, 0.35); padding: 0 12px calc(12px + env(safe-area-inset-bottom)); animation: fade 0.2s ease-out; }
+.cheer-sheet.is-out { opacity: 0; transition: opacity 0.2s; }
+.cheer-card { background: var(--card); border-radius: var(--radius); padding: 20px 18px 16px; width: 100%; max-width: 420px; text-align: center; box-shadow: var(--shadow); display: grid; gap: 10px; justify-items: center; animation: sheet-up 0.38s cubic-bezier(0.22, 1.2, 0.36, 1); }
+.cheer-lamp svg { width: 64px; height: 64px; fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.3s; }
+.cheer-lamp .lamp-flame { fill: var(--line); stroke: none; transition: fill 0.3s; }
+.cheer-sheet.is-lit .cheer-lamp svg { stroke: var(--gold); animation: lamp-on 0.9s ease-out forwards; }
+.cheer-sheet.is-lit .cheer-lamp .lamp-flame { fill: var(--lamp); }
+.cheer-num { display: grid; justify-items: center; line-height: 1; }
+.cheer-num b { font-family: var(--font-zh-serif); font-size: 3.6rem; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
+.cheer-num span { font-size: 0.9rem; color: var(--ink-2); margin-top: 4px; }
+.cheer-k { margin: 0; font-weight: 700; font-size: 1.1rem; color: var(--green); }
+.cheer-week { width: 100%; }
+.cheer-week .sw.is-pop .sw-dot { animation: dot-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 0 4px var(--green-soft); }
+@keyframes sheet-up { from { transform: translateY(110%); } to { transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* 解锁称号、徽章 */
+.celebrate { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50; display: grid; place-items: center; background: rgba(15, 26, 22, 0.55); padding: 16px; overflow: hidden; }
+.celebrate-card { position: relative; z-index: 1; background: var(--card); border-radius: var(--radius); padding: 24px 20px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); animation: pop 0.35s ease-out; }
+.celebrate-card h2 { font-size: 1.6rem; color: var(--green); margin: 4px 0 8px; animation: rise-in 0.4s 0.25s ease-out backwards; }
 .celebrate-k { color: var(--gold-ink); font-weight: 700; margin: 8px 0 0; }
-.celebrate-star { color: var(--gold); display: inline-block; animation: spin 1.2s ease-out; }
+.cele-medal { position: relative; display: inline-grid; place-items: center; width: 104px; height: 104px; border-radius: 50%; background: var(--gold-soft); color: var(--gold); border: 3px solid var(--gold); animation: medal-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.cele-medal .badge-ico { stroke: var(--gold-ink); stroke-width: 1.6; }
+.cele-medal > svg { position: relative; z-index: 1; }
+.cele-rays { position: absolute; top: -30px; right: -30px; bottom: -30px; left: -30px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, rgba(217, 182, 94, 0.28) 0deg 10deg, transparent 10deg 30deg); animation: rays 8s linear infinite; z-index: 0; }
+.cele-n { color: var(--ink-2); margin: 0 0 8px; }
+.cele-n b { font-family: var(--font-zh-serif); font-size: 1.5rem; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
+.cele-badges { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 6px; text-align: left; }
+.cele-badges li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; background: var(--gold-soft); font-weight: 600; animation: rise-in 0.4s ease-out backwards; }
+.cele-badges .badge-medal { width: 36px; height: 36px; }
 @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes spin { from { transform: rotate(-90deg) scale(0.6); } to { transform: rotate(0) scale(1); } }
-@media (prefers-reduced-motion: reduce) { .celebrate-card, .celebrate-star { animation: none; } }
+@keyframes medal-in { 0% { transform: scale(0) rotate(-120deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes rays { to { transform: rotate(360deg); } }
+@keyframes rise-in { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* 几何彩屑：八角星、菱形、圆点、短条 */
+.confetti { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.cf { position: absolute; top: -24px; display: block; animation-name: cf-fall; animation-timing-function: cubic-bezier(0.25, 0.6, 0.5, 1); animation-fill-mode: forwards; }
+.cf-star .star8 { display: block; fill: currentColor; }
+.cf-star .star8 .star8-c { fill: var(--card); }
+.cf-diamond { width: 10px; height: 10px; background: currentColor; transform: rotate(45deg); }
+.cf-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.cf-bar { width: 4px; height: 12px; border-radius: 2px; background: currentColor; }
+@keyframes cf-fall { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--dx, 0), 105vh) rotate(var(--r, 360deg)); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .prow-check.is-pop, .prow-check.is-pop::after, .prow-check.is-pop svg path,
+  .streak-card.is-new .streak-lamp, .streak-card.is-new .lamp-flame, .streak-card.is-new .sw-dot,
+  .cheer-sheet, .cheer-card, .cheer-sheet.is-lit .cheer-lamp svg, .cheer-week .sw-dot,
+  .celebrate-card, .celebrate-card h2, .cele-medal, .cele-rays, .cele-badges li { animation: none !important; }
+  .prow-check.is-pop::after { display: none; }
+  .confetti { display: none; }
+}

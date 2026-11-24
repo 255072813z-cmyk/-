@@ -47,7 +47,7 @@ export function compassPoint(b) {
 }
 
 /**
- * 启动手机罗盘。回调得到"磁北方位角"（0～360，顺时针）。
+ * 启动手机罗盘。回调得到"磁北方位角"（0～360，顺时针；屏幕上方所指的方向）和屏幕旋转角（竖屏为 0）。
  * - iOS：需要用户点按后调用 DeviceOrientationEvent.requestPermission()，读 webkitCompassHeading
  * - Android Chrome：deviceorientationabsolute 事件，heading = 360 - alpha
  * 返回 stop() 函数。
@@ -71,7 +71,7 @@ export function startCompass({ onHeading, onError }) {
       screenAngle = 0;
     }
     got = true;
-    onHeading((h + screenAngle + 360) % 360);
+    onHeading((h + screenAngle + 360) % 360, ((screenAngle % 360) + 360) % 360);
   };
   const attach = (failReason = 'nodata') => {
     evName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
@@ -86,10 +86,10 @@ export function startCompass({ onHeading, onError }) {
     return () => {};
   }
   if (typeof DOE.requestPermission === 'function') {
-    // iOS 必须在点按后请求权限。有的浏览器也带这个接口但直接返回"拒绝"，
-    // 所以无论结果如何都先监听，3.5 秒内收到方向数据就照常工作，收不到才提示没有权限。
+    // iOS 必须在点按后请求权限。新版安卓 Chrome 也带这个接口，可能答"prompt"（还没决定）。
+    // 所以无论结果如何都先监听，3.5 秒内收到方向数据就照常工作；收不到时，明确"拒绝"才说没有权限，否则说读不到。
     DOE.requestPermission()
-      .then((s) => attach(s === 'granted' ? 'nodata' : 'denied'))
+      .then((s) => attach(s === 'denied' ? 'denied' : 'nodata'))
       .catch(() => attach('denied'));
   } else {
     attach();

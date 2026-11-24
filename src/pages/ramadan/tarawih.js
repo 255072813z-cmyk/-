@@ -5,6 +5,7 @@ import { ymdKey, addDays } from '../../core/clock.js';
 import { ICONS, star8 } from '../../ui/art.js';
 import { t } from '../../i18n/index.js';
 import { dateShort } from '../../i18n/format.js';
+import { earn } from '../../ui/cheer.js';
 
 const SETS = 10;
 
@@ -57,6 +58,7 @@ export function tarawihPage(ctx) {
         done = Math.min(SETS, done + 1);
         save(key, done);
         draw(el);
+        if (done >= SETS) earn('tarawih', ymdKey(night));
       });
       el.querySelector('[data-undo]').addEventListener('click', () => {
         done = Math.max(0, done - 1);

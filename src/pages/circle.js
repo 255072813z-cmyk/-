@@ -5,6 +5,7 @@ import { shareText, shareLink } from '../core/share.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t } from '../i18n/index.js';
 import { esc } from '../i18n/format.js';
+import { earn } from '../ui/cheer.js';
 
 const KINDS = ['remind', 'dua', 'salam', 'congrats'];
 const ERR = { full: 'circle.errFull', locked: 'circle.errCode', 'no-circle': 'circle.errCode', bad: 'circle.errNick', net: 'circle.errNet', limit: 'circle.limit' };
@@ -112,6 +113,7 @@ export function circlePage(ctx) {
         const r = await createCircle(nick);
         create.disabled = false;
         r.ok ? draw(r.data) : msg(errText(r.error));
+        if (r.ok) earn('circle', ymdKey(ctx.sched.today));
       });
     const join = body.querySelector('[data-join]');
     if (join)
@@ -122,6 +124,7 @@ export function circlePage(ctx) {
         const r = await joinCircle(body.querySelector('[data-code]').value, nick);
         join.disabled = false;
         r.ok ? draw(r.data) : msg(errText(r.error));
+        if (r.ok) earn('circle', ymdKey(ctx.sched.today));
       });
     body.querySelectorAll('[data-nudge]').forEach((b) =>
       b.addEventListener('click', async () => {
@@ -150,6 +153,7 @@ export function circlePage(ctx) {
         const withCode = link ? link + (link.includes('?') ? '&' : '?') + 'circle=' + st.code : '';
         const r = await shareText(t('circle.inviteMsg', { app: t('app.name'), code: st.code, link: withCode }).trim());
         if (r === 'copied') msg(t('times.copied'));
+        if (r === 'shared' || r === 'copied') earn('share', ymdKey(ctx.sched.today));
       });
     const lock = body.querySelector('[data-lock]');
     if (lock) lock.addEventListener('change', async () => (await setLock(lock.checked)).ok || msg(t('circle.errNet')));

@@ -61,13 +61,13 @@ export function streakStatus(today) {
 }
 
 /**
- * 今天打卡。返回 { cur, best, newTitle, usedGrace, restartedFrom }
- * newTitle：这次刚解锁的称号天数（没有则 null）
+ * 今天打卡。返回 { cur, best, newTitle, usedGrace, restartedFrom, fresh }
+ * newTitle：这次刚解锁的称号天数（没有则 null）；fresh：今天第一次打卡（用来放"又坚持了一天"的动画）
  */
 export function checkIn(today) {
   const s = readStreak();
-  if (s.last === today) return { ...s, newTitle: null, usedGrace: [], restartedFrom: 0 };
-  if (s.last && s.last > today) return { ...s, newTitle: null, usedGrace: [], restartedFrom: 0 }; // 手机日期往回调了：不动
+  if (s.last === today) return { ...s, newTitle: null, usedGrace: [], restartedFrom: 0, fresh: false };
+  if (s.last && s.last > today) return { ...s, newTitle: null, usedGrace: [], restartedFrom: 0, fresh: false }; // 手机日期往回调了：不动
   const b = bridge(s, today);
   let restartedFrom = 0;
   if (b) {
@@ -84,7 +84,7 @@ export function checkIn(today) {
   const reached = MILESTONES.filter((m) => s.cur >= m && !s.titles.includes(m));
   s.titles = [...s.titles, ...reached];
   save('streak', s);
-  return { ...s, newTitle: reached.length ? reached[reached.length - 1] : null, usedGrace: b || [], restartedFrom };
+  return { ...s, newTitle: reached.length ? reached[reached.length - 1] : null, usedGrace: b || [], restartedFrom, fresh: true };
 }
 
 /** 下一个称号还差几天 */

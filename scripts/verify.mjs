@@ -101,6 +101,133 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await ctx.close();
 }
 
+// 3b. 罗盘指针（全面）：安卓、苹果两种传感器；磁偏角向东、向西的城市；横屏；跨过正北；读不到传感器、没有权限
+{
+  const { qiblaBearing } = await import('../src/core/qibla.js');
+  const { CITY_DATA } = await import('../src/content/cities-data.js');
+  const norm = (a) => ((a % 360) + 360) % 360;
+  const diff = (a, b) => {
+    const d = norm(a - b);
+    return d > 180 ? d - 360 : d;
+  };
+  // 打开某城市的朝向页。ios：模拟苹果（没有 absolute 事件，读 webkitCompassHeading，要先请求权限）；angle：屏幕旋转角
+  async function openCompass({ city = 'dushanbe', ios = false, perm = 'granted', angle = 0 } = {}) {
+    const ctx = await browser.newContext(phone);
+    await ctx.addInitScript(
+      ([city, ios, perm, angle]) => {
+        localStorage.setItem('masjid:settings', JSON.stringify({ city, cityConfirmed: true, lang: 'zh' }));
+        if (ios) {
+          delete Window.prototype.ondeviceorientationabsolute;
+          delete window.ondeviceorientationabsolute;
+          window.DeviceOrientationEvent.requestPermission = () => Promise.resolve(perm);
+        }
+        if (angle) Object.defineProperty(screen, 'orientation', { configurable: true, get: () => ({ angle, type: 'landscape-primary', addEventListener() {}, removeEventListener() {} }) });
+      },
+      [city, ios, perm, angle],
+    );
+    const page = await ctx.newPage();
+    await page.goto(base + '?weather=clear#/qibla');
+    await page.waitForSelector('[data-start]');
+    await page.click('[data-start]');
+    const c = CITY_DATA.find((x) => x.id === city);
+    const b = qiblaBearing(c.lat, c.lon);
+    // 让屏幕上方指向"真北方位 H"：换算成磁北，再换算成手机顶边的方向（横屏时差 angle）
+    const toward = async (H, n = 50) => {
+      const dev = norm(norm(H - c.declination) - angle);
+      for (let i = 0; i < n; i++)
+        await page.evaluate(
+          ([ios, dev]) => {
+            const ev = new Event(ios ? 'deviceorientation' : 'deviceorientationabsolute');
+            // 苹果的 alpha 是任意参考系，故意给个乱的值，确认用的是 webkitCompassHeading
+            Object.assign(ev, ios ? { alpha: 77, beta: 0, gamma: 0, absolute: false, webkitCompassHeading: dev } : { alpha: (360 - dev) % 360, beta: 0, gamma: 0, absolute: true });
+            window.dispatchEvent(ev);
+          },
+          [ios, dev],
+        );
+      const rose = parseFloat((await page.getAttribute('[data-rose]', 'transform')).match(/-?[\d.]+/)[0]);
+      return { turn: (await page.textContent('[data-turn]')).trim(), rose, aligned: (await page.locator('.compass-card.is-aligned').count()) === 1 };
+    };
+    return { ctx, page, b, c, toward };
+  }
+
+  // 安卓，杜尚别（磁偏角 +4.7° 向东）
+  {
+    const { ctx, page, b, toward } = await openCompass();
+    const needle = parseFloat((await page.getAttribute('[data-rose] > g', 'transform')).match(/-?[\d.]+/)[0]);
+    const num = (await page.textContent('.bearing-num')).trim();
+    check('罗盘：表盘上的朝向指针转到朝向角（杜尚别 243.8°）', Math.abs(needle - b) < 0.05 && num === b.toFixed(1) + '°', `指针 ${needle.toFixed(1)}°，显示 ${num}`);
+    let r = await toward(b + 30);
+    const ok1 = r.turn === '向左转 30°' && Math.abs(diff(-r.rose, b + 30)) < 0.5 && !r.aligned;
+    r = await toward(b - 50);
+    const ok2 = r.turn === '向右转 50°' && Math.abs(diff(-r.rose, b - 50)) < 0.5;
+    const t2 = r.turn;
+    r = await toward(b + 4);
+    const ok3 = r.turn === '已对准朝向' && r.aligned;
+    const hint = await page.locator('[data-portrait]:visible').count();
+    check('罗盘（安卓）：偏右 30° 提示向左转 30°，偏左 50° 提示向右转 50°，差 4° 算对准；表盘跟着转', ok1 && ok2 && ok3 && hint === 0, `${t2}；${r.turn}，表盘 ${r.rose}`);
+    // 跨过正北：从 350° 转到 10°，指针应走最短的 20°，不能绕一大圈
+    await toward(350, 60);
+    const path = [];
+    const c = CITY_DATA.find((x) => x.id === 'dushanbe');
+    for (let i = 0; i < 25; i++) {
+      await page.evaluate((a) => {
+        const ev = new Event('deviceorientationabsolute');
+        Object.assign(ev, { alpha: a, beta: 0, gamma: 0, absolute: true });
+        window.dispatchEvent(ev);
+      }, norm(360 - norm(10 - c.declination)));
+      path.push(-parseFloat((await page.getAttribute('[data-rose]', 'transform')).match(/-?[\d.]+/)[0]));
+    }
+    const worst = Math.max(...path.map((a) => Math.abs(diff(a, 0))));
+    check('罗盘：从 350° 转到 10° 时走最短路（经过正北），不乱转一圈', worst <= 10.5 && Math.abs(diff(path[path.length - 1], 10)) < 1, `途中离正北最远 ${worst.toFixed(1)}°`);
+    await ctx.close();
+  }
+  // 安卓，符拉迪沃斯托克（磁偏角 -10.9° 向西）、莫斯科（+12.2°）
+  for (const city of ['vladivostok', 'moscow']) {
+    const { ctx, b, c, toward } = await openCompass({ city });
+    const r1 = await toward(b);
+    const r2 = await toward(b + 20);
+    // 如果磁偏角的正负弄反了，会差 2×|磁偏角|（20° 以上），这里就会失败
+    check(
+      `罗盘：${city === 'moscow' ? '莫斯科（磁偏角向东 12.2°）' : '符拉迪沃斯托克（磁偏角向西 10.9°）'}，朝向 ${b.toFixed(1)}° 时对准，偏 20° 提示向左转`,
+      r1.aligned && r1.turn === '已对准朝向' && r2.turn === '向左转 20°',
+      `磁偏角 ${c.declination}°：${r1.turn}；${r2.turn}`,
+    );
+    await ctx.close();
+  }
+  // 苹果：先请求权限，读 webkitCompassHeading
+  {
+    const { ctx, b, toward } = await openCompass({ ios: true });
+    const r1 = await toward(b - 40);
+    const r2 = await toward(b);
+    check('罗盘（苹果）：用 webkitCompassHeading，偏左 40° 提示向右转 40°，转过来后对准', r1.turn === '向右转 40°' && r2.aligned, `${r1.turn}；${r2.turn}`);
+    await ctx.close();
+  }
+  // 横屏：屏幕转了 90°，按屏幕上方算方向，并提醒竖着拿
+  {
+    const { ctx, page, b, toward } = await openCompass({ angle: 90 });
+    const r = await toward(b);
+    const hint = await page.locator('[data-portrait]:visible').count();
+    check('罗盘（横屏）：修正屏幕旋转后仍然对准，并提示竖着拿更准', r.aligned && hint === 1, r.turn);
+    await ctx.close();
+  }
+  // 读不到传感器 / 苹果拒绝权限：3.5 秒后说明原因，按钮回来可以再试
+  {
+    const a = await openCompass();
+    const b2 = await openCompass({ ios: true, perm: 'denied' });
+    await a.page.waitForTimeout(3800);
+    const t1 = (await a.page.textContent('[data-turn]')).trim();
+    const t2 = (await b2.page.textContent('[data-turn]')).trim();
+    const again = await a.page.locator('[data-start]:visible').count();
+    check('罗盘：读不到传感器时提示用角度对照；苹果没给权限时说明去设置里允许', /读不到罗盘/.test(t1) && /没有得到罗盘权限/.test(t2) && again === 1, `${t1.slice(0, 12)}…；${t2.slice(0, 12)}…`);
+    // 再点一次"打开罗盘"，这回有数据：照常工作
+    await a.page.click('[data-start]');
+    const r = await a.toward(a.b);
+    check('罗盘：出错后再点一次能正常用', r.aligned, r.turn);
+    await a.ctx.close();
+    await b2.ctx.close();
+  }
+}
+
 // 4. 本地记录：赞念计数刷新后还在
 {
   const ctx = await browser.newContext(phone);
@@ -120,6 +247,67 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.reload();
   const yes = await page.locator('.day.is-today.is-yes').count();
   check('刷新后封斋记录还在（斋月第 13 天）', yes === 1);
+  await ctx.close();
+}
+
+// 4b. 每日封斋：斋月里打开能用——倒计时、封斋饭截止和开斋时间、今天打卡、改过去某天、到点自动切换
+{
+  const { fastTimes } = await import('../src/core/ramadan.js');
+  const { getCity } = await import('../src/core/cities.js');
+  const ft = fastTimes(getCity('dushanbe'), { y: 2027, m: 2, d: 20 });
+  const hm = (d) => new Date(d.getTime() + 5 * 3600e3).toISOString().slice(11, 16);
+  const ctx = await browser.newContext(phone);
+  await ctx.addInitScript(() => localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, lang: 'zh' })));
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  // 用假时钟：开斋前 10 秒
+  await page.clock.install({ time: new Date(ft.iftar.getTime() - 10e3) });
+  await page.goto(base + '?weather=clear#/ramadan');
+  await page.waitForSelector('[data-fast-count]');
+  const title = (await page.textContent('.r-status h1')).trim();
+  const head = (await page.textContent('.fast-phase')).trim();
+  const times = (await page.locator('.ft-time').allTextContents()).map((x) => x.trim());
+  check('斋月页（第 13 天）：显示"封斋中"、开斋倒计时、封斋饭截止和开斋时间', /第 13 天/.test(title) && head === '封斋中' && times[0] === hm(ft.sahurEnd) && times[1] === hm(ft.iftar), `${title}；${head}；${times.join(' / ')}`);
+  const days = await page.locator('.day').count();
+  const future = await page.locator('.day[disabled]').count();
+  check('斋月页：30 个日子格，今天以后的不能点', days >= 29 && future === days - 13, `${days} 格，${future} 格不能点`);
+  // 今天打卡 → 解锁"第一天斋"徽章 → 刷新还在
+  await page.click('[data-today]');
+  await page.waitForSelector('.celebrate', { timeout: 3000 }).catch(() => {});
+  const badge = (await page.textContent('.celebrate h2').catch(() => '')) || '';
+  if (badge) await page.click('[data-cele-ok]');
+  const btn = (await page.textContent('[data-today]')).trim();
+  check('今天封了斋，点一下记下，并解锁"第一天斋"徽章', /已记下/.test(btn) && (await page.locator('.day.is-today.is-yes').count()) === 1 && badge === '第一天斋', `${btn}；${badge}`);
+  // 改过去某天：封了 → 没封 → 清空
+  const cell = '[data-day="5"]';
+  const seen = [];
+  for (let i = 0; i < 3; i++) {
+    await page.click(cell);
+    seen.push((await page.getAttribute(cell, 'class')).includes('is-yes') ? 'yes' : (await page.getAttribute(cell, 'class')).includes('is-no') ? 'no' : '-');
+  }
+  check('斋月第 5 天：点一下"封了"，再点"没封"，再点清空', seen.join(',') === 'yes,no,-', seen.join(' → '));
+  // 到点开斋：时钟走过开斋时间，页面自己切到"已开斋"，倒计时改成到明天封斋饭截止
+  await page.clock.runFor(15e3);
+  await page.waitForTimeout(300);
+  const head2 = (await page.textContent('.fast-phase')).trim();
+  const count2 = (await page.textContent('.hero-count')).trim();
+  check('到开斋时间页面自动切换为"已开斋"，倒计时改为明天停止吃喝', /已开斋/.test(head2) && /明天停止吃喝/.test(count2), `${head2}；${count2.replace(/\s+/g, ' ')}`);
+  await page.reload();
+  await page.waitForSelector('[data-today]');
+  check('刷新后今天的封斋记录还在', (await page.locator('.day.is-today.is-yes').count()) === 1);
+  // 首页：斋月里有斋月卡片
+  await page.goto(base + '?weather=clear#/');
+  await page.waitForSelector('[data-hero]');
+  const home = await page.textContent('#app');
+  check('斋月里首页有封斋卡片（开斋/封斋饭时间）', /封斋饭|开斋/.test(home));
+  // 斋月前：显示还有几天、第一天的时间，不能打卡
+  await page.clock.setSystemTime(new Date('2027-01-20T08:00:00Z'));
+  await page.goto(base + '?weather=clear#/ramadan');
+  await page.waitForSelector('.r-status h1');
+  const pre = (await page.textContent('.r-status h1')).trim();
+  check('斋月前：显示"斋月还有 N 天"和第一天的时间，不能打卡', /斋月还有 \d+ 天/.test(pre) && (await page.locator('[data-today]').count()) === 0 && (await page.locator('.ft-time').count()) === 2, pre);
+  check('斋月页以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }
 
@@ -328,10 +516,51 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForTimeout(500);
   const got = await page.locator('.title-item.is-got').count();
   check('"我的坚持"页：已解锁 2 个称号（起步、一周）', got === 2, `${got} 个`);
+  const badges = await page.locator('.badge').count();
+  const gotB = (await page.locator('.badge.is-got .badge-name').allTextContents()).join('、');
+  check('"我的坚持"页：16 枚成就徽章，已得"第一步"（第一次记下已礼）', badges === 16 && /第一步/.test(gotB), `${badges} 枚，已得：${gotB}`);
+  // 今天第一次打卡（没有新称号）：底部弹出"又坚持了一天"，数字跳到新的天数，几秒后自己收起
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20');
+  await page.evaluate(() => {
+    localStorage.setItem('masjid:streak', JSON.stringify({ cur: 8, best: 8, last: '2026-12-17', grace: [], titles: [3, 7], prev: 0 }));
+    localStorage.removeItem('masjid:prayed');
+  });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await page.click('[data-prayed="fajr"]');
+  await page.waitForSelector('.cheer-sheet', { timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(1300);
+  const sheetN = (await page.textContent('[data-cheer-n]').catch(() => '')) || '';
+  const sheetK = (await page.textContent('.cheer-k').catch(() => '')) || '';
+  await page.screenshot({ path: join(shots, 'verify-streak-sheet.png') });
+  await page.waitForTimeout(3000);
+  const gone = (await page.locator('.cheer-sheet').count()) === 0;
+  check('今天第一次打卡：弹出"又坚持了一天"，数字跳到 9，几秒后自己收起', sheetN === '9' && /又坚持了一天/.test(sheetK) && gone, `${sheetN}，${sheetK}，收起 ${gone}`);
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/circle');
   await page.waitForTimeout(400);
   check('没有后台时，亲友圈说明"上线后可用"，不报错', /上线后可用/.test(await page.textContent('#app')));
   check('以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 11. 系统开了"减少动态效果"：庆祝时不放彩屑，只显示静态卡片
+{
+  const ctx = await browser.newContext({ ...phone, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20');
+  await page.evaluate(() => {
+    localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, lang: 'zh' }));
+    localStorage.setItem('masjid:streak', JSON.stringify({ cur: 14, best: 14, last: '2026-12-17', grace: [], titles: [3, 7], prev: 0 }));
+  });
+  await page.reload();
+  await page.waitForTimeout(500);
+  await page.click('[data-prayed="fajr"]');
+  await page.waitForSelector('.celebrate', { timeout: 2000 }).catch(() => {});
+  const cele = await page.locator('.celebrate').count();
+  const confetti = await page.locator('.confetti').count();
+  const n = (await page.textContent('[data-cele-n]').catch(() => '')) || '';
+  const badges = (await page.locator('.cele-badges li').allTextContents()).join('、');
+  check('减少动态效果时：解锁"半个月"仍有庆祝卡片，但没有彩屑，数字直接显示 15；同时得到的徽章列在下面', cele === 1 && confetti === 0 && n === '15' && /第一步/.test(badges), `彩屑 ${confetti}，数字 ${n}，徽章：${badges}`);
   await ctx.close();
 }
 

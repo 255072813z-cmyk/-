@@ -137,6 +137,9 @@ test('坚持打卡：连续天数、每周宽限一天、断了重新开始、�
     for (const d of ['2026-11-02', '2026-11-03', '2026-11-04']) checkIn(d);
     let r = checkIn('2026-11-04');
     assert.equal(r.cur, 3, '同一天打两次只算一次');
+    assert.equal(r.fresh, false, '同一天第二次不再放"又坚持了一天"');
+    assert.equal(checkIn('2026-11-05').fresh, true);
+    mem.set('masjid:streak', JSON.stringify({ ...JSON.parse(mem.get('masjid:streak')), cur: 3, last: '2026-11-04' }));
     // 漏了 11-05（星期四），11-06 打卡：用掉本周宽限，连续不断
     r = checkIn('2026-11-06');
     assert.equal(r.cur, 4);
@@ -159,6 +162,53 @@ test('坚持打卡：连续天数、每周宽限一天、断了重新开始、�
     assert.equal(streakStatus('2026-11-25').cur, 0);
     const cells = weekCells('2026-11-11', new Set(['2026-11-09', '2026-11-10']));
     assert.deepEqual(cells.map((c) => c.st), ['done', 'done', 'today', 'future', 'future', 'future', 'future']);
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+test('成就徽章：做到了才解锁，只解锁一次，坏数据不出错', async () => {
+  const mem = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) } };
+  try {
+    const { onPrayed, onGuideDone, onFast, award, badgeList, BADGES } = await import('../src/core/badges.js');
+    const ids = (list) => list.map((b) => b.id);
+    const all5 = { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true };
+    assert.deepEqual(onPrayed('2026-11-01', {}), [], '什么都没记：不解锁');
+    assert.deepEqual(ids(onPrayed('2026-11-01', { dhuhr: true })), ['firstPrayer']);
+    assert.deepEqual(onPrayed('2026-11-01', { dhuhr: true, asr: true }), [], '已解锁的不再弹');
+    assert.deepEqual(ids(onPrayed('2026-11-01', all5)), ['fiveDay']);
+    // 同一天重复记，只算一天
+    for (let i = 0; i < 5; i++) onPrayed('2026-11-01', all5);
+    let fiveWeek = badgeList().find((b) => b.id === 'fiveWeek');
+    assert.equal(fiveWeek.have, 1);
+    let got = [];
+    for (let d = 2; d <= 7; d++) got = got.concat(ids(onPrayed(`2026-11-0${d}`, all5)));
+    assert.deepEqual(got, ['fiveWeek', 'fajr7'], '第 7 天：七天五番、晨光');
+    fiveWeek = badgeList().find((b) => b.id === 'fiveWeek');
+    assert.equal(fiveWeek.got, '2026-11-07');
+    // 跟做：第 1 次、第 30 次
+    assert.deepEqual(ids(onGuideDone('2026-11-07')), ['guide1']);
+    for (let i = 2; i < 30; i++) assert.deepEqual(onGuideDone('2026-11-08'), []);
+    assert.deepEqual(ids(onGuideDone('2026-11-09')), ['guide30']);
+    // 斋月：第一天、29 天
+    assert.deepEqual(ids(onFast('2027-02-08', { 1: 'yes' })), ['fast1']);
+    const log = Object.fromEntries(Array.from({ length: 28 }, (_, i) => [i + 1, 'yes']));
+    log[29] = 'no';
+    assert.deepEqual(onFast('2027-03-08', log), [], '28 天还不够');
+    assert.equal(badgeList().find((b) => b.id === 'fastAll').have, 28);
+    log[29] = 'yes';
+    assert.deepEqual(ids(onFast('2027-03-09', log)), ['fastAll']);
+    // 一次性的
+    assert.equal(award('wudu', '2026-11-10').id, 'wudu');
+    assert.equal(award('wudu', '2026-11-11'), null);
+    assert.equal(award('nope', '2026-11-11'), null, '不认识的徽章');
+    assert.equal(BADGES.length, 16);
+    // 存储坏了：当作还没有徽章，不报错
+    mem.set('masjid:badges', '"坏了"');
+    assert.equal(badgeList().filter((b) => b.got).length, 0);
+    mem.set('masjid:badges', JSON.stringify({ got: { wudu: 5, bogus: '2026-01-01', tasbih: '2026-01-02' }, days: { five: 'x' }, n: { guide: -3 } }));
+    assert.deepEqual(badgeList().filter((b) => b.got).map((b) => b.id), ['tasbih']);
   } finally {
     delete globalThis.window;
   }

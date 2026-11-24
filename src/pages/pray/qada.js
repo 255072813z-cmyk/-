@@ -3,6 +3,8 @@
 import { load, save } from '../../core/storage.js';
 import { ICONS, star8 } from '../../ui/art.js';
 import { t } from '../../i18n/index.js';
+import { ymdKey } from '../../core/clock.js';
+import { earn } from '../../ui/cheer.js';
 
 const KINDS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'witr'];
 const MAX = 100000;
@@ -17,7 +19,7 @@ export function readQada() {
   return out;
 }
 
-export function qadaPage() {
+export function qadaPage(ctx) {
   let q = readQada();
   const row = (k) => `<li class="adj qada-row">
       <span class="adj-name">${k === 'witr' ? t('qada.witr') : t('prayer.' + k)}</span>
@@ -63,7 +65,9 @@ export function qadaPage() {
       el.querySelectorAll('[data-q]').forEach((b) =>
         b.addEventListener('click', () => {
           const k = b.dataset.q;
+          const made = Number(b.dataset.d) < 0 && q[k] > 0; // 补上了一番
           set({ ...q, [k]: Math.max(0, Math.min(MAX, q[k] + Number(b.dataset.d))) });
+          if (made) earn('qada', ymdKey(ctx.sched.today));
         }),
       );
       // 一整天没礼：五番拜和威特尔各加一
