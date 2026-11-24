@@ -1,5 +1,6 @@
 // 插图：全部为 SVG，不使用图片文件。
 // 红线：人物只用剪影或背影，不画五官；装饰用几何花纹、穹顶、宣礼塔、拱门。
+import { t } from '../i18n/index.js';
 
 /** 八角星（伊斯兰几何花纹的基本形） */
 export function star8(size = 24, cls = '') {
@@ -69,7 +70,7 @@ export function prayerRow(posture = 'stand') {
         `<g class="fig fig-${i}" transform="translate(${p.x} ${100 - 100 * p.s + 8}) scale(${p.s})">${figure(posture)}</g>`,
     )
     .join('');
-  return `<svg class="prayer-row" viewBox="0 0 300 120" role="img" aria-label="一排人在礼拜（剪影）">
+  return `<svg class="prayer-row" viewBox="0 0 300 120" role="img" aria-label="${t('art.row')}">
     <defs>
       <linearGradient id="mihrabGlow" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="var(--lamp)" stop-opacity=".55"/>
@@ -109,7 +110,7 @@ export function wuduFigure(zone) {
           .map(([x, y], i) => `<path style="animation-delay:${i * 0.4}s" d="M${x} ${y}q4 6 0 8q-4-2 0-8z"/>`)
           .join('')}</g>`
       : '';
-  return `<svg class="wudu-fig ${zone === 'done' ? 'is-done' : ''}" viewBox="0 0 120 140" role="img" aria-label="小净示意（剪影）">
+  return `<svg class="wudu-fig ${zone === 'done' ? 'is-done' : ''}" viewBox="0 0 120 140" role="img" aria-label="${t('art.wudu')}">
     ${zone === 'done' || zone === 'none' ? '<circle class="halo" cx="60" cy="70" r="58"/>' : ''}
     <g class="body">
       <circle cx="60" cy="24" r="12"/><ellipse cx="47.6" cy="25" rx="2.6" ry="3.6"/><ellipse cx="72.4" cy="25" rx="2.6" ry="3.6"/>

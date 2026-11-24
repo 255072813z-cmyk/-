@@ -16,6 +16,7 @@
 // 首页和"在家礼拜"随首屏一起加载；其余页面第一次打开时才下载（首屏更快）。
 import { homePage } from './pages/home.js';
 import { hubPage } from './pages/pray/hub.js';
+import { t } from './i18n/index.js';
 
 const LAZY = {
   wudu: () => import('./pages/pray/wudu.js').then((m) => m.wuduPage),
@@ -36,7 +37,7 @@ const loaded = {};
 function lazy(name, ctx, args) {
   if (loaded[name]) return loaded[name](ctx, ...args);
   return {
-    html: '<div class="page"><p class="loading">稍等…</p></div>',
+    html: `<div class="page"><p class="loading">${t('common.loading')}</p></div>`,
     mount() {
       LAZY[name]()
         .then((fn) => {
@@ -45,7 +46,7 @@ function lazy(name, ctx, args) {
         })
         .catch(() => {
           const el = document.querySelector('.loading');
-          if (el) el.textContent = '没有网络，这一页还没缓存。连上网后再打开一次就能离线看了。';
+          if (el) el.textContent = t('common.offlineMissing');
         });
     },
   };
@@ -82,7 +83,10 @@ export function resolveRoute(path, ctx) {
 
 /** 空闲时预先下载常用页面，之后断网也能打开 */
 export function prefetchPages() {
-  const go = () => Object.values(LAZY).forEach((f) => f().catch(() => {}));
+  const go = () => {
+    Object.values(LAZY).forEach((f) => f().catch(() => {}));
+    import('./content/region-map.js').catch(() => {}); // 朝向页的地图
+  };
   if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
   else setTimeout(go, 2500);
 }

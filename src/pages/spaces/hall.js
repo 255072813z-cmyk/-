@@ -4,8 +4,9 @@ import { hallPanorama, matPos } from '../../ui/spaces-art.js';
 import { ICONS } from '../../ui/art.js';
 import { joinRoom, presenceEnabled } from '../../core/presence.js';
 import { skyPhase } from '../../core/prayer-times.js';
-import { fmtHM, splitDuration } from '../../core/clock.js';
+import { fmtHM } from '../../core/clock.js';
 import { t } from '../../i18n/index.js';
+import { durText } from '../../i18n/format.js';
 
 const LOCAL_CAPACITY = 40;
 
@@ -18,14 +19,14 @@ export function hallPage(ctx) {
 
   const html = `
   <div class="page hall-page">
-    <div class="page-head"><a class="back" href="#/masjid" aria-label="返回清真寺">${ICONS.back}</a>
-      <h1>礼拜大殿 <span class="ar-sm" lang="ar" dir="rtl">بَيْتُ الصَّلَاة</span></h1></div>
+    <div class="page-head"><a class="back" href="#/masjid" aria-label="${t('common.back')}">${ICONS.back}</a>
+      <h1>${t('hall.title')} <span class="ar-sm" lang="ar" dir="rtl">بَيْتُ الصَّلَاة</span></h1></div>
     <p class="hall-count" data-count aria-live="polite"></p>
     <div class="pano-wrap">
-      <div class="pano" data-pano tabindex="0" aria-label="大殿全景，可以左右滑动"></div>
+      <div class="pano" data-pano tabindex="0" aria-label="${t('hall.panoAria')}"></div>
       <div class="walk">
-        <button class="btn btn-ghost btn-sm" type="button" data-walk="-1" aria-label="往左走">← 往左走</button>
-        <button class="btn btn-ghost btn-sm" type="button" data-walk="1" aria-label="往右走">往右走 →</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-walk="-1">← ${t('hall.left')}</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-walk="1">${t('hall.right')} →</button>
       </div>
     </div>
     <section class="card hall-panel" data-panel></section>
@@ -52,38 +53,37 @@ export function hallPage(ctx) {
 
   function drawCount() {
     const n = el.querySelector('[data-count]');
-    if (!live) n.textContent = '在线人数在网站正式上线后显示。现在你可以先选一张垫子坐下。';
-    else if (!st.connected) n.textContent = '正在连接…';
-    else n.textContent = `此刻在大殿 ${st.online} 人 · 坐着 ${st.taken.length} 人 · 空垫子 ${st.capacity - st.taken.length} 张`;
+    if (!live) n.textContent = t('hall.noLive');
+    else if (!st.connected) n.textContent = t('hall.connecting');
+    else n.textContent = t('hall.count', { n: st.online, seated: st.taken.length + (st.mine != null ? 1 : 0), free: st.capacity - st.taken.length - (st.mine != null ? 1 : 0) });
   }
 
   function drawPanel() {
     const p = el.querySelector('[data-panel]');
     const s = ctx.sched;
-    const left = splitDuration(s.nextTime - ctx.now);
-    const next = `下一番：${t('prayer.' + s.next)} ${fmtHM(s.nextTime)}（还有 ${left.h ? left.h + ' 小时 ' : ''}${left.m} 分）`;
+    const next = t('hall.next', { name: t('prayer.' + s.next), time: fmtHM(s.nextTime), left: durText(s.nextTime - ctx.now) });
     const spot = mySpot();
     const full = st.taken.length >= st.capacity && st.mine == null;
     if (spot) {
       p.className = 'card hall-panel is-sitting';
-      p.innerHTML = `<p class="sit-title">你坐在第 ${spot.r + 1} 排第 ${spot.c + 1} 张垫子上</p>
+      p.innerHTML = `<p class="sit-title">${t('hall.sitting', { r: spot.r + 1, c: spot.c + 1 })}</p>
         <div class="breath" aria-hidden="true"></div>
-        <p>安静坐一会儿。可以默念赞词，也可以什么都不想。</p>
+        <p>${t('hall.sitText')}</p>
         <p class="note">${next}</p>
-        <div class="step-btns"><a class="btn btn-ghost" href="#/tasbih">默念赞词</a><button class="btn btn-ghost" type="button" data-stand>起身离开</button></div>`;
+        <div class="step-btns"><a class="btn btn-ghost" href="#/tasbih">${t('hall.dhikr')}</a><button class="btn btn-ghost" type="button" data-stand>${t('hall.stand')}</button></div>`;
       p.querySelector('[data-stand]').addEventListener('click', stand);
     } else if (full) {
       p.className = 'card hall-panel is-full';
       p.innerHTML = st.queuePos
-        ? `<p class="sit-title">你排在第 ${st.queuePos} 位</p><p>有人起身时，空出来的垫子会自动留给排在最前面的人。</p><p class="note">${next}</p>
-           <div class="step-btns"><a class="btn btn-ghost" href="#/masjid/courtyard">先去庭院喝杯茶</a></div>`
-        : `<p class="sit-title">垫子都坐满了</p><p>${st.capacity} 张垫子都有人。可以排队等一张，也可以先在后面站一会儿。</p><p class="note">${next}</p>
-           <div class="step-btns"><button class="btn btn-primary" type="button" data-queue>排队等一张</button><a class="btn btn-ghost" href="#/masjid/courtyard">去庭院</a></div>`;
+        ? `<p class="sit-title">${t('hall.queuePos', { n: st.queuePos })}</p><p>${t('hall.queueText')}</p><p class="note">${next}</p>
+           <div class="step-btns"><a class="btn btn-ghost" href="#/masjid/courtyard">${t('hall.toCourtTea')}</a></div>`
+        : `<p class="sit-title">${t('hall.full')}</p><p>${t('hall.fullText', { n: st.capacity })}</p><p class="note">${next}</p>
+           <div class="step-btns"><button class="btn btn-primary" type="button" data-queue>${t('hall.queue')}</button><a class="btn btn-ghost" href="#/masjid/courtyard">${t('hall.toCourt')}</a></div>`;
       const q = p.querySelector('[data-queue]');
       if (q) q.addEventListener('click', () => room && room.queue());
     } else {
       p.className = 'card hall-panel';
-      p.innerHTML = `<p class="sit-title">${msg || '点一张空垫子，坐下来'}</p><p>脱了鞋，走到前面去。可以左右走走看看。</p><p class="note">${next}</p>`;
+      p.innerHTML = `<p class="sit-title">${msg || t('hall.pick')}</p><p>${t('hall.pickText')}</p><p class="note">${next}</p>`;
     }
   }
 
@@ -115,7 +115,7 @@ export function hallPage(ctx) {
   function toast(text) {
     const layer = document.querySelector('.toast-layer');
     if (!layer) return;
-    layer.innerHTML = `<div class="toast" role="status"><div class="toast-text"><strong>${text}</strong></div><div class="toast-actions"><button class="btn btn-ghost btn-sm" type="button" data-close>知道了</button></div></div>`;
+    layer.innerHTML = `<div class="toast" role="status"><div class="toast-text"><strong>${text}</strong></div><div class="toast-actions"><button class="btn btn-ghost btn-sm" type="button" data-close>${t('common.close')}</button></div></div>`;
     layer.querySelector('[data-close]').addEventListener('click', () => (layer.innerHTML = ''));
   }
 
@@ -145,9 +145,9 @@ export function hallPage(ctx) {
             st.queuePos = m.you.queuePos;
             if (m.event === 'assigned' && st.mine != null) {
               const p = matPos(st.mine);
-              toast(`轮到你了：第 ${p.r + 1} 排第 ${p.c + 1} 张垫子留给你`);
+              toast(t('hall.yourTurn', { r: p.r + 1, c: p.c + 1 }));
             }
-            if (m.event === 'error:taken') msg = '这张刚被别人坐了，换一张吧';
+            if (m.event === 'error:taken') msg = t('hall.taken');
             drawAll();
           },
         });

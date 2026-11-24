@@ -1,23 +1,24 @@
 // 首页上的斋月卡片（单独成模块，首页不必加载整个斋月页面）
 import { ramadanStatus, fastPhase } from '../../core/ramadan.js';
-import { fmtHM, splitDuration } from '../../core/clock.js';
+import { fmtHM } from '../../core/clock.js';
+import { t } from '../../i18n/index.js';
+import { durText, dateShort } from '../../i18n/format.js';
 
 /** 首页上用的斋月卡片：斋月中显示封斋/开斋倒计时（放在首页最上面），斋月前显示还有几天 */
 export function homeRamadanCard(ctx) {
   const st = ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust);
   if (st.active) {
     const f = fastPhase(ctx.city, ctx.now, ctx.settings.offsets);
-    const { h, m } = splitDuration(f.target - ctx.now);
-    const left = h > 0 ? `还有 ${h} 小时 ${m} 分` : `还有 ${m} 分钟`;
+    const left = t('card.left', { dur: durText(f.target - ctx.now) });
     const line =
       f.phase === 'fasting'
-        ? `封斋中 · ${fmtHM(f.times.iftar)} 开斋 · ${left}`
+        ? t('card.fasting', { time: fmtHM(f.times.iftar), left })
         : f.phase === 'before'
-          ? `封斋饭请在 ${fmtHM(f.times.sahurEnd)} 前吃完 · ${left}`
-          : `已开斋 · 明天 ${fmtHM(f.tomorrow.sahurEnd)} 前吃完封斋饭`;
-    return `<a class="card card-link home-ramadan is-active" href="#/ramadan"><b>斋月第 ${st.day} 天</b><span>${line}</span><span class="hr-go">→</span></a>`;
+          ? t('card.before', { time: fmtHM(f.times.sahurEnd), left })
+          : t('card.after', { time: fmtHM(f.tomorrow.sahurEnd) });
+    return `<a class="card card-link home-ramadan is-active" href="#/ramadan"><b>${t('fast.dayN', { n: st.day })}</b><span>${line}</span><span class="hr-go">→</span></a>`;
   }
   if (!st.start || st.start.inDays > 120) return '';
-  return `<a class="card card-link home-ramadan" href="#/ramadan"><b>斋月还有 ${st.start.inDays} 天</b><span>推算 ${st.start.m}月${st.start.d}日开始，以当地清真寺公布为准</span><span class="hr-go">→</span></a>`;
+  return `<a class="card card-link home-ramadan" href="#/ramadan"><b>${t('fast.daysLeft', { n: st.start.inDays })}</b><span>${t('card.startsOn', { date: dateShort(st.start) })}</span><span class="hr-go">→</span></a>`;
 }
 

@@ -1,11 +1,26 @@
 // 跟着做礼拜：先选哪一部分（逊奈/主命/威特尔），再一步一步跟做。
 // 画面上是一排人和你做同样的动作——在家礼拜，也像站在清真寺的班里。
 import { PRAYER_INFO, buildSteps, unitLabel, AFTER_PRAYER, getPrayerInfo } from '../../content/prayers.js';
-import { prayerRow, ICONS, star8 } from '../../ui/art.js';
+import { prayerRow, ICONS } from '../../ui/art.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
 
-const POSTURE_ZH = { stand: '站立', raise: '举手', ruku: '鞠躬', sujud: '叩头', sit: '坐' };
+const unitName = (u) => t(...unitLabel(u).name);
+
+/** 一步的文字：标题、怎么做、女士、提示 */
+export function stepText(st) {
+  const v = { ...st.vars };
+  if (st.id === 'niyyah') {
+    v.prayerName = t('prayer.' + v.prayer);
+    v.kindName = t('kind.' + v.kind);
+  }
+  return {
+    title: t(`step.${st.id}.title`, v),
+    how: t(st.howKey || `step.${st.id}.how`, v),
+    women: st.women ? t(`step.${st.id}.women`, v) : '',
+    note: st.note ? t(`step.${st.id}.note`, v) : '',
+  };
+}
 
 function chooser(ctx, prayerKey) {
   const info = getPrayerInfo(prayerKey);
@@ -14,19 +29,19 @@ function chooser(ctx, prayerKey) {
     .map((u) => {
       const l = unitLabel(u);
       return `<li><a class="card card-link unit lv-${l.level}" href="#/pray/guide/${prayerKey}/${u.id}">
-        <span class="unit-name">${l.name}</span><span class="unit-tag">${l.tag}</span><span class="unit-go">开始 →</span></a></li>`;
+        <span class="unit-name">${unitName(u)}</span><span class="unit-tag">${t(l.tag)}</span><span class="unit-go">${t('guide.start')}</span></a></li>`;
     })
     .join('');
   const total = info.units.reduce((a, u) => a + u.rakats, 0);
   return `
   <div class="page guide">
-    <div class="page-head"><a class="back" href="#/pray" aria-label="返回在家礼拜">${ICONS.back}</a>
-      <h1>${info.zh} <span class="ar-sm" lang="ar" dir="rtl">${info.ar}</span></h1></div>
+    <div class="page-head"><a class="back" href="#/pray" aria-label="${t('common.back')}">${ICONS.back}</a>
+      <h1>${t('prayer.' + prayerKey)} <span class="ar-sm" lang="ar" dir="rtl">${info.ar}</span></h1></div>
     <section class="card row-card">${prayerRow('stand')}</section>
-    <p class="lead">${info.zh}一共 ${total} 拜，按顺序礼。点一部分开始跟做：</p>
-    ${isFri ? '<p class="note friday">今天是主麻日。在家礼晌礼 4 拜主命，不礼主麻的 2 拜。</p>' : ''}
+    <p class="lead">${t('guide.total', { prayer: t('prayer.' + prayerKey), n: total })}</p>
+    ${isFri ? `<p class="note friday">${t('guide.friday')}</p>` : ''}
     <ol class="units">${units}</ol>
-    <p class="note">"必须"的部分不可缺；"圣行"是先知常做的，尽量礼；"可选"的礼了更好。</p>
+    <p class="note">${t('guide.levels')}</p>
     <div class="pick-grid small">${Object.keys(PRAYER_INFO)
       .map((p) => `<a class="pick ${p === prayerKey ? 'is-on' : ''}" href="#/pray/guide/${p}">${t('prayer.' + p)}</a>`)
       .join('')}</div>
@@ -38,28 +53,28 @@ export function guidePage(ctx, prayerKey, unitId) {
   if (!unitId) return { html: chooser(ctx, prayerKey) };
   const isTarawih = prayerKey === 'tarawih';
 
-  const { steps, label, info, unit } = buildSteps(prayerKey, unitId);
+  const { steps, info, unit } = buildSteps(prayerKey, unitId);
   let i = 0;
   const next = info.units[info.units.indexOf(unit) + 1];
   const html = `
   <div class="page guide">
-    <div class="page-head"><a class="back" href="${isTarawih ? '#/ramadan/tarawih' : '#/pray/guide/' + prayerKey}" aria-label="返回">${ICONS.back}</a>
-      <h1>${info.zh} · ${label.name}</h1></div>
+    <div class="page-head"><a class="back" href="${isTarawih ? '#/ramadan/tarawih' : '#/pray/guide/' + prayerKey}" aria-label="${t('common.back')}">${ICONS.back}</a>
+      <h1>${t('prayer.' + prayerKey)} · ${unitName(unit)}</h1></div>
     <div data-stage></div>
   </div>`;
 
   function finishHTML() {
     return `<section class="card done-card">
       <p class="done-ar" lang="ar" dir="rtl">تَقَبَّلَ اللَّهُ</p>
-      <h2>愿真主接受你的礼拜</h2>
-      <p>出拜后，可以念：</p>
+      <h2>${t('guide.done')}</h2>
+      <p>${t('guide.after')}</p>
       ${AFTER_PRAYER.map(reciteCard).join('')}
       <div class="step-btns">
-        ${isTarawih ? '<a class="btn btn-primary" href="#/ramadan/tarawih">回到间歇拜，记下这一组</a>' : ''}
-        ${!isTarawih && next ? `<a class="btn btn-primary" href="#/pray/guide/${prayerKey}/${next.id}">接着礼${unitLabel(next).name}</a>` : ''}
-        ${!isTarawih ? `<a class="btn ${next ? 'btn-ghost' : 'btn-primary'}" href="#/tasbih">礼拜后赞念</a>` : ''}
+        ${isTarawih ? `<a class="btn btn-primary" href="#/ramadan/tarawih">${t('guide.backTarawih')}</a>` : ''}
+        ${!isTarawih && next ? `<a class="btn btn-primary" href="#/pray/guide/${prayerKey}/${next.id}">${t('guide.next', { unit: unitName(next) })}</a>` : ''}
+        ${!isTarawih ? `<a class="btn ${next ? 'btn-ghost' : 'btn-primary'}" href="#/tasbih">${t('guide.tasbih')}</a>` : ''}
       </div>
-      <button class="btn btn-ghost btn-sm" type="button" data-restart>从头再看一遍</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-restart>${t('guide.restart')}</button>
     </section>`;
   }
 
@@ -74,24 +89,25 @@ export function guidePage(ctx, prayerKey, unitId) {
       return;
     }
     const st = steps[i];
+    const tx = stepText(st);
     stage.innerHTML = `
       <section class="card stepper">
         <div class="progress" aria-hidden="true"><span style="width:${((i + 1) / steps.length) * 100}%"></span></div>
-        <p class="step-count">第 ${st.rakah} 拜 / 共 ${unit.rakats} 拜 · 第 ${i + 1} 步，共 ${steps.length} 步</p>
+        <p class="step-count">${t('guide.count', { r: st.rakah, rn: unit.rakats, i: i + 1, sn: steps.length })}</p>
         <div class="row-stage posture-${st.posture}">${prayerRow(st.posture)}</div>
         <div class="step-head">
-          <h2 class="step-title">${st.title}</h2>
+          <h2 class="step-title">${tx.title}</h2>
           <span class="ar-sm" lang="ar" dir="rtl">${st.ar}</span>
-          <span class="posture-tag">${POSTURE_ZH[st.posture]}</span>
+          <span class="posture-tag">${t('posture.' + st.posture)}</span>
         </div>
-        <p class="how">${st.how}</p>
-        ${st.women ? `<p class="note women">${st.women}</p>` : ''}
+        <p class="how">${tx.how}</p>
+        ${tx.women ? `<p class="note women">${tx.women}</p>` : ''}
         ${st.items.map(reciteCard).join('')}
-        ${st.note ? `<p class="note">${st.note}</p>` : ''}
+        ${tx.note ? `<p class="note">${tx.note}</p>` : ''}
       </section>
       <div class="step-btns sticky">
-        <button class="btn btn-ghost" type="button" data-prev ${i === 0 ? 'disabled' : ''}>上一步</button>
-        <button class="btn btn-primary" type="button" data-next>${i === steps.length - 1 ? '完成' : '下一步'}</button>
+        <button class="btn btn-ghost" type="button" data-prev ${i === 0 ? 'disabled' : ''}>${t('common.prev')}</button>
+        <button class="btn btn-primary" type="button" data-next>${i === steps.length - 1 ? t('common.finish') : t('common.next')}</button>
       </div>`;
     stage.querySelector('[data-prev]').addEventListener('click', () => go(el, -1));
     stage.querySelector('[data-next]').addEventListener('click', () => go(el, 1));

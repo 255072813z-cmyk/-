@@ -17,7 +17,6 @@ export const SHORT_SURAHS = [103, 108, 112, 113];
 
 export const PRAYER_INFO = {
   fajr: {
-    zh: '晨礼',
     ar: 'الفَجْر',
     loud: true,
     units: [
@@ -26,7 +25,6 @@ export const PRAYER_INFO = {
     ],
   },
   dhuhr: {
-    zh: '晌礼',
     ar: 'الظُّهْر',
     loud: false,
     units: [
@@ -36,7 +34,6 @@ export const PRAYER_INFO = {
     ],
   },
   asr: {
-    zh: '晡礼',
     ar: 'العَصْر',
     loud: false,
     units: [
@@ -45,7 +42,6 @@ export const PRAYER_INFO = {
     ],
   },
   maghrib: {
-    zh: '昏礼',
     ar: 'المَغْرِب',
     loud: true,
     units: [
@@ -54,7 +50,6 @@ export const PRAYER_INFO = {
     ],
   },
   isha: {
-    zh: '宵礼',
     ar: 'العِشَاء',
     loud: true,
     units: [
@@ -69,7 +64,6 @@ export const PRAYER_INFO = {
 // 斋月的间歇拜（泰拉威）：哈乃斐学派为 20 拜，每 2 拜一出拜，是强调的圣行，在宵礼之后、威特尔之前礼。
 export const EXTRA_PRAYERS = {
   tarawih: {
-    zh: '间歇拜',
     ar: 'التَّرَاوِيح',
     loud: true,
     units: [{ id: 'set', kind: 'sunnah', rakats: 2, when: 'after', strong: true, loudOk: true }],
@@ -80,183 +74,63 @@ export function getPrayerInfo(key) {
   return PRAYER_INFO[key] || EXTRA_PRAYERS[key] || null;
 }
 
+/**
+ * 这一部分拜的名称和标签：返回语言词条的键和变量，由界面用 t() 显示。
+ * level：fard 必须 / sunnah 圣行 / optional 圣行·可选
+ */
 export function unitLabel(unit) {
-  if (unit.kind === 'fard') return { name: `${unit.rakats} 拜主命`, tag: '必须', level: 'fard' };
-  if (unit.kind === 'witr') return { name: `${unit.rakats} 拜威特尔`, tag: '必须（瓦直卜）', level: 'fard' };
-  const pos = unit.when === 'before' ? '前' : '后';
+  if (unit.kind === 'fard') return { name: ['unit.fard', { n: unit.rakats }], tag: 'tag.fard', level: 'fard' };
+  if (unit.kind === 'witr') return { name: ['unit.witr', { n: unit.rakats }], tag: 'tag.wajib', level: 'fard' };
   return {
-    name: `${pos} ${unit.rakats} 拜逊奈`,
-    tag: unit.strong ? '圣行' : '圣行·可选',
+    name: [unit.when === 'before' ? 'unit.sunnahBefore' : 'unit.sunnahAfter', { n: unit.rakats }],
+    tag: unit.strong ? 'tag.sunnah' : 'tag.optional',
     level: unit.strong ? 'sunnah' : 'optional',
   };
 }
 
 /**
- * 生成跟做步骤。
- * 每一步：{ posture, rakah, title, ar, how, women, items:[{k, repeat}] | [{surah}], note }
+ * 生成跟做步骤。步骤里不写文字，只写"是哪一步"（id），文字在语言文件 step.<id>.* 里：
+ *   step.<id>.title 标题 / step.<id>.how 怎么做 / step.<id>.women 女士 / step.<id>.note 提示
+ * 每一步：{ id, posture, rakah, vars, ar, items:[{k, repeat, side}] | [{surah}], women, note, howKey }
  * posture：stand 站立 / raise 举手 / ruku 鞠躬 / sujud 叩头 / sit 坐
  */
 export function buildSteps(prayerKey, unitId) {
   const info = getPrayerInfo(prayerKey);
   const unit = info.units.find((u) => u.id === unitId) || info.units[0];
   const n = unit.rakats;
-  const kindName = unit.kind === 'fard' ? '主命' : unit.kind === 'witr' ? '威特尔' : '逊奈';
   const steps = [];
-  const quiet =
-    (unit.kind === 'fard' || unit.loudOk) && info.loud
-      ? '一个人礼拜时，前两拜可以出声念，也可以低声念。'
-      : '低声念，自己能听见即可。';
+  const loud = (unit.kind === 'fard' || unit.loudOk) && info.loud;
+  const add = (id, posture, rakah, ar, items, extra = {}) => steps.push({ id, posture, rakah, ar, items, vars: {}, ...extra });
 
   for (let r = 1; r <= n; r++) {
     if (r === 1) {
-      steps.push({
-        posture: 'stand',
-        rakah: r,
-        title: '举意',
-        ar: 'النِّيَّة',
-        how: `站好，面向朝向。在心里想好：我为真主礼${info.zh}的${n} 拜${kindName}。用自己的话想即可，不必念出声。`,
-        items: [],
-      });
-      steps.push({
-        posture: 'raise',
-        rakah: r,
-        title: '入拜大赞词',
-        ar: 'تَكْبِيرَةُ الإِحْرَام',
-        how: '双手举到耳边（拇指接近耳垂），手心朝前，念大赞词。然后双手放下，右手搭在左手上，放在肚脐下面。',
-        women: '女士：双手举到肩部，念完后双手放在胸前。',
-        items: [{ k: 'takbir' }],
-      });
-      steps.push({
-        posture: 'stand',
-        rakah: r,
-        title: '赞主词',
-        ar: 'الثَّنَاء',
-        how: '站着，眼睛看叩头的地方，低声念。',
-        items: [{ k: 'thana' }],
-      });
-      steps.push({
-        posture: 'stand',
-        rakah: r,
-        title: '求护词、太斯米',
-        ar: 'التَّعَوُّذ وَالتَّسْمِيَة',
-        how: '低声念。',
-        items: [{ k: 'taawwudh' }, { k: 'basmala' }],
-      });
+      add('niyyah', 'stand', r, 'النِّيَّة', [], { vars: { prayer: prayerKey, n, kind: unit.kind } });
+      add('takbirTahrima', 'raise', r, 'تَكْبِيرَةُ الإِحْرَام', [{ k: 'takbir' }], { women: true });
+      add('thana', 'stand', r, 'الثَّنَاء', [{ k: 'thana' }]);
+      add('taawwudh', 'stand', r, 'التَّعَوُّذ وَالتَّسْمِيَة', [{ k: 'taawwudh' }, { k: 'basmala' }]);
     } else {
-      steps.push({
-        posture: 'stand',
-        rakah: r,
-        title: `起立，开始第 ${r} 拜`,
-        ar: 'القِيَام',
-        how: '念着大赞词站起来，双手像第一拜那样放好，再低声念太斯米。',
-        items: [{ k: 'takbir' }, { k: 'basmala' }],
-      });
+      add('rise', 'stand', r, 'القِيَام', [{ k: 'takbir' }, { k: 'basmala' }], { vars: { r } });
     }
-
-    steps.push({
-      posture: 'stand',
-      rakah: r,
-      title: '开端章',
-      ar: 'الفَاتِحَة',
-      how: (r <= 2 ? quiet : '低声念。') + '念完后轻声说"阿敏"。',
-      items: [{ surah: 1 }, { k: 'amin' }],
+    // 开端章的说明：前两拜（可出声的拜）/ 前两拜（低声）/ 第 3、4 拜
+    add('fatiha', 'stand', r, 'الفَاتِحَة', [{ surah: 1 }, { k: 'amin' }], {
+      howKey: r <= 2 ? (loud ? 'step.fatiha.howLoud' : 'step.fatiha.howQuiet') : 'step.fatiha.howLater',
     });
-
-    const needSurah = unit.kind !== 'fard' || r <= 2;
-    if (needSurah) {
-      steps.push({
-        posture: 'stand',
-        rakah: r,
-        title: '再念一段经文',
-        ar: 'السُّورَة',
-        how: '念一章或至少三节经文。会背哪章念哪章；这里按经文顺序给出几章短章作示例。',
-        items: [{ surah: SHORT_SURAHS[(r - 1) % SHORT_SURAHS.length] }],
-      });
+    if (unit.kind !== 'fard' || r <= 2) {
+      add('surah', 'stand', r, 'السُّورَة', [{ surah: SHORT_SURAHS[(r - 1) % SHORT_SURAHS.length] }]);
     }
-
     if (unit.kind === 'witr' && r === n) {
-      steps.push({
-        posture: 'raise',
-        rakah: r,
-        title: '举手，念古努特',
-        ar: 'القُنُوت',
-        how: '念完经文后，双手像入拜时那样举起，念大赞词，然后双手放好，低声念古努特。',
-        items: [{ k: 'takbir' }, { k: 'qunut' }],
-        note: '还不会背古努特的，可以先念"我们的主啊，求你在今世赏赐我们美好的……"（2:201），同时抓紧学会古努特。',
-      });
+      add('qunut', 'raise', r, 'القُنُوت', [{ k: 'takbir' }, { k: 'qunut' }], { note: true });
     }
-
-    steps.push({
-      posture: 'ruku',
-      rakah: r,
-      title: '鞠躬',
-      ar: 'الرُّكُوع',
-      how: '念着大赞词弯腰，双手扶住膝盖、手指张开，背和头放平。',
-      women: '女士：弯腰稍浅，手放在膝上，手指并拢。',
-      items: [{ k: 'takbir' }, { k: 'ruku', repeat: 3 }],
-    });
-    steps.push({
-      posture: 'stand',
-      rakah: r,
-      title: '起身站直',
-      ar: 'القَوْمَة',
-      how: '起身时念第一句，站直后念第二句，稍停片刻。',
-      items: [{ k: 'tasmi' }, { k: 'tahmid' }],
-    });
-    steps.push({
-      posture: 'sujud',
-      rakah: r,
-      title: '第一次叩头',
-      ar: 'السَّجْدَة',
-      how: '念着大赞词叩头：先膝盖着地，再双手，然后鼻子和额头，双手放在头的两侧。',
-      women: '女士：身体收拢，手臂贴近身体，腹部贴近大腿。',
-      items: [{ k: 'takbir' }, { k: 'sujud', repeat: 3 }],
-    });
-    steps.push({
-      posture: 'sit',
-      rakah: r,
-      title: '坐起片刻',
-      ar: 'الجَلْسَة',
-      how: '念着大赞词坐起来，身体坐稳、停一下。',
-      items: [{ k: 'takbir' }],
-    });
-    steps.push({
-      posture: 'sujud',
-      rakah: r,
-      title: '第二次叩头',
-      ar: 'السَّجْدَة الثَّانِيَة',
-      how: '念着大赞词再叩头，和第一次一样。',
-      items: [{ k: 'takbir' }, { k: 'sujud', repeat: 3 }],
-    });
-
+    add('ruku', 'ruku', r, 'الرُّكُوع', [{ k: 'takbir' }, { k: 'ruku', repeat: 3 }], { women: true });
+    add('qawmah', 'stand', r, 'القَوْمَة', [{ k: 'tasmi' }, { k: 'tahmid' }]);
+    add('sujud1', 'sujud', r, 'السَّجْدَة', [{ k: 'takbir' }, { k: 'sujud', repeat: 3 }], { women: true });
+    add('jalsa', 'sit', r, 'الجَلْسَة', [{ k: 'takbir' }]);
+    add('sujud2', 'sujud', r, 'السَّجْدَة الثَّانِيَة', [{ k: 'takbir' }, { k: 'sujud', repeat: 3 }]);
     if (r === n) {
-      steps.push({
-        posture: 'sit',
-        rakah: r,
-        title: '最后的坐',
-        ar: 'القَعْدَة الأَخِيرَة',
-        how: '念着大赞词坐起来：坐在左脚上，右脚竖起、脚趾朝前，双手放在大腿上。依次念作证词、赞圣词和祈祷词。念到"لَا إِلَهَ"时可以抬起右手食指，念到"إِلَّا اللَّهُ"时放下。',
-        women: '女士：双脚从右侧伸出，坐在地上。',
-        items: [{ k: 'takbir' }, { k: 'tashahhud' }, { k: 'salawat' }, { k: 'rabbana' }],
-      });
-      steps.push({
-        posture: 'sit',
-        rakah: r,
-        title: '出拜',
-        ar: 'السَّلَام',
-        how: '先向右转头念出拜词，再向左转头念一遍。礼拜到这里完成。',
-        items: [{ k: 'salam', side: '向右' }, { k: 'salam', side: '向左' }],
-      });
+      add('qadahFinal', 'sit', r, 'القَعْدَة الأَخِيرَة', [{ k: 'takbir' }, { k: 'tashahhud' }, { k: 'salawat' }, { k: 'rabbana' }], { women: true });
+      add('salam', 'sit', r, 'السَّلَام', [{ k: 'salam', side: 'right' }, { k: 'salam', side: 'left' }]);
     } else if (r === 2) {
-      steps.push({
-        posture: 'sit',
-        rakah: r,
-        title: '第一次坐',
-        ar: 'القَعْدَة الأُولَى',
-        how: '念着大赞词坐起来：坐在左脚上，右脚竖起、脚趾朝前。只念作证词，念完不要停留，接着起立礼下一拜。',
-        women: '女士：双脚从右侧伸出，坐在地上。',
-        items: [{ k: 'takbir' }, { k: 'tashahhud' }],
-      });
+      add('qadahFirst', 'sit', r, 'القَعْدَة الأُولَى', [{ k: 'takbir' }, { k: 'tashahhud' }], { women: true });
     }
   }
   return { unit, steps, label: unitLabel(unit), info };

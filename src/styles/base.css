@@ -168,3 +168,5 @@ ul.dots li::marker { color: var(--gold); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+.seg-sub { display: block; font-size: 0.7em; font-weight: 500; color: var(--muted); }
+.seg:disabled { opacity: 0.6; cursor: default; }

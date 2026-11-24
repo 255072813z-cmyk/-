@@ -2,6 +2,7 @@
 import { TASBIH, TASBIH_100 } from '../../content/recitations.js';
 import { load, save } from '../../core/storage.js';
 import { star8 } from '../../ui/art.js';
+import { t, L } from '../../i18n/index.js';
 
 export function tasbihPage() {
   let st = load('tasbih', { phase: 0, count: 0 }); // phase 0-2 三句，3 = 第 100 句
@@ -9,13 +10,13 @@ export function tasbihPage() {
 
   const html = `
   <div class="page tasbih">
-    <h1 class="sr-only">礼拜后赞念</h1>
+    <h1 class="sr-only">${t('guide.tasbih')}</h1>
     <section class="card tasbih-card" data-box></section>
-    <p class="note center">点大圆圈计数，不联网，不排名，只是你自己的记念。</p>
+    <p class="note center">${t('tasbih.hint')}</p>
     <section class="card soft-card">
-      <h2 class="card-title">${star8(18)} 怎么念</h2>
-      <p>礼完主命拜后，"赞真主清净"33 遍、"一切赞颂全归真主"33 遍、"真主至大"33 遍，最后念一遍认主独一的话，凑满 100。</p>
-      <p class="src">出处：${TASBIH_100.src}</p>
+      <h2 class="card-title">${star8(18)} ${t('tasbih.howTitle')}</h2>
+      <p>${t('tasbih.how')}</p>
+      <p class="src">${t('common.source', { src: L(TASBIH_100.src) })}</p>
     </section>
   </div>`;
 
@@ -24,11 +25,11 @@ export function tasbihPage() {
     if (st.phase === 3) {
       box.innerHTML = `
         <div class="tb-dots">${TASBIH.map(() => '<span class="on"></span>').join('')}</div>
-        <p class="tb-label">最后一句，凑满 100</p>
+        <p class="tb-label">${t('tasbih.last')}</p>
         <p class="ar big" lang="ar" dir="rtl">${TASBIH_100.ar}</p>
         <p class="tr" lang="en">${TASBIH_100.tr}</p>
-        <p class="zh">${TASBIH_100.zh}</p>
-        <button class="btn btn-primary btn-wide" type="button" data-reset>念完了，重新开始</button>`;
+        <p class="zh">${L(TASBIH_100)}</p>
+        <button class="btn btn-primary btn-wide" type="button" data-reset>${t('tasbih.again')}</button>`;
       box.querySelector('[data-reset]').addEventListener('click', () => {
         st = { phase: 0, count: 0 };
         save('tasbih', st);
@@ -42,8 +43,8 @@ export function tasbihPage() {
     const C = 2 * Math.PI * R;
     box.innerHTML = `
       <div class="tb-dots">${TASBIH.map((_, i) => `<span class="${i < st.phase ? 'on' : i === st.phase ? 'cur' : ''}"></span>`).join('')}</div>
-      <p class="tb-label">第 ${st.phase + 1} 句，共 3 句</p>
-      <button class="tb-tap" type="button" data-tap aria-label="计数：${cur.zh}，已念 ${st.count} 遍，共 ${cur.count} 遍">
+      <p class="tb-label">${t('tasbih.phrase', { i: st.phase + 1, n: 3 })}</p>
+      <button class="tb-tap" type="button" data-tap aria-label="${t('tasbih.aria', { text: L(cur), i: st.count, n: cur.count })}">
         <svg viewBox="-100 -100 200 200" aria-hidden="true">
           <circle r="${R}" class="tb-track"/>
           <circle r="${R}" class="tb-ring" style="stroke-dasharray:${C};stroke-dashoffset:${C * (1 - pct)}" transform="rotate(-90)"/>
@@ -53,10 +54,10 @@ export function tasbihPage() {
       </button>
       <p class="ar big" lang="ar" dir="rtl">${cur.ar}</p>
       <p class="tr" lang="en">${cur.tr}</p>
-      <p class="zh">${cur.zh}</p>
+      <p class="zh">${L(cur)}</p>
       <div class="step-btns">
-        <button class="btn btn-ghost btn-sm" type="button" data-undo ${st.count === 0 ? 'disabled' : ''}>退一下</button>
-        <button class="btn btn-ghost btn-sm" type="button" data-reset>重新开始</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-undo ${st.count === 0 ? 'disabled' : ''}>${t('tasbih.undo')}</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-reset>${t('tasbih.reset')}</button>
       </div>`;
     box.querySelector('[data-tap]').addEventListener('click', () => {
       st.count++;

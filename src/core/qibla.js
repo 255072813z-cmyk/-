@@ -41,9 +41,9 @@ export function greatCirclePoints(lat1, lon1, lat2 = KAABA.lat, lon2 = KAABA.lon
   return pts; // [lon, lat]
 }
 
-export function compassWord(b) {
-  const words = ['北', '东北偏北', '东北', '东北偏东', '东', '东南偏东', '东南', '东南偏南', '南', '西南偏南', '西南', '西南偏西', '西', '西北偏西', '西北', '西北偏北'];
-  return words[Math.round(b / 22.5) % 16];
+/** 方位：0 北，1 北偏东……15（16 个方位）；文字在语言文件 compass.0…15 */
+export function compassPoint(b) {
+  return Math.round(b / 22.5) % 16;
 }
 
 /**

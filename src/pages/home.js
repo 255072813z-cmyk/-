@@ -1,9 +1,10 @@
 // 首页：今天的礼拜
 // 用户一打开就要看到三件事：下一番拜是什么、还有多久、今天在家礼拜行不行。
 import { t } from '../i18n/index.js';
+import { dateLine, hijriLine, durHTML } from '../i18n/format.js';
 import { fmtHM, splitDuration, addDays } from '../core/clock.js';
 import { PRAYERS, skyPhase } from '../core/prayer-times.js';
-import { toHijri, HIJRI_MONTHS } from '../core/hijri.js';
+import { toHijri } from '../core/hijri.js';
 import { setSettings } from '../core/settings.js';
 import { CITIES } from '../core/cities.js';
 import { PRAYER_INFO } from '../content/prayers.js';
@@ -11,19 +12,12 @@ import { mosqueScene, star8 } from '../ui/art.js';
 import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
 
-const WEEK = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-
 function prayerName(p, sched) {
   if (p === 'dhuhr' && sched.today.wd === 5) return t('prayer.jumuah');
   return t('prayer.' + p);
 }
 
-function countdownText(ms) {
-  const { h, m, s } = splitDuration(ms);
-  if (h > 0) return `<b>${h}</b><small>小时</small><b>${m}</b><small>分</small>`;
-  if (m >= 10) return `<b>${m}</b><small>分钟</small>`;
-  return `<b>${m}</b><small>分</small><b>${String(s).padStart(2, '0')}</b><small>秒</small>`;
-}
+const countdownText = (ms) => durHTML(ms, true);
 
 /** 冬季：天气说下雪/严寒，或者查不到天气时的 12～2 月 */
 export function isWinter(ctx) {
@@ -36,19 +30,15 @@ function winterCard(ctx) {
   const k = ctx.weatherKind;
   if (!k || k === 'clear') return '';
   const w = ctx.weather;
-  const msg = {
-    heavy: '今天大雪，路上不好走，在家礼拜同样可以。',
-    snow: '今天下雪，路上滑，在家礼拜同样可以。',
-    cold: `今天很冷（${Math.round(w.temp)}°C），出门不方便，在家礼拜同样可以。`,
-  }[k];
-  return `<section class="card winter-card" aria-label="在家礼拜提示">
+  const msg = t('winter.' + k, { temp: w ? Math.round(w.temp) : '' });
+  return `<section class="card winter-card" aria-label="${t('winter.label')}">
     <p class="winter-msg">${msg}</p>
-    <p class="winter-why">按哈乃斐学派，雨雪、泥泞路滑、严寒，都是可以不去清真寺参加集体礼拜的正当理由（见教法书《Nur al-Idah》）。在家按时礼拜，同样完成了主命。</p>
+    <p class="winter-why">${t('winter.why')}</p>
     <div class="winter-actions">
-      <a class="btn btn-primary" href="#/pray">进入在家礼拜</a>
-      <a class="btn btn-ghost" href="#/pray/wudu">先做小净</a>
+      <a class="btn btn-primary" href="#/pray">${t('winter.go')}</a>
+      <a class="btn btn-ghost" href="#/pray/wudu">${t('winter.wudu')}</a>
     </div>
-    ${w && w.demo ? '<p class="note">（演示天气）</p>' : ''}
+    ${w && w.demo ? `<p class="note">${t('winter.demo')}</p>` : ''}
   </section>`;
 }
 
@@ -86,7 +76,7 @@ function listHTML(ctx) {
       <span class="prow-name">${prayerName(p, s)}</span>
       <span class="prow-ar" lang="ar" dir="rtl">${PRAYER_INFO[p].ar}</span>
       <span class="prow-time">${fmtHM(T[p])}</span>
-      ${s.current === p ? '<span class="prow-badge">现在</span>' : s.next === p && !s.nextTomorrow ? '<span class="prow-badge soft">下一番</span>' : ''}
+      ${s.current === p ? `<span class="prow-badge">${t('home.badgeNow')}</span>` : s.next === p && !s.nextTomorrow ? `<span class="prow-badge soft">${t('home.next')}</span>` : ''}
     </li>`);
     if (p === 'fajr') {
       rows.push(`<li class="prow prow-sun"><span class="prow-name">${t('prayer.sunrise')}</span><span class="prow-ar"></span><span class="prow-time">${fmtHM(T.sunrise)}</span></li>`);
@@ -100,9 +90,9 @@ function dateHTML(ctx) {
   const h = toHijri(d, ctx.settings.hijriAdjust);
   const afterSunset = ctx.now >= ctx.sched.times.sunset;
   const hn = afterSunset ? toHijri(addDays(d, 1), ctx.settings.hijriAdjust) : null;
-  return `<span class="date-g">${d.y}年${d.m}月${d.d}日 ${WEEK[d.wd]}${d.wd === 5 ? '<span class="jumuah">主麻日</span>' : ''}</span>
-    <span class="date-h">伊斯兰历 ${h.y} 年 ${HIJRI_MONTHS[h.m - 1].zh} ${h.d} 日<span class="date-ar" lang="ar" dir="rtl">${HIJRI_MONTHS[h.m - 1].ar}</span></span>
-    ${hn ? `<span class="date-eve">日落后，伊斯兰历已进入 ${hn.d} 日</span>` : ''}`;
+  return `<span class="date-g">${dateLine(d)}${d.wd === 5 ? `<span class="jumuah">${t('home.jumuah')}</span>` : ''}</span>
+    <span class="date-h">${hijriLine(h)}</span>
+    ${hn ? `<span class="date-eve">${t('home.hijriEve', { d: hn.d })}</span>` : ''}`;
 }
 
 export function homePage(ctx) {
@@ -130,10 +120,10 @@ export function homePage(ctx) {
       <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
       <p class="local-note">${adjusted ? t('home.localNoteAdjusted') : t('home.localNote')}</p>
       <details class="method">
-        <summary>时间是怎么算的？</summary>
+        <summary>${t('home.howCalc')}</summary>
         <p>${t('home.method')}</p>
         <p>${t('home.methodLocal')}</p>
-        <p>时间在你的手机上离线计算，没有网络也能看。</p>
+        <p>${t('home.offline')}</p>
       </details>
       <a class="link-row" href="#/settings">${adjusted ? t('home.adjusted') : t('home.adjust')} →</a>
     </section>
@@ -142,18 +132,18 @@ export function homePage(ctx) {
     <div class="date" data-date>${dateHTML(ctx)}</div>
     <div class="city-row">
       <div class="segmented" role="group" aria-label="${t('city.switch')}">${cityBtns}</div>
-      <span class="city-note">当地时间 ${fmtHM(ctx.now)}</span>
+      <span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>
     </div>
     <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
     <div data-winter>${winterCard(ctx)}</div>
     <a class="card card-link athome" href="#/pray">
       <span class="athome-t">${t('home.atHome')}</span>
-      <span class="athome-s">小净 · 朝向 · 跟着做 · 礼拜后赞念</span>
+      <span class="athome-s">${t('home.atHomeSub')}</span>
     </a>
     <a class="card card-link to-masjid" href="#/masjid">
-      <span class="athome-t">进清真寺坐坐</span>
-      <span class="athome-s">礼拜大殿 · 庭院 · 诗歌夜</span>
+      <span class="athome-t">${t('home.toMasjid')}</span>
+      <span class="athome-s">${t('home.toMasjidSub')}</span>
     </a>
     </div>
     <p class="privacy">${t('privacy')}</p>
@@ -183,9 +173,9 @@ export function homePage(ctx) {
       if (m !== lastMinute) {
         lastMinute = m;
         const { h, m: mm } = splitDuration(c.sched.nextTime - c.now);
-        el.querySelector('[data-sr-count]').textContent = `距离下一番还有 ${h} 小时 ${mm} 分`;
+        el.querySelector('[data-sr-count]').textContent = t('home.srCount', { h, m: mm });
         const note = document.querySelector('.city-note');
-        if (note) note.textContent = '当地时间 ' + fmtHM(c.now);
+        if (note) note.textContent = t('home.localTime', { time: fmtHM(c.now) });
         const d = document.querySelector('[data-date]');
         if (d) d.innerHTML = dateHTML(c);
         const r = document.querySelector('[data-ramadan]');

@@ -1,4 +1,5 @@
 // 三个空间的插图（SVG）。人物只用剪影、背影，不画五官。
+import { t } from '../i18n/index.js';
 
 /** 坐着的背影（戴多比帽），用在垫子上 */
 function seatedBack(cx, baseY, s, cls = '') {
@@ -31,7 +32,7 @@ export function matPos(i) {
 function mat(i, state) {
   const p = matPos(i);
   const { x, y, w, h } = p;
-  const label = `第 ${p.r + 1} 排第 ${p.c + 1} 张垫子，${state === 'mine' ? '你坐在这里' : state === 'taken' ? '有人' : '空着'}`;
+  const label = t('hall.matAria', { r: p.r + 1, c: p.c + 1, state: t('hall.mat.' + state) });
   const tone = (p.r + p.c) % 2 ? 'mt-a' : 'mt-b';
   const person = state === 'taken' || state === 'mine' ? seatedBack(x, y + h * 0.45, h / 40, state === 'mine' ? 'me' : '') : '';
   return `<g class="mat ${tone} is-${state}" data-mat="${i}" role="button" tabindex="${state === 'free' ? 0 : -1}" aria-label="${label}">
@@ -62,7 +63,7 @@ export function hallPanorama({ capacity = 40, taken = [], mine = null, phase = '
     )
     .join('');
   const mats = Array.from({ length: capacity }, (_, i) => mat(i, i === mine ? 'mine' : takenSet.has(i) ? 'taken' : 'free')).join('');
-  return `<svg class="hall phase-${phase}" viewBox="0 0 1080 420" role="group" aria-label="礼拜大殿">
+  return `<svg class="hall phase-${phase}" viewBox="0 0 1080 420" role="group" aria-label="${t('hall.title')}">
     <rect class="h-wall" width="1080" height="240"/>
     <rect class="h-ceil" width="1080" height="40"/>
     <g class="h-ceil-star">${Array.from({ length: 27 }, (_, i) => `<path d="M${20 + i * 40} 20l6-6 6 6-6 6z"/>`).join('')}</g>

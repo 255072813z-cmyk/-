@@ -9,6 +9,10 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
+const zh = (await import('../src/i18n/zh.js')).default;
+// 页面上露出的"词条名"（说明语言文件里缺了这一条）
+const KEY_PREFIXES = [...new Set(Object.keys(zh).map((k) => k.split('.')[0]))];
+const RAW_KEY = new RegExp('\\b(' + KEY_PREFIXES.join('|') + ')\\.[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*\\b');
 const { chromium } = require('playwright');
 const root = fileURLToPath(new URL('../dist/', import.meta.url));
 const outDir = fileURLToPath(new URL('../shots/', import.meta.url));
@@ -79,6 +83,12 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
     }
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(250);
+    const text = await page.evaluate(() => document.body.innerText);
+    const raw = text.match(RAW_KEY);
+    if (raw) {
+      problems++;
+      console.log(`页面露出词条名 ${vname}/${name}: ${raw[0]}`);
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (overflow > 0) {
       problems++;
@@ -94,5 +104,5 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
 }
 await browser.close();
 server.close();
-console.log(problems ? `发现 ${problems} 个问题` : '三种尺寸全部页面：无横向溢出、无报错');
+console.log(problems ? `发现 ${problems} 个问题` : '三种尺寸全部页面：无横向溢出、无报错、无露出的词条名');
 process.exit(problems ? 1 : 0);

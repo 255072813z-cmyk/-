@@ -6,6 +6,7 @@ import { joinRoom, presenceEnabled } from '../../core/presence.js';
 import { startPoetryMusic, stopAll } from '../../core/music.js';
 import { fmtHM } from '../../core/clock.js';
 import { poetryOpen } from './index.js';
+import { t, L, getLang } from '../../i18n/index.js';
 
 const ROTATE_MS = 20000;
 
@@ -24,11 +25,11 @@ export function poetryPage(ctx) {
     return {
       html: `
       <div class="page poetry-page">
-        <div class="page-head"><a class="back" href="#/masjid" aria-label="返回清真寺">${ICONS.back}</a><h1>诗歌夜</h1></div>
+        <div class="page-head"><a class="back" href="#/masjid" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('poetry.title')}</h1></div>
         <section class="poetry-wrap">${poetryScene({ open: false })}</section>
         <section class="card center-card">
-          <p class="sit-title">今晚宵礼（${fmtHM(isha)}）后开放</p>
-          <p>礼完宵礼，来这里坐一坐，听一段沙什玛考姆，读几句鲁达基、鲁米、哈菲兹的诗。到晨礼为止。</p>
+          <p class="sit-title">${t('poetry.opensAt', { time: fmtHM(isha) })}</p>
+          <p>${t('poetry.closedText')}</p>
         </section>
       </div>`,
     };
@@ -36,20 +37,20 @@ export function poetryPage(ctx) {
 
   const html = `
   <div class="page poetry-page">
-    <div class="page-head"><a class="back" href="#/masjid" aria-label="返回清真寺">${ICONS.back}</a><h1>诗歌夜 <span class="ar-sm" lang="fa" dir="rtl">شب شعر</span></h1></div>
+    <div class="page-head"><a class="back" href="#/masjid" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('poetry.title')} <span class="ar-sm" lang="fa" dir="rtl">شب شعر</span></h1></div>
     <section class="poetry-wrap" data-scene>${poetryScene({ open: true })}</section>
     <section class="card verse-card" data-verse aria-live="polite"></section>
     <div class="step-btns">
-      <button class="btn btn-ghost" type="button" data-prev>上一首</button>
-      <button class="btn btn-primary" type="button" data-music aria-pressed="false">播放配乐</button>
-      <button class="btn btn-ghost" type="button" data-nextp>下一首</button>
+      <button class="btn btn-ghost" type="button" data-prev>${t('poetry.prev')}</button>
+      <button class="btn btn-primary" type="button" data-music aria-pressed="false">${t('poetry.play')}</button>
+      <button class="btn btn-ghost" type="button" data-nextp>${t('poetry.next')}</button>
     </div>
     <p class="note center" data-count></p>
     <section class="card soft-card">
-      <h2 class="card-title">${star8(18)} 关于诗歌夜</h2>
-      <p>沙什玛考姆（Шашмақом，"六大木卡姆"）是塔吉克、乌兹别克的古典音乐，常用鲁米、哈菲兹等诗人的诗句作唱词。</p>
-      <p class="note">配乐为本站合成的弹拨乐氛围音，不是沙什玛考姆原曲录音。默认静音，点"播放配乐"才会响。</p>
-      <p class="note">波斯文原文出自 Ganjoor 古典诗歌库；塔吉克文为本站转写，中文为本站意译。</p>
+      <h2 class="card-title">${star8(18)} ${t('poetry.aboutTitle')}</h2>
+      <p>${t('poetry.about')}</p>
+      <p class="note">${t('poetry.musicNote')}</p>
+      <p class="note">${t('poetry.textNote')}</p>
     </section>
   </div>`;
 
@@ -60,11 +61,11 @@ export function poetryPage(ctx) {
     void box.offsetWidth;
     box.classList.add('fade-in');
     box.innerHTML = `
-      <p class="poet">${p.poet.zh} <span lang="tg">${p.poet.tg}</span> <span class="ar-sm" lang="fa" dir="rtl">${p.poet.fa}</span></p>
+      <p class="poet">${L(p.poet)} <span lang="tg">${p.poet.cyr}</span> <span class="ar-sm" lang="fa" dir="rtl">${p.poet.fa}</span></p>
       <div class="fa" lang="fa" dir="rtl">${p.fa.map((l) => `<p>${l}</p>`).join('')}</div>
-      <div class="tg" lang="tg">${p.tg.map((l) => `<p>${l}</p>`).join('')}</div>
-      <div class="zh">${p.zh.map((l) => `<p>${l}</p>`).join('')}</div>
-      <p class="src">${p.note} · 出处：${p.src}</p>
+      <div class="tg" lang="tg">${p.cyr.map((l) => `<p>${l}</p>`).join('')}</div>
+      ${getLang() === 'tg' ? '' : `<div class="zh">${L(p).map((l) => `<p>${l}</p>`).join('')}</div>`}
+      <p class="src">${L(p.note)} · ${t('common.source', { src: L(p.src) })}</p>
       <p class="verse-dots" aria-hidden="true">${POEMS.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</p>`;
   }
   const go = (d) => {
@@ -90,7 +91,7 @@ export function poetryPage(ctx) {
         if (playing) startPoetryMusic();
         else stopAll();
         e.currentTarget.setAttribute('aria-pressed', String(playing));
-        e.currentTarget.textContent = playing ? '停止配乐' : '播放配乐';
+        e.currentTarget.textContent = playing ? t('poetry.stop') : t('poetry.play');
         el.querySelector('[data-scene]').innerHTML = poetryScene({ open: true, playing });
       });
       if (live)
@@ -98,7 +99,7 @@ export function poetryPage(ctx) {
           onState(m) {
             online = m.online;
             const n = el && el.querySelector('[data-count]');
-            if (n) n.textContent = `此刻在诗歌夜 ${online} 人`;
+            if (n) n.textContent = t('poetry.online', { n: online });
           },
         });
     },

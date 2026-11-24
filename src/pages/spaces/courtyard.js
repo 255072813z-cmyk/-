@@ -4,16 +4,12 @@ import { ICONS, star8 } from '../../ui/art.js';
 import { joinRoom, presenceEnabled } from '../../core/presence.js';
 import { startFountain, stopAll } from '../../core/music.js';
 import { skyPhase } from '../../core/prayer-times.js';
-import { fmtHM, splitDuration } from '../../core/clock.js';
+import { fmtHM } from '../../core/clock.js';
 import { t } from '../../i18n/index.js';
+import { durText } from '../../i18n/format.js';
 
-const LINES = [
-  '葡萄架下很安静，只有水池里的流水声。',
-  '茶是刚沏的绿茶，茶碗只倒半碗，凉了再添——这是待客的老规矩。',
-  '馕刚从馕坑里取出来，还烫手，芝麻的香气飘过来。',
-  '长辈们坐在塔普昌上，铺着奶奶绣的苏扎尼，慢慢喝茶，不说话。',
-  '离下一番拜还有一会儿，不着急。',
-];
+// 轮换的几句话（文字在语言文件 court.line.0…4）
+const LINES = [0, 1, 2, 3, 4].map((i) => 'court.line.' + i);
 
 export function courtyardPage(ctx) {
   const live = presenceEnabled();
@@ -28,19 +24,19 @@ export function courtyardPage(ctx) {
 
   const html = `
   <div class="page courtyard-page">
-    <div class="page-head"><a class="back" href="#/masjid" aria-label="返回清真寺">${ICONS.back}</a><h1>庭院</h1></div>
+    <div class="page-head"><a class="back" href="#/masjid" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('court.title')}</h1></div>
     <section class="court-wrap" data-scene></section>
-    <p class="court-line" data-line aria-live="polite">${LINES[0]}</p>
+    <p class="court-line" data-line aria-live="polite">${t(LINES[0])}</p>
     <section class="card court-next" data-next></section>
     <div class="court-actions">
-      <button class="btn btn-ghost" type="button" data-tea>倒茶</button>
-      <button class="btn btn-ghost" type="button" data-bread>掰块馕</button>
-      <button class="btn btn-ghost" type="button" data-sound aria-pressed="false">流水声</button>
+      <button class="btn btn-ghost" type="button" data-tea>${t('court.tea')}</button>
+      <button class="btn btn-ghost" type="button" data-bread>${t('court.bread')}</button>
+      <button class="btn btn-ghost" type="button" data-sound aria-pressed="false">${t('court.water')}</button>
     </div>
     <p class="note center" data-count></p>
     <section class="card soft-card">
-      <h2 class="card-title">${star8(18)} 在庭院里</h2>
-      <p>这里是两番拜之间歇脚的地方。宣礼前 10 分钟，会请你进大殿。</p>
+      <h2 class="card-title">${star8(18)} ${t('court.aboutTitle')}</h2>
+      <p>${t('court.about')}</p>
     </section>
   </div>`;
 
@@ -50,16 +46,15 @@ export function courtyardPage(ctx) {
   function drawNext() {
     const s = ctx.sched;
     const left = s.nextTime - ctx.now;
-    const { h, m } = splitDuration(left);
     const soon = left <= 10 * 60000;
     el.querySelector('[data-next]').innerHTML = `
-      <p class="court-label">下一番</p>
+      <p class="court-label">${t('home.next')}</p>
       <p class="court-prayer">${t('prayer.' + s.next)} <span class="court-time">${fmtHM(s.nextTime)}</span></p>
-      <p>${soon ? '宣礼快到了' : `还有 ${h ? h + ' 小时 ' : ''}${m} 分钟`}</p>
-      ${soon ? `<a class="btn btn-primary btn-wide" href="#/masjid/hall">进大殿</a>` : ''}`;
+      <p>${soon ? t('court.soon') : t('card.left', { dur: durText(left) })}</p>
+      ${soon ? `<a class="btn btn-primary btn-wide" href="#/masjid/hall">${t('court.goHall')}</a>` : ''}`;
   }
   function drawCount() {
-    el.querySelector('[data-count]').textContent = live ? (online == null ? '' : `庭院里此刻 ${online} 人`) : '';
+    el.querySelector('[data-count]').textContent = live ? (online == null ? '' : t('court.online', { n: online })) : '';
   }
 
   return {
@@ -78,25 +73,25 @@ export function courtyardPage(ctx) {
           if (tea < 0.5 && el) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
-        e.currentTarget.textContent = '添茶';
-        el.querySelector('[data-line]').textContent = LINES[1];
+        e.currentTarget.textContent = t('court.teaMore');
+        el.querySelector('[data-line]').textContent = t(LINES[1]);
       });
       el.querySelector('[data-bread]').addEventListener('click', () => {
         bread = true;
         drawScene();
-        el.querySelector('[data-line]').textContent = LINES[2];
+        el.querySelector('[data-line]').textContent = t(LINES[2]);
       });
       el.querySelector('[data-sound]').addEventListener('click', (e) => {
         sound = !sound;
         if (sound) startFountain();
         else stopAll();
         e.currentTarget.setAttribute('aria-pressed', String(sound));
-        e.currentTarget.textContent = sound ? '停止' : '流水声';
+        e.currentTarget.textContent = sound ? t('court.stop') : t('court.water');
       });
       rot = setInterval(() => {
         line = (line + 1) % LINES.length;
         const n = el && el.querySelector('[data-line]');
-        if (n) n.textContent = LINES[line];
+        if (n) n.textContent = t(LINES[line]);
       }, 12000);
       if (live)
         room = joinRoom('courtyard', {

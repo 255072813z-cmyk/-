@@ -55,10 +55,10 @@ test('伊斯兰历：乌姆古拉历与算术历相差不超过 2 天', async ()
 });
 
 test('朝向：杜尚别约 244°（西南偏西），距离约 3350 公里', async () => {
-  const { qiblaBearing, distanceKm, compassWord } = await import('../src/core/qibla.js');
+  const { qiblaBearing, distanceKm, compassPoint } = await import('../src/core/qibla.js');
   const b = qiblaBearing(38.53575, 68.77905);
   assert.ok(b > 243 && b < 245, String(b));
-  assert.equal(compassWord(b), '西南偏西');
+  assert.equal(compassPoint(b), 11); // 西南偏西
   const km = distanceKm(38.53575, 68.77905);
   assert.ok(km > 3300 && km < 3400, String(km));
 });

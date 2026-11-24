@@ -19,30 +19,30 @@ export function spacesPage(ctx) {
   <div class="page spaces">
     <section class="gate-wrap">${gateScene({ phase: skyPhase(s.times, ctx.now) })}</section>
     <div class="r-status">
-      <h1>清真寺 <span class="ar-sm" lang="ar" dir="rtl">المَسْجِد</span></h1>
-      <p>推开门，进来坐坐。没有聊天，没有喧哗。</p>
+      <h1>${t('nav.masjid')} <span class="ar-sm" lang="ar" dir="rtl">المَسْجِد</span></h1>
+      <p>${t('spaces.lead')}</p>
     </div>
     <div class="doors">
       <a class="card card-link door door-hall" href="#/masjid/hall">
-        <span class="door-t">礼拜大殿</span>
-        <span class="door-s">选一张垫子坐下，安静待一会儿</span>
+        <span class="door-t">${t('hall.title')}</span>
+        <span class="door-s">${t('spaces.hallSub')}</span>
         <span class="door-c" data-count="hall">${live ? '…' : ''}</span>
       </a>
       <a class="card card-link door door-court" href="#/masjid/courtyard">
-        <span class="door-t">庭院</span>
-        <span class="door-s">两番拜之间，喝杯茶，等下一番（${t('prayer.' + s.next)} ${fmtHM(s.nextTime)}）</span>
+        <span class="door-t">${t('court.title')}</span>
+        <span class="door-s">${t('spaces.courtSub', { name: t('prayer.' + s.next), time: fmtHM(s.nextTime) })}</span>
         <span class="door-c" data-count="courtyard">${live ? '…' : ''}</span>
       </a>
       <a class="card card-link door door-poetry ${open ? '' : 'is-closed'}" href="#/masjid/poetry">
-        <span class="door-t">诗歌夜</span>
-        <span class="door-s">沙什玛考姆的夜晚，鲁达基、鲁米、哈菲兹的诗 · ${open ? '现在开着' : `今晚宵礼（${fmtHM(ishaToday)}）后开放`}</span>
+        <span class="door-t">${t('poetry.title')}</span>
+        <span class="door-s">${t('spaces.poetrySub')} · ${open ? t('spaces.openNow') : t('poetry.opensAt', { time: fmtHM(ishaToday) })}</span>
         <span class="door-c" data-count="poetry">${live ? '…' : ''}</span>
       </a>
     </div>
     <section class="card soft-card">
-      <h2 class="card-title">${star8(18)} 说明</h2>
-      <p>${live ? '门上显示的是此刻真实在线的人数。' : '在线人数在网站正式上线、连接计数服务后显示。'}画里的人是插画。</p>
-      <p class="note">这里不聊天、不评论、不排名；不用注册，不记录你是谁。</p>
+      <h2 class="card-title">${star8(18)} ${t('quran.aboutTitle')}</h2>
+      <p>${live ? t('spaces.liveNote') : t('spaces.noLiveNote')} ${t('spaces.artNote')}</p>
+      <p class="note">${t('spaces.quiet')}</p>
     </section>
   </div>`;
   return {
@@ -55,9 +55,9 @@ export function spacesPage(ctx) {
           const n = el.querySelector(`[data-count="${room}"]`);
           if (n) n.textContent = text;
         };
-        set('hall', `此刻 ${c.hall.online} 人 · 垫子 ${c.hall.taken}/${c.hall.capacity}`);
-        set('courtyard', `此刻 ${c.courtyard.online} 人`);
-        set('poetry', open ? `此刻 ${c.poetry.online} 人` : '');
+        set('hall', t('spaces.hallCount', { n: c.hall.online, taken: c.hall.taken, cap: c.hall.capacity }));
+        set('courtyard', t('spaces.count', { n: c.courtyard.online }));
+        set('poetry', open ? t('spaces.count', { n: c.poetry.online }) : '');
       });
     },
   };

@@ -233,7 +233,8 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
     await page.goto(base + '?weather=clear' + h);
     await page.waitForTimeout(600);
     const txt = await page.textContent('#app');
-    if (txt && !/稍等|没有网络/.test(txt) && txt.length > 50) okPages.push(h);
+    const stuck = await page.locator('#app > .page > .loading').count();
+    if (txt && !stuck && txt.length > 50) okPages.push(h);
   }
   check('断网后斋月、大殿、跟做、朝向页都能打开', okPages.length === 4, okPages.join(' '));
   await ctx.close();

@@ -17,43 +17,43 @@ test('各番拜的总拜数（哈乃斐学派）', () => {
   assert.deepEqual(fard, { fajr: 2, dhuhr: 4, asr: 4, maghrib: 3, isha: 4 });
 });
 
-const count = (steps, title, rakah) => steps.filter((s) => s.title === title && (rakah == null || s.rakah === rakah)).length;
+const count = (steps, id, rakah) => steps.filter((s) => s.id === id && (rakah == null || s.rakah === rakah)).length;
 
 test('主命拜：第 3、4 拜只念开端章；第 2 拜后坐下念作证词', () => {
   const { steps } = buildSteps('dhuhr', 'fard');
-  assert.equal(count(steps, '开端章'), 4);
-  assert.equal(count(steps, '再念一段经文'), 2);
-  assert.equal(count(steps, '再念一段经文', 3), 0);
-  assert.equal(count(steps, '第一次坐', 2), 1);
-  assert.equal(count(steps, '鞠躬'), 4);
-  assert.equal(count(steps, '第一次叩头') + count(steps, '第二次叩头'), 8);
-  assert.equal(steps.at(-1).title, '出拜');
-  assert.equal(count(steps, '赞主词'), 1);
+  assert.equal(count(steps, 'fatiha'), 4);
+  assert.equal(count(steps, 'surah'), 2);
+  assert.equal(count(steps, 'surah', 3), 0);
+  assert.equal(count(steps, 'qadahFirst', 2), 1);
+  assert.equal(count(steps, 'ruku'), 4);
+  assert.equal(count(steps, 'sujud1') + count(steps, 'sujud2'), 8);
+  assert.equal(steps.at(-1).id, 'salam');
+  assert.equal(count(steps, 'thana'), 1);
 });
 
 test('昏礼主命 3 拜：第 3 拜不念经文，最后坐后出拜', () => {
   const { steps } = buildSteps('maghrib', 'fard');
-  assert.equal(count(steps, '再念一段经文'), 2);
-  assert.equal(count(steps, '第一次坐'), 1);
-  assert.equal(count(steps, '最后的坐', 3), 1);
+  assert.equal(count(steps, 'surah'), 2);
+  assert.equal(count(steps, 'qadahFirst'), 1);
+  assert.equal(count(steps, 'qadahFinal', 3), 1);
 });
 
 test('逊奈 4 拜：每一拜都念开端章 + 经文', () => {
   const { steps } = buildSteps('dhuhr', 'sunnah-before');
-  assert.equal(count(steps, '再念一段经文'), 4);
+  assert.equal(count(steps, 'surah'), 4);
   // 经文按经文顺序，不重复
-  const ss = steps.filter((s) => s.title === '再念一段经文').map((s) => s.items[0].surah);
+  const ss = steps.filter((s) => s.id === 'surah').map((s) => s.items[0].surah);
   assert.deepEqual(ss, [...ss].sort((a, b) => a - b));
   assert.equal(new Set(ss).size, ss.length);
 });
 
 test('威特尔：第 3 拜念完经文后举手念古努特，再鞠躬', () => {
   const { steps } = buildSteps('isha', 'witr');
-  const i = steps.findIndex((s) => s.title === '举手，念古努特');
+  const i = steps.findIndex((s) => s.id === 'qunut');
   assert.equal(steps[i].rakah, 3);
-  assert.equal(steps[i - 1].title, '再念一段经文');
-  assert.equal(steps[i + 1].title, '鞠躬');
-  assert.equal(count(steps, '举手，念古努特'), 1);
+  assert.equal(steps[i - 1].id, 'surah');
+  assert.equal(steps[i + 1].id, 'ruku');
+  assert.equal(count(steps, 'qunut'), 1);
 });
 
 test('每条念词都有阿拉伯文、译音、中文和出处', () => {
@@ -103,10 +103,10 @@ test('诗歌：波斯文、塔吉克文、中文行数一致，文字不混写',
   const { POEMS } = await import('../src/content/poems.js');
   assert.ok(POEMS.length >= 5);
   for (const p of POEMS) {
-    assert.equal(p.fa.length, p.tg.length, p.src);
-    assert.equal(p.fa.length, p.zh.length, p.src);
-    for (const l of p.tg) assert.ok(!/[A-Za-z]/.test(l), `塔吉克文含拉丁字母：${l}`);
+    assert.equal(p.fa.length, p.cyr.length, p.src.zh);
+    assert.equal(p.fa.length, p.zh.length, p.src.zh);
+    for (const l of p.cyr) assert.ok(!/[A-Za-z]/.test(l), `塔吉克文含拉丁字母：${l}`);
     for (const l of p.fa) assert.ok(!/[A-Za-zА-Яа-яӮӯҶҷҲҳҒғҚқӢӣ]/.test(l), `波斯文混入其他字母：${l}`);
-    assert.ok(p.src.startsWith('Ganjoor'));
+    assert.ok(p.src.zh.startsWith('Ganjoor'));
   }
 });

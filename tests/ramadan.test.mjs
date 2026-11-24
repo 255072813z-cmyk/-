@@ -69,9 +69,9 @@ test('一天中的斋戒阶段', () => {
 test('间歇拜每组 2 拜，每拜都念经文，可出声念', () => {
   const { steps, unit } = buildSteps('tarawih', 'set');
   assert.equal(unit.rakats, 2);
-  assert.equal(steps.filter((s) => s.title === '再念一段经文').length, 2);
-  assert.match(steps.find((s) => s.title === '开端章').how, /可以出声念/);
-  assert.match(steps[0].how, /间歇拜/);
+  assert.equal(steps.filter((s) => s.id === 'surah').length, 2);
+  assert.equal(steps.find((s) => s.id === 'fatiha').howKey, 'step.fatiha.howLoud'); // 可以出声念
+  assert.equal(steps[0].vars.prayer, 'tarawih');
 });
 
 test('古兰经 30 卷连续、覆盖 1–604 页', () => {
