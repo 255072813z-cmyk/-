@@ -103,7 +103,8 @@ test('红线：没有支付、登录、统计、Cookie', () => {
     assert.ok(!/navigator\.geolocation/.test(readFileSync(f, 'utf8')), `${f} 读取了位置`);
   }
   const geoChunks = dist.filter((f) => /navigator\.geolocation/.test(readFileSync(f, 'utf8')));
-  assert.ok(geoChunks.length <= 1, '打包产物里读取位置的地方不止一处');
+  // 新版和老浏览器兼容版各一份
+  assert.ok(geoChunks.filter((f) => !/-legacy-/.test(f)).length <= 1 && geoChunks.filter((f) => /-legacy-/.test(f)).length <= 1, '打包产物里读取位置的地方不止一处');
   for (const f of geoChunks) assert.ok(/enableHighAccuracy:\s*(!1|false)/.test(readFileSync(f, 'utf8')), `${f} 读取位置时没有限定粗略位置`);
   // 我们自己的代码绝不读写 Cookie；打包产物里只允许出现在 Capacitor 库自带的（默认关闭、本应用从不调用的）Cookie 插件里
   for (const f of own) assert.ok(!/document\.cookie/.test(readFileSync(f, 'utf8')), `${f} 读写了 Cookie`);

@@ -16,6 +16,9 @@ import { getSettings } from '../core/settings.js';
 import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
 import { platform } from '../core/api.js';
 import { ymdKey } from '../core/clock.js';
+import { prayedOn, togglePrayed } from '../core/prayed.js';
+import { shareText, shareLink } from '../core/share.js';
+import { L } from '../i18n/index.js';
 
 function prayerName(p, sched) {
   if (p === 'dhuhr' && sched.today.wd === 5) return t('prayer.jumuah');
@@ -66,6 +69,7 @@ function weatherCard(ctx) {
     <div class="wx-head"><svg class="wx-icon" viewBox="0 0 24 24" aria-hidden="true">${WX_ICON[icon]}</svg>
       <p class="winter-msg">${t(msgKey, vars)}</p></div>
     <p class="winter-why">${t('wx.' + k + 'Why', vars)}</p>
+    ${HOME_PRAYER_KINDS.includes(k) ? `<div data-wx-hadith="${ctx.sched.today.wd === 5 ? 'b901' : 'b666'}">${HAD ? hadithQuote(HAD.HADITH[ctx.sched.today.wd === 5 ? 'b901' : 'b666'], 'wx-hadith') : ''}</div>` : ''}
     ${showActions ? `<div class="winter-actions">
       <a class="btn btn-primary" href="#/pray">${t('winter.go')}</a>
       <a class="btn btn-ghost" href="#/pray/wudu">${t('winter.wudu')}</a>
@@ -74,6 +78,68 @@ function weatherCard(ctx) {
   </section>`;
 }
 const winterCard = weatherCard;
+
+// 圣训内容按需加载（不拖慢首屏）；加载过一次后同步可用
+let HAD = null;
+export function loadHadith() {
+  return HAD ? Promise.resolve(HAD) : import('../content/hadith.js').then((m) => (HAD = m));
+}
+
+// 这些天气下，引用先知让大家"在住处礼拜"的圣训（布哈里 666、901），让人安心在家礼拜
+const HOME_PRAYER_KINDS = ['heavy', 'snow', 'rain', 'storm', 'cold'];
+function hadithQuote(h, cls = '') {
+  return `<blockquote class="hadith-quote ${cls}">
+    <p class="hq-ar" lang="ar" dir="rtl">${h.ar}</p>
+    <p class="hq-text">${L(h)}</p>
+    <p class="hq-src">${t('common.source', { src: L(h.src) })}</p></blockquote>`;
+}
+
+/** 今日圣训（每天一句，可以分享给亲友） */
+function hadithCard(ctx) {
+  return `<section class="card hadith-card">
+    <h2 class="card-title">${star8(18)} ${t('hadith.title')}</h2>
+    <div data-daily-hadith>${HAD ? hadithQuote(HAD.dailyHadith(ctx.sched.today)) : ''}</div>
+    <button type="button" class="btn btn-ghost btn-sm" data-share-hadith>${t('hadith.share')}</button>
+    <p class="note" data-share-msg aria-live="polite"></p>
+  </section>`;
+}
+
+/** 把应用分享给亲友 */
+function shareCard() {
+  return `<section class="card share-card">
+    <p class="athome-t">${t('share.title')}</p>
+    <p class="athome-s">${t('share.sub')}</p>
+    <button type="button" class="btn btn-primary btn-sm" data-share-app>${t('share.btn')}</button>
+    <p class="note" data-share-msg aria-live="polite"></p>
+  </section>`;
+}
+
+/** 圣训加载好后填进页面（首页今日圣训、天气卡片里的依据） */
+function fillHadith(root, ctx) {
+  loadHadith().then((m) => {
+    const box = root.querySelector('[data-daily-hadith]');
+    if (box && !box.innerHTML.trim()) box.innerHTML = hadithQuote(m.dailyHadith(ctx.sched.today));
+    const wx = root.querySelector('[data-wx-hadith]');
+    if (wx && !wx.innerHTML.trim()) wx.innerHTML = hadithQuote(m.HADITH[wx.dataset.wxHadith], 'wx-hadith');
+  });
+}
+
+function bindShare(root, ctx) {
+  const say = (btn, r) => {
+    const m = btn.parentElement.querySelector('[data-share-msg]');
+    if (m) m.textContent = r === 'copied' ? t('times.copied') : r === 'failed' ? t('times.shareFailed') : '';
+  };
+  const link = () => shareLink(ctx.remote);
+  const h = root.querySelector('[data-share-hadith]');
+  if (h)
+    h.addEventListener('click', async () => {
+      const d = (await loadHadith()).dailyHadith(ctx.sched.today);
+      const text = `${L(d)}\n(${L(d.src)})\n\n${t('share.from', { app: t('app.name') })}${link() ? ' ' + link() : ''}`;
+      say(h, await shareText(text));
+    });
+  const a = root.querySelector('[data-share-app]');
+  if (a) a.addEventListener('click', async () => say(a, await shareText(t('share.msg', { app: t('app.name'), link: link() }).trim())));
+}
 
 /** 手机应用里还没允许通知时，在首页直接请用户开启（很多老人不会去翻设置） */
 function notifyCard(r) {
@@ -162,6 +228,9 @@ function listHTML(ctx) {
   const T = s.times;
   const n = ctx.now.getTime();
   const rows = [];
+  const done = prayedOn(ymdKey(s.today));
+  // 这番拜的时间已经开始（宵礼过了午夜仍算前一天的，这里按当天的时间表）
+  const started = (p) => n >= T[p].getTime();
   for (const p of PRAYERS) {
     const passed = n >= (p === 'isha' ? T.isha : T[p]).getTime() && s.current !== p;
     const cls = [s.current === p ? 'is-current' : '', s.next === p && !s.nextTomorrow ? 'is-next' : '', passed ? 'is-passed' : ''].join(' ');
@@ -170,6 +239,7 @@ function listHTML(ctx) {
       <span class="prow-ar" lang="ar" dir="rtl">${PRAYER_INFO[p].ar}</span>
       <span class="prow-time">${fmtHM(T[p])}</span>
       ${s.current === p ? `<span class="prow-badge">${t('home.badgeNow')}</span>` : s.next === p && !s.nextTomorrow ? `<span class="prow-badge soft">${t('home.next')}</span>` : ''}
+      ${started(p) ? `<button type="button" class="prow-check ${done[p] ? 'is-on' : ''}" data-prayed="${p}" aria-pressed="${!!done[p]}" aria-label="${t('home.markPrayed', { name: prayerName(p, s) })}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>` : '<span class="prow-check-gap"></span>'}
     </li>`);
     if (p === 'fajr') {
       rows.push(`<li class="prow prow-sun"><span class="prow-name">${t('prayer.sunrise')}</span><span class="prow-ar"></span><span class="prow-time">${fmtHM(T.sunrise)}</span></li>`);
@@ -208,6 +278,7 @@ export function homePage(ctx) {
       <ul class="plist" data-list>${listHTML(ctx)}</ul>
       <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
       ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
+      <p class="note prayed-note">${t('home.prayedNote')}</p>
       <p class="local-note">${
         ctx.official
           ? t(adjusted ? 'home.localNoteOfficialAdjusted' : 'home.localNoteOfficial', { src: remoteText(ctx.official) })
@@ -243,11 +314,13 @@ export function homePage(ctx) {
       <span class="athome-t">${t('home.atHome')}</span>
       <span class="athome-s">${t('home.atHomeSub')}</span>
     </a>
+    ${hadithCard(ctx)}
     <a class="card card-link to-masjid" href="#/masjid">
       <span class="athome-t">${t('home.toMasjid')}</span>
       <span class="athome-s">${t('home.toMasjidSub')}</span>
     </a>
     </div>
+    ${shareCard()}
     <p class="privacy">${t('privacy')}</p>
   </div>`;
 
@@ -258,6 +331,17 @@ export function homePage(ctx) {
     mount(el) {
       bindNotifyCard(el);
       bindNotices(el);
+      bindShare(el, ctx);
+      fillHadith(el, ctx);
+      el.querySelectorAll('[data-prayed]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const on = b.getAttribute('aria-pressed') !== 'true';
+          togglePrayed(ymdKey(ctx.sched.today), b.dataset.prayed, on);
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-pressed', String(on));
+          if (on && navigator.vibrate) navigator.vibrate(20);
+        }),
+      );
       const ok = el.querySelector('[data-city-ok]');
       if (ok) ok.addEventListener('click', () => setSettings({ cityConfirmed: true }));
     },
@@ -293,7 +377,10 @@ export function homePage(ctx) {
     },
     onWeather(c) {
       const box = document.querySelector('[data-winter]');
-      if (box) box.innerHTML = winterCard(c);
+      if (box) {
+        box.innerHTML = winterCard(c);
+        fillHadith(box, c);
+      }
       const scene = document.querySelector('[data-scene] svg');
       if (scene) scene.outerHTML = mosqueScene({ phase: skyPhase(c.sched.times, c.now), winter: isWinter(c) });
     },

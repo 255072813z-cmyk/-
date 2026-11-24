@@ -1,7 +1,7 @@
 /* 首页 */
 .scene-wrap { position: relative; border-radius: 22px; overflow: hidden; margin: 4px 0 10px; box-shadow: var(--shadow); aspect-ratio: 16 / 10; max-height: 300px; width: 100%; }
 .scene { display: block; width: 100%; height: 100%; }
-.scene-top { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 10px 12px; text-align: center; pointer-events: none; }
+.scene-top { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; padding: 10px 12px; text-align: center; pointer-events: none; }
 .bismillah { font-size: 1.45rem; line-height: 1.6; margin: 0; color: #fff7df; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
 .date { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.55; margin: 2px 0 10px; }
 .date-g { font-family: var(--font-zh-serif); font-weight: 700; font-size: 1.15rem; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; }
@@ -174,3 +174,26 @@ details.method summary { color: var(--green); }
 .jumuah { white-space: nowrap; }
 .welcome-card { border: 1.5px solid var(--green); background: var(--green-soft); }
 .welcome-card .step-btns { flex-wrap: wrap; }
+
+/* "已礼"：每番拜右边一个可以点的勾，只给自己看 */
+.prow { grid-template-columns: 1fr auto auto auto; grid-template-areas: 'name time badge check' 'ar time badge check'; }
+.prow-check, .prow-check-gap { grid-area: check; width: 40px; height: 40px; }
+.prow-check { display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--line); background: var(--card); cursor: pointer; padding: 0; }
+.prow-check svg { width: 22px; height: 22px; fill: none; stroke: var(--line); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.prow-check.is-on { background: var(--green); border-color: var(--green); }
+.prow-check.is-on svg { stroke: #fff; }
+.prow-check:active { transform: scale(0.94); }
+.prayed-note { margin: 6px 12px 0; }
+
+/* 圣训引用 */
+.hadith-quote { margin: 10px 0 6px; padding: 10px 12px; border-inline-start: 3px solid var(--gold); background: var(--gold-soft); border-radius: 10px; }
+.hq-ar { font-family: var(--font-ar); font-size: 1.25rem; line-height: 1.9; text-align: right; margin: 0 0 4px; }
+.hq-text { margin: 0 0 4px; }
+.hq-src { margin: 0; font-size: 0.82rem; color: var(--muted); }
+.weather-card .hadith-quote { background: rgba(255, 255, 255, 0.1); border-color: var(--lamp); }
+.weather-card .hq-src { color: inherit; opacity: 0.8; }
+.weather-card.wx-clear .hadith-quote { background: var(--gold-soft); }
+.share-card, .hadith-card { display: grid; gap: 4px; }
+.share-card .btn, .hadith-card .btn { justify-self: start; }
+.page.home .hadith-card { order: 7; }
+.page.home .share-card { order: 8; }

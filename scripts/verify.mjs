@@ -240,6 +240,76 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await ctx.close();
 }
 
+// 10. 基本操作：新功能都能用、能保存
+{
+  const ctx = await browser.newContext(phone);
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  await page.goto(base + '?weather=snow&now=2026-12-18T15:20');
+  await page.waitForTimeout(800);
+  // 第一次打开：首页请用户确认城市；确认后不再出现
+  const welcome = await page.locator('[data-city-ok]').count();
+  await page.click('[data-city-ok]');
+  await page.waitForTimeout(200);
+  await page.reload();
+  await page.waitForTimeout(500);
+  check('第一次打开请确认城市，确认后不再出现', welcome === 1 && (await page.locator('[data-city-ok]').count()) === 0);
+  // 已礼打勾：只有已到时间的拜能点；刷新后还在
+  const checks = await page.locator('[data-prayed]').count();
+  await page.click('[data-prayed="dhuhr"]');
+  await page.reload();
+  await page.waitForTimeout(400);
+  const pressed = await page.getAttribute('[data-prayed="dhuhr"]', 'aria-pressed');
+  check('"已礼"打勾：到时间的拜才能点（15:20 时晨礼、晌礼），刷新后还在', checks === 2 && pressed === 'true', `可点 ${checks} 番，晌礼 ${pressed}`);
+  // 雪天：天气卡片里有"在住处礼拜"的圣训；星期五用伊本·阿拔斯主麻日那一条
+  await page.waitForSelector('[data-wx-hadith] .hq-src', { timeout: 3000 }).catch(() => {});
+  const wx = (await page.textContent('[data-wx-hadith]').catch(() => '')) || '';
+  check('雪天卡片引用"在家里礼拜"的圣训（星期五：布哈里 901）', /901/.test(wx) && /[\u0600-\u06FF]/.test(wx), wx.replace(/\s+/g, ' ').slice(0, 50));
+  // 今日圣训 + 分享
+  await page.waitForSelector('[data-daily-hadith] .hq-src', { timeout: 3000 }).catch(() => {});
+  const hd = (await page.textContent('[data-daily-hadith]').catch(() => '')) || '';
+  check('今日圣训有原文、意思和出处', /[\u0600-\u06FF]/.test(hd) && /出处：(布哈里|提尔密济)/.test(hd), hd.replace(/\s+/g, ' ').slice(-30));
+  check('首页有"分享给亲友"', (await page.locator('[data-share-app]').count()) === 1 && (await page.locator('[data-share-hadith]').count()) === 1);
+  // 补礼记录
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/pray/qada');
+  await page.waitForTimeout(500);
+  await page.click('[data-bulk]');
+  await page.click('[data-q="fajr"][data-d="1"]');
+  await page.click('[data-q="isha"][data-d="-1"]');
+  await page.reload();
+  await page.waitForTimeout(400);
+  const qf = await page.textContent('[data-qv="fajr"]');
+  const qi = await page.textContent('[data-qv="isha"]');
+  check('补礼记录加减正确、刷新后还在', qf === '2' && qi === '0', `晨礼 ${qf}，宵礼 ${qi}`);
+  // 本月时间表
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/times');
+  await page.waitForTimeout(500);
+  const rows = await page.locator('.times-table tbody tr').count();
+  check('本月时间表 31 天都在，今天高亮', rows === 31 && (await page.locator('.times-table tr.is-today').count()) === 1, `${rows} 行`);
+  // 换城市：时间跟着变，首页显示新城市
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/city');
+  await page.waitForTimeout(400);
+  await page.fill('[data-search]', 'kazan');
+  const visible = await page.locator('[data-pick]:visible').count();
+  await page.click('[data-pick="kazan"]');
+  await page.waitForTimeout(500);
+  const back = await page.evaluate(() => location.hash); // 回到进来之前的页面
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/');
+  await page.waitForTimeout(400);
+  const cityBtn = await page.textContent('.city-btn');
+  check('搜索城市、选中后回到原来的页面，首页换成新城市', visible === 1 && back === '#/times' && /喀山/.test(cityBtn), `${visible} 个结果，回到 ${back}，${cityBtn.trim()}`);
+  // 切换语言
+  await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/settings');
+  await page.waitForTimeout(400);
+  await page.click('[data-lang="tg"]');
+  await page.waitForTimeout(800);
+  const tg = await page.textContent('.tabbar');
+  check('设置里切换成塔吉克语，界面立即变', /Имрӯз/.test(tg), tg.replace(/\s+/g, ' ').trim());
+  check('以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
 await browser.close();
 server.close();
 const failed = results.filter((r) => !r.ok).length;

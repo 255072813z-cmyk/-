@@ -4,6 +4,10 @@ import { PRAYER_INFO, buildSteps, unitLabel, AFTER_PRAYER, getPrayerInfo } from 
 import { prayerRow, ICONS } from '../../ui/art.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
+import { PRAYERS } from '../../core/prayer-times.js';
+import { ymdKey } from '../../core/clock.js';
+import { togglePrayed, prayedOn } from '../../core/prayed.js';
+import { markGuideDone } from '../../core/usage.js';
 
 const unitName = (u) => t(...unitLabel(u).name);
 
@@ -74,6 +78,7 @@ export function guidePage(ctx, prayerKey, unitId) {
         ${!isTarawih && next ? `<a class="btn btn-primary" href="#/pray/guide/${prayerKey}/${next.id}">${t('guide.next', { unit: unitName(next) })}</a>` : ''}
         ${!isTarawih ? `<a class="btn ${next ? 'btn-ghost' : 'btn-primary'}" href="#/tasbih">${t('guide.tasbih')}</a>` : ''}
       </div>
+      ${PRAYERS.includes(prayerKey) ? `<button class="btn btn-ghost btn-sm" type="button" data-mark>${prayedOn(ymdKey(ctx.sched.today))[prayerKey] ? t('guide.marked') : t('home.markPrayed', { name: t('prayer.' + prayerKey) })}</button>` : ''}
       <button class="btn btn-ghost btn-sm" type="button" data-restart>${t('guide.restart')}</button>
     </section>`;
   }
@@ -82,6 +87,14 @@ export function guidePage(ctx, prayerKey, unitId) {
     const stage = el.querySelector('[data-stage]');
     if (i >= steps.length) {
       stage.innerHTML = finishHTML();
+      markGuideDone(ymdKey(ctx.sched.today));
+      const mark = stage.querySelector('[data-mark]');
+      if (mark)
+        mark.addEventListener('click', () => {
+          togglePrayed(ymdKey(ctx.sched.today), prayerKey, true);
+          mark.textContent = t('guide.marked');
+          mark.disabled = true;
+        });
       stage.querySelector('[data-restart]').addEventListener('click', () => {
         i = 0;
         draw(el);

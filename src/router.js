@@ -109,6 +109,7 @@ export function prefetchPages() {
     Object.values(LAZY).forEach((f) => f().catch(() => {}));
     import('./content/region-map.js').catch(() => {}); // 朝向页的地图
     import('./content/wide-map.js').catch(() => {});
+    import('./content/hadith.js').catch(() => {}); // 今日圣训、在家礼拜的依据
   };
   if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
   else setTimeout(go, 2500);

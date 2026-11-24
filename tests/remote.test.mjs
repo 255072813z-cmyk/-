@@ -142,31 +142,69 @@ test('统计：地址对应功能名', () => {
   for (const f of ['home', 'pray', 'guide', 'qibla', 'hall']) assert.ok(FEATURES.includes(f));
 });
 
-test('统计：手机发出的内容只有约定的几项，"我的位置"只报最近的城市', async () => {
+test('统计：没网时先存在手机里，有网时按顺序补传；内容只有约定的几项，没有位置', async () => {
+  const mem = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) } };
+  globalThis.location = { hostname: '127.0.0.1', search: '?api=http://127.0.0.1:8787&ref=share' };
   const sent = [];
-  globalThis.location = { hostname: '127.0.0.1', search: '?api=http://127.0.0.1:8787' };
+  let online = false;
   const origFetch = globalThis.fetch;
   globalThis.fetch = async (url, init) => {
-    sent.push({ url, init });
-    return { ok: true };
+    if (!online) throw new Error('offline');
+    sent.push({ url, init, body: JSON.parse(init.body) });
+    return { ok: true, status: 204 };
   };
   try {
-    const { sendDaily, setStatsGate } = await import('../src/core/stats.js');
+    const { recordDay, flushStats, setStatsGate, markFeature, markGuideDone } = await import('../src/core/stats.js');
+    const { togglePrayed } = await import('../src/core/prayed.js');
+    const here = getCity('here', { lat: 55.81, lon: 37.62, utcOffset: 3 });
     setStatsGate(() => false);
-    assert.equal(await sendDaily(getCity('dushanbe'), 'zh', '2026-11-24'), false, '关掉统计后不发');
-    assert.equal(sent.length, 0);
+    recordDay({ city: here, lang: 'ru', todayKey: '2026-11-24', fontScale: 2, notifyOn: true });
+    assert.equal(mem.has('masjid:statq') ? JSON.parse(mem.get('masjid:statq')).length : 0, 0, '关掉统计后不记');
     setStatsGate(() => true);
-    await sendDaily(getCity('here', { lat: 55.81, lon: 37.62, utcOffset: 3 }), 'ru', '2026-11-24');
-    assert.equal(sent.length, 1);
-    const body = JSON.parse(sent[0].init.body);
-    assert.deepEqual(Object.keys(body).sort(), ['c', 'l', 'p', 'v']);
-    assert.equal(body.c, 'moscow');
-    assert.ok(!/55\.81|37\.62/.test(sent[0].init.body), '统计里出现了位置');
+    // 第一天：没网
+    recordDay({ city: here, lang: 'ru', todayKey: '2026-11-24', fontScale: 2, notifyOn: true });
+    markFeature('qibla', '2026-11-24');
+    markGuideDone('2026-11-24');
+    togglePrayed('2026-11-24', 'fajr', true);
+    togglePrayed('2026-11-24', 'isha', true);
+    await flushStats();
+    assert.equal(sent.length, 0);
+    assert.equal(JSON.parse(mem.get('masjid:statq')).length, 1, '没网时留在队列里');
+    // 第二天：有网了，两天的一起补传
+    online = true;
+    recordDay({ city: here, lang: 'ru', todayKey: '2026-11-25', fontScale: 2, notifyOn: false });
+    await flushStats();
+    assert.equal(sent.length, 2);
+    assert.equal(JSON.parse(mem.get('masjid:statq')).length, 0);
+    const [d1, d2] = sent.map((x) => x.body);
+    const ALLOWED = ['d', 'v', 'p', 'l', 'c', 'iw', 'ad', 'fs', 'ntf', 'nw', 'src', 'fd', 'f', 'pk', 'gd'];
+    for (const b of [d1, d2]) assert.ok(Object.keys(b).every((k) => ALLOWED.includes(k)), JSON.stringify(b));
+    assert.equal(d1.d, '2026-11-24');
+    assert.equal(d1.nw, 1);
+    assert.equal(d1.src, 'share');
+    assert.equal(d1.iw, '2026-11-23'); // 那一周的周一
+    assert.equal(d1.c, 'moscow');
+    assert.equal(d2.d, '2026-11-25');
+    assert.equal(d2.nw, undefined, '只有第一天算新用户');
+    assert.equal(d2.fd, '2026-11-24');
+    assert.deepEqual(d2.f, ['qibla']);
+    assert.equal(d2.pk, 2);
+    assert.equal(d2.gd, 1);
+    assert.equal(d2.ad, 2);
+    assert.equal(d2.ntf, 0);
+    const raw = sent.map((x) => x.init.body).join('');
+    assert.ok(!/55\.81|37\.62/.test(raw), '统计里出现了位置');
     assert.equal(sent[0].init.credentials, 'omit');
-    assert.ok(parseHit(body, IDS, '2026-11-24'));
+    for (const b of [d1, d2]) assert.ok(parseHit(b, IDS, '2026-11-25'));
+    // 同一天再打开不重复记
+    recordDay({ city: here, lang: 'ru', todayKey: '2026-11-25', fontScale: 2, notifyOn: false });
+    await flushStats();
+    assert.equal(sent.length, 2);
   } finally {
     globalThis.fetch = origFetch;
     delete globalThis.location;
+    delete globalThis.window;
   }
 });
 
@@ -199,7 +237,12 @@ test('安全：网页有内容安全策略，只运行自己的脚本，不连�
   assert.match(csp, /object-src 'none'/);
   assert.match(csp, /connect-src 'self' https:\/\/api\.open-meteo\.com/);
   assert.ok(!/connect-src[^;]*\s(https:|wss:|\*)(\s|;|$)/.test(csp), '不能允许连接任意网站');
-  assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>/.test(html), '页面里不能有行内脚本');
+  // 行内脚本只允许老浏览器兼容层那几段，而且必须按内容摘要写进安全策略
+  const { createHash } = await import('node:crypto');
+  for (const m of html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+    const h = createHash('sha256').update(m[1]).digest('base64');
+    assert.ok(csp.includes(`'sha256-${h}'`), '有行内脚本没有列在安全策略里：' + m[1].slice(0, 60));
+  }
   assert.match(html, /name="referrer" content="no-referrer"/);
 });
 

@@ -22,8 +22,10 @@ import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
 import { isNativeApp, syncNotifications, listenNotificationTaps } from './core/notify.js';
 import { cachedRemote, refreshRemote, effectiveOffsets, effectiveHijri, flagOn } from './core/remote.js';
-import { setStatsGate, markUse, sendDaily, reportError } from './core/stats.js';
-import { setPresenceGate } from './core/presence.js';
+import { setStatsGate, setPresenceGate } from './core/gates.js';
+import { markUse } from './core/usage.js';
+// 匿名统计的发送部分按需加载（不拖慢首屏）
+const stats = () => import('./core/stats.js');
 import { t, setLang, getLang, loadLang } from './i18n/index.js';
 import { ICONS, star8 } from './ui/art.js';
 import { resolveRoute, prefetchPages } from './router.js';
@@ -202,7 +204,15 @@ function start() {
 loadLang(ctx.settings.lang).then(start, start);
 // 联系后台（设置了后台地址才会）：每天一次匿名统计；最多每 6 小时取一次远程配置
 function phoneHome() {
-  sendDaily(ctx.city, getLang(), todayKey());
+  const st = ctx.notifyState;
+  stats().then(({ recordDay }) => recordDay({
+    city: ctx.city,
+    lang: getLang(),
+    todayKey: todayKey(),
+    fontScale: ctx.settings.fontScale,
+    // 提醒开着没有：手机应用看系统权限，网页看设置
+    notifyOn: isNativeApp() ? (st && st.native ? st.display === 'granted' && ctx.settings.remind : null) : ctx.settings.remind,
+  }));
   refreshRemote().then((cfg) => {
     if (!cfg) return;
     const weatherWas = flagOn(ctx.remote, 'weather');
@@ -222,9 +232,12 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// 网络恢复时，把离线时攒下的匿名统计补传
+window.addEventListener('online', () => stats().then((m) => m.flushStats()));
+
 // 匿名错误报告（只有错误信息和位置）
-window.addEventListener('error', (e) => reportError(e.message, `${e.filename || ''}:${e.lineno || 0}`, todayKey()));
-window.addEventListener('unhandledrejection', (e) => reportError(String((e.reason && e.reason.message) || e.reason), 'promise', todayKey()));
+window.addEventListener('error', (e) => stats().then((m) => m.reportError(e.message, `${e.filename || ''}:${e.lineno || 0}`, todayKey())).catch(() => {}));
+window.addEventListener('unhandledrejection', (e) => stats().then((m) => m.reportError(String((e.reason && e.reason.message) || e.reason), 'promise', todayKey())).catch(() => {}));
 if (isNativeApp()) {
   document.documentElement.classList.add('is-app');
   listenNotificationTaps();

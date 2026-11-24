@@ -6,11 +6,8 @@
 import { apiBase } from './api.js';
 import { devParam } from './dev.js';
 
-let gate = () => true;
-/** main.js 设置：远程开关关掉时不连接 */
-export function setPresenceGate(fn) {
-  gate = fn;
-}
+import { presenceOn as gate } from './gates.js';
+export { setPresenceGate } from './gates.js';
 
 function baseUrl() {
   if (!gate()) return '';

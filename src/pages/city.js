@@ -4,7 +4,7 @@ import { setSettings } from '../core/settings.js';
 import { CITIES, CITY_GROUPS } from '../core/cities.js';
 import { fmtHM } from '../core/clock.js';
 import { locate } from '../core/location.js';
-import { markFeature } from '../core/stats.js';
+import { markFeature } from '../core/usage.js';
 import { ymdKey } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t } from '../i18n/index.js';

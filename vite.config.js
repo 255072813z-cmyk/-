@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
+import legacy, { cspHashes } from '@vitejs/plugin-legacy';
 import { readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
@@ -28,7 +29,8 @@ function contentSecurityPolicy(env) {
       const local = 'http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:*';
       const policy = [
         "default-src 'self'",
-        `script-src 'self'${app ? " 'unsafe-inline'" : ''}`,
+        // 老浏览器兼容层的几段固定小脚本，按内容摘要放行（不是放开所有行内脚本）
+        `script-src 'self' ${cspHashes.map((h) => `'sha256-${h}'`).join(' ')}${app ? " 'unsafe-inline'" : ''}`,
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: blob:",
         "font-src 'self'",
@@ -52,11 +54,14 @@ export default defineConfig(({ mode }) => {
   return {
     base: './', // 相对路径：放到任何子目录（如 GitHub Pages）都能打开
     define: { __APP_VERSION__: JSON.stringify(pkg.version) }, // 应用版本（统计、提示更新用）
-    plugins: [contentSecurityPolicy(env)],
+    plugins: [
+      // 老手机：不支持新版脚本的浏览器（约 2017 年以前的安卓浏览器、iOS 10）自动改用兼容版；新手机不受影响
+      legacy({ targets: ['chrome >= 49', 'safari >= 10', 'ios >= 10', 'android >= 5'], modernPolyfills: false }),
+      contentSecurityPolicy(env),
+    ],
     build: {
-      // 兼容老一些的手机和微信内置浏览器（iOS 13+ / 安卓 Chrome 80+）
-      target: ['es2019', 'safari13', 'chrome80'],
-      cssTarget: ['safari13', 'chrome80'],
+      // 新版脚本的目标由兼容层决定（支持模块的浏览器）；样式按老一些的手机处理
+      cssTarget: ['safari10', 'chrome49'],
       assetsInlineLimit: 0,
     },
   };

@@ -5,6 +5,7 @@ import { fmtHM, addDays, ymdKey } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t } from '../i18n/index.js';
 import { cityName } from '../i18n/format.js';
+import { shareText } from '../core/share.js';
 
 const daysIn = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
 
@@ -18,24 +19,6 @@ export function dayText(ctx, ymd) {
   }
   lines.push(ctx.official ? t('times.shareNoteOfficial') : t('times.shareNote'));
   return lines.join('\n');
-}
-
-/** 用手机的分享功能；不支持时复制到剪贴板。返回 'shared' | 'copied' | 'failed' */
-export async function shareText(text) {
-  try {
-    if (navigator.share) {
-      await navigator.share({ text });
-      return 'shared';
-    }
-  } catch (e) {
-    if (e && e.name === 'AbortError') return 'cancel';
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    return 'copied';
-  } catch (e) {
-    return 'failed';
-  }
 }
 
 export function timesPage(ctx, offset = 0) {

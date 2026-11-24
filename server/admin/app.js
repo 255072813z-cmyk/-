@@ -13,6 +13,10 @@ const CITY = Object.fromEntries(CITY_NAMES.map((c) => [c.id, c.name]));
 const CITY_IDS = CITY_NAMES.map((c) => c.id);
 const LABELS = {
   p: { web: '网页', android: '安卓', ios: '苹果' },
+  src: { share: '分享链接', direct: '直接打开网页', app: '应用商店' },
+  pk: { 0: '0 番', 1: '1 番', 2: '2 番', 3: '3 番', 4: '4 番', 5: '5 番' },
+  ad: { 1: '1 天', 2: '2 天', 3: '3 天', 4: '4 天', 5: '5 天', 6: '6 天', 7: '7 天（每天）' },
+  fs: { 0: '标准', 1: '大', 2: '特大' },
   l: { zh: '中文', tg: '塔吉克语', ru: '俄语' },
   f: { home: '首页', pray: '在家礼拜', wudu: '小净', guide: '跟着做礼拜', qibla: '朝向', tasbih: '赞念', ramadan: '斋月', tarawih: '间歇拜', quran: '古兰经 30 天', masjid: '清真寺入口', hall: '礼拜大殿', courtyard: '庭院', poetry: '诗歌夜', settings: '设置', city: '选择城市', here: '用我的位置' },
   flags: { masjid: '清真寺三个空间', presence: '在线人数', weather: '天气提示', stats: '匿名统计' },
@@ -87,21 +91,30 @@ function renderStats(data, nDays) {
   const today = data.today;
   const dates = [];
   for (let i = nDays - 1; i >= 0; i--) dates.push(new Date(Date.parse(today + 'T00:00:00Z') - i * 864e5).toISOString().slice(0, 10));
-  const rows = dates.map((d) => ({ d, ...(data.days[d] || { n: 0, fn: 0, p: {}, l: {}, c: {}, v: {}, f: {}, e: {} }) }));
+  const empty = { n: 0, fn: 0, p: {}, l: {}, c: {}, v: {}, f: {}, e: {}, nw: 0, src: {}, coh: {}, ntf: 0, ntfn: 0, fs: {}, ad: {}, pk: {}, gd: 0 };
+  const rows = dates.map((d) => ({ d, ...empty, ...(data.days[d] || {}) }));
   const t = rows[rows.length - 1];
   const last7 = rows.slice(-8, -1);
   const avg7 = last7.length ? Math.round(last7.reduce((s, r) => s + r.n, 0) / last7.length) : 0;
   const online = Object.values(data.rooms || {}).reduce((s, r) => s + (r.online || 0), 0);
+  const new7 = last7.reduce((a, r) => a + (r.nw || 0), 0);
+  const share7 = last7.reduce((a, r) => a + ((r.src || {}).share || 0), 0);
+  const ntf = rows.reduce((a, r) => a + (r.ntf || 0), 0);
+  const ntfn = rows.reduce((a, r) => a + (r.ntfn || 0), 0);
   $('[data-tiles]').innerHTML = [
     [fmt(t.n), '今天使用的设备'],
     [fmt(avg7), '前 7 天日均'],
+    [fmt(t.nw || 0), '今天新增'],
+    [new7 ? Math.round((share7 / new7) * 100) + '%' : '—', '前 7 天新增中来自分享'],
+    [ntfn ? Math.round((ntf / ntfn) * 100) + '%' : '—', '开着礼拜提醒的比例'],
     [fmt(online), '此刻在三个空间里'],
-    [fmt(data.rooms && data.rooms.hall ? data.rooms.hall.taken : 0) + ' / 40', '大殿垫子'],
   ]
     .map(([b, s]) => `<div class="tile"><b>${esc(b)}</b><span>${esc(s)}</span></div>`)
     .join('');
-  dauChart($('[data-dau]'), rows);
-  for (const k of ['p', 'l', 'c', 'v']) bars($(`[data-bars="${k}"]`), sumKey(rows, k), k, k === 'c' ? 15 : 10);
+  dauChart($('[data-dau]'), rows, 'n', '台设备');
+  dauChart($('[data-new]'), rows, 'nw', '台新设备');
+  retention($('[data-retention]'), data.days);
+  for (const k of ['p', 'l', 'c', 'v', 'src', 'pk', 'ad', 'fs']) bars($(`[data-bars="${k}"]`), sumKey(rows, k), k, k === 'c' ? 15 : 10);
   // 功能使用率：用过的设备 / 上报功能的设备
   const fn = rows.reduce((s, r) => s + (r.fn || 0), 0);
   const f = sumKey(rows, 'f');
@@ -140,23 +153,60 @@ function bars(el, obj, k, max, pct = false) {
   el.querySelectorAll('[data-w]').forEach((x) => (x.style.width = x.dataset.w + '%'));
 }
 
-function dauChart(el, rows) {
+/** 留存表：按第一次打开的那一周分组，看之后每一周平均每天还有多少比例在用 */
+function retention(el, days) {
+  const DAY = 864e5;
+  const week = (d) => {
+    const t = Date.parse(d + 'T00:00:00Z');
+    return new Date(t - ((new Date(t).getUTCDay() + 6) % 7) * DAY).toISOString().slice(0, 10);
+  };
+  const installs = {};
+  for (const [d, v] of Object.entries(days)) if (v.nw) installs[week(d)] = (installs[week(d)] || 0) + v.nw;
+  const cohorts = Object.keys(installs).sort().slice(-8);
+  if (!cohorts.length) {
+    el.innerHTML = '<p class="note">还没有新用户数据。</p>';
+    return;
+  }
+  const head = Array.from({ length: 8 }, (_, k) => `<th>第 ${k} 周</th>`).join('');
+  const body = cohorts
+    .map((c) => {
+      const cells = Array.from({ length: 8 }, (_, k) => {
+        const start = Date.parse(c + 'T00:00:00Z') + k * 7 * DAY;
+        let sum = 0;
+        let n = 0;
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start + i * DAY).toISOString().slice(0, 10);
+          if (!days[d]) continue;
+          sum += (days[d].coh || {})[c] || 0;
+          n++;
+        }
+        return n ? `<td>${Math.round((sum / n / installs[c]) * 100)}%</td>` : '<td></td>';
+      }).join('');
+      return `<tr><th scope="row">${esc(c)}（${fmt(installs[c])}）</th>${cells}</tr>`;
+    })
+    .join('');
+  el.innerHTML = `<table><thead><tr><th>开始那周（人数）</th>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function dauChart(el, rows, key = 'n', unit = '台设备') {
   const W = 760, H = 220, L = 44, B = 24, T = 10, R = 8;
-  const max = Math.max(1, ...rows.map((r) => r.n));
+  const val = (r) => r[key] || 0;
+  const max = Math.max(1, ...rows.map(val));
   const step = niceStep(max);
   const top = Math.ceil(max / step) * step;
   const bw = (W - L - R) / rows.length;
   const barW = Math.max(2, Math.min(24, bw - 2));
   const y = (v) => T + (H - T - B) * (1 - v / top);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每天使用的设备数">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每天${unit}">`;
   for (let v = 0; v <= top; v += step) svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
   const every = Math.ceil(rows.length / 8);
   rows.forEach((r, i) => {
     const x = L + i * bw + (bw - barW) / 2;
-    const h = Math.max(0, y(0) - y(r.n));
+    const h = Math.max(0, y(0) - y(val(r)));
     const rr = Math.min(4, h / 2, barW / 2);
     // 顶端圆角、底部方角
-    if (h > 0) svg += `<path class="bar" data-i="${i}" d="M${x} ${y(0)}V${y(r.n) + rr}Q${x} ${y(r.n)} ${x + rr} ${y(r.n)}H${x + barW - rr}Q${x + barW} ${y(r.n)} ${x + barW} ${y(r.n) + rr}V${y(0)}Z"/>`;
+    const top = y(val(r));
+    if (h > 0) svg += `<path class="bar" data-i="${i}" d="M${x} ${y(0)}V${top + rr}Q${x} ${top} ${x + rr} ${top}H${x + barW - rr}Q${x + barW} ${top} ${x + barW} ${top + rr}V${y(0)}Z"/>`;
     svg += `<rect class="hit" data-i="${i}" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}"/>`;
     if ((rows.length - 1 - i) % every === 0) svg += `<text class="axis" x="${L + i * bw + bw / 2}" y="${H - 6}" text-anchor="middle">${esc(r.d.slice(5))}</text>`;
   });
@@ -171,7 +221,7 @@ function dauChart(el, rows) {
       const hb = h.getBoundingClientRect();
       const bar = el.querySelector(`.bar[data-i="${i}"]`);
       const barTop = bar ? bar.getBoundingClientRect().top : hb.bottom;
-      tip.textContent = `${r.d}：${fmt(r.n)} 台设备`;
+      tip.textContent = `${r.d}：${fmt(val(r))} ${unit}`;
       tip.style.left = hb.left - box.left + hb.width / 2 + 'px';
       tip.style.top = Math.max(24, barTop - box.top - 4) + 'px';
       tip.hidden = false;

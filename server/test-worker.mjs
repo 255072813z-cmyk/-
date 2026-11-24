@@ -3,6 +3,7 @@
 import { Miniflare } from 'miniflare';
 import { generateKeys, signBody, verifyEnvelope, sanitizeConfig } from '../shared/remote-config.js';
 import { CITY_DATA } from '../src/content/cities-data.js';
+import { weekOf } from '../shared/stats.js';
 
 const repo = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const SITE = 'https://example.org';
@@ -152,6 +153,16 @@ ok('功能记在前一天，不认识的功能丢掉', d1.fn === 1 && d1.f.qibla
 ok('错误信息去掉控制字符', Object.keys(d0.e || {}).some((k) => k.endsWith('TypeError: x is undefined')));
 ok('统计里没有 IP 等个人信息', !JSON.stringify(stats).includes('10.1.0'));
 ok('统计附带此刻在线人数', stats.rooms && stats.rooms.hall.online === 41);
+// 离线攒下、晚几天才到的记录：记到它自己那一天；留存分组、新增来源、提醒比例
+const iw = weekOf(yesterday);
+ok('离线攒下的昨天的记录也收', (await hit({ d: yesterday, v: '1.0.0', p: 'android', l: 'tg', c: 'dushanbe', iw, nw: 1, src: 'share', ntf: 1, fs: 2, ad: 1 }, SITE, '10.1.0.3')).status === 204);
+const old40 = new Date(Date.now() + 5 * 3600e3 - 40 * 864e5).toISOString().slice(0, 10);
+ok('40 天前的记录不收', (await hit({ d: old40, v: '1.0.0' }, SITE, '10.1.0.3')).status === 400);
+const st2 = await (await get('/admin/api/stats?days=7', { headers: adminH() })).json();
+const y2 = st2.days[yesterday] || {};
+ok('昨天：新增、来源、留存分组、提醒、字号都记上', y2.n === 1 && y2.nw === 1 && y2.src.share === 1 && y2.coh[iw] === 1 && y2.ntf === 1 && y2.ntfn === 1 && y2.fs['2'] === 1, JSON.stringify(y2));
+ok('今天的数不受影响', st2.days[today].n === 2);
+
 let blocked = 0;
 for (let i = 0; i < 310; i++) if ((await hit({ v: '1.0.0' }, SITE, '10.9.9.9')).status === 429) blocked++;
 ok('同一 IP 每分钟超过 300 次被限流', blocked >= 10, `${blocked} 次被拦`);
