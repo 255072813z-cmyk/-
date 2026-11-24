@@ -284,3 +284,9 @@
   .r-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   .r-grid .card { margin-top: 0; }
 }
+.notify-status { background: var(--green-soft); border-radius: 12px; padding: 8px 12px; font-size: 0.95rem; }
+.notify-status .btn { margin-top: 6px; }
+.notify-prayers { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 4px 14px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--bg); cursor: pointer; font-weight: 600; }
+.chip input { width: 20px; height: 20px; accent-color: var(--green); }
+.sub-title { margin: 8px 0 4px; font-weight: 700; color: var(--ink-2); }

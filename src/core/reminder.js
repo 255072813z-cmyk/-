@@ -4,6 +4,7 @@ import { load, save } from './storage.js';
 import { ymdKey } from './clock.js';
 import { PRAYERS } from './prayer-times.js';
 import { playChime } from './chime.js';
+import { isNativeApp } from './notify.js';
 import { t } from '../i18n/index.js';
 
 const WINDOW = 10 * 60 * 1000;
@@ -13,14 +14,17 @@ export function checkReminder(ctx) {
   if (!s.remind || !ctx.sched) return;
   const times = ctx.sched.times;
   const n = ctx.now.getTime();
+  const on = (s.notify && s.notify.prayers) || {};
   for (const p of PRAYERS) {
+    if (on[p] === false) continue;
     const at = times[p].getTime();
     if (n >= at && n - at < WINDOW) {
       const key = ymdKey(ctx.sched.today) + ':' + p + ':' + ctx.city.id;
       if (load('reminded', '') === key) return;
       save('reminded', key);
       showToast(p, ctx);
-      if (s.sound) playChime();
+      // 手机应用里系统通知会响，这里不再重复出声
+      if (s.sound && !isNativeApp()) playChime();
       return;
     }
   }

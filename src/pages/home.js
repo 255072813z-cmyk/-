@@ -11,6 +11,8 @@ import { PRAYER_INFO } from '../content/prayers.js';
 import { mosqueScene, star8 } from '../ui/art.js';
 import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
+import { isNativeApp, askNotifyPermission } from '../core/notify.js';
+import { getSettings } from '../core/settings.js';
 
 function prayerName(p, sched) {
   if (p === 'dhuhr' && sched.today.wd === 5) return t('prayer.jumuah');
@@ -40,6 +42,25 @@ function winterCard(ctx) {
     </div>
     ${w && w.demo ? `<p class="note">${t('winter.demo')}</p>` : ''}
   </section>`;
+}
+
+/** 手机应用里还没允许通知时，在首页直接请用户开启（很多老人不会去翻设置） */
+function notifyCard(r) {
+  if (!isNativeApp() || !r || !r.native || r.display === 'granted' || !getSettings().remind) return '';
+  return `<section class="card notify-card">
+    <p class="notify-card-t">${t('home.notifyTitle')}</p>
+    <p>${t('home.notifyText')}</p>
+    <button type="button" class="btn btn-primary btn-wide" data-notify-on>${t('home.notifyOn')}</button>
+  </section>`;
+}
+
+function bindNotifyCard(root) {
+  const b = root.querySelector('[data-notify-on]');
+  if (b)
+    b.addEventListener('click', async () => {
+      await askNotifyPermission();
+      setSettings({}); // 重新排提醒并刷新页面
+    });
 }
 
 function heroHTML(ctx) {
@@ -136,6 +157,7 @@ export function homePage(ctx) {
     </div>
     <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
+    <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
     <div data-winter>${winterCard(ctx)}</div>
     <a class="card card-link athome" href="#/pray">
       <span class="athome-t">${t('home.atHome')}</span>
@@ -157,6 +179,13 @@ export function homePage(ctx) {
       el.querySelectorAll('[data-city]').forEach((b) =>
         b.addEventListener('click', () => setSettings({ city: b.dataset.city })),
       );
+      bindNotifyCard(el);
+    },
+    onNotify(r) {
+      const box = document.querySelector('[data-notify-card]');
+      if (!box) return;
+      box.innerHTML = notifyCard(r);
+      bindNotifyCard(box);
     },
     tick(c) {
       const el = document.querySelector('[data-hero]');

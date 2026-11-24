@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 432 432">
+  <!-- 安卓自适应图标前景：内容放在中间 66% 的安全区内 -->
+  <g transform="translate(216 216) scale(0.36) translate(-512 -512)">
+    <g fill="none" stroke="#d9b65e" stroke-width="34" stroke-linejoin="round">
+      <rect x="322" y="322" width="380" height="380"/>
+      <rect x="322" y="322" width="380" height="380" transform="rotate(45 512 512)"/>
+    </g>
+    <path d="M432 640V545Q432 475 512 455Q592 475 592 545V640Z" fill="#d9b65e"/>
+    <path d="M512 455V418" stroke="#d9b65e" stroke-width="14"/>
+    <circle cx="512" cy="408" r="12" fill="#d9b65e"/>
+  </g>
+</svg>

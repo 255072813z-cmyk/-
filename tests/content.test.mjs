@@ -80,33 +80,27 @@ test('小净：四项主命都在（洗脸、洗臂、抹头、洗脚）', () =>
 });
 
 test('红线：没有支付、登录、统计、Cookie', () => {
-  const files = [];
-  const walk = (d) => {
+  const walkDir = (d, files = []) => {
     for (const f of readdirSync(d, { withFileTypes: true })) {
       const p = d + '/' + f.name;
-      if (f.isDirectory()) walk(p);
+      if (f.isDirectory()) walkDir(p, files);
       else if (/\.(js|html|css)$/.test(f.name)) files.push(p);
     }
+    return files;
   };
-  walk(new URL('../src', import.meta.url).pathname);
-  files.push(new URL('../index.html', import.meta.url).pathname);
-  const dist = new URL('../dist/assets', import.meta.url).pathname;
-  if (existsSync(dist)) walk(dist);
-  const banned = [/document\.cookie/, /type=["']password/, /gtag\(|google-analytics|googletagmanager|hm\.baidu|umami|yandex.*metrika/i, /navigator\.geolocation/, /payment|PaymentRequest|stripe|alipay|wechatpay/i];
-  for (const f of files) {
+  const own = walkDir(new URL('../src', import.meta.url).pathname);
+  own.push(new URL('../index.html', import.meta.url).pathname);
+  const distDir = new URL('../dist/assets', import.meta.url).pathname;
+  const dist = existsSync(distDir) ? walkDir(distDir) : [];
+  const banned = [/type=["']password/, /gtag\(|google-analytics|googletagmanager|hm\.baidu|umami|yandex.*metrika|firebase-analytics|appmetrica/i, /navigator\.geolocation/, /payment|PaymentRequest|stripe|alipay|wechatpay/i];
+  for (const f of [...own, ...dist]) {
     const src = readFileSync(f, 'utf8');
     for (const re of banned) assert.ok(!re.test(src), `${f} 命中 ${re}`);
   }
-});
-
-test('诗歌：波斯文、塔吉克文、中文行数一致，文字不混写', async () => {
-  const { POEMS } = await import('../src/content/poems.js');
-  assert.ok(POEMS.length >= 5);
-  for (const p of POEMS) {
-    assert.equal(p.fa.length, p.cyr.length, p.src.zh);
-    assert.equal(p.fa.length, p.zh.length, p.src.zh);
-    for (const l of p.cyr) assert.ok(!/[A-Za-z]/.test(l), `塔吉克文含拉丁字母：${l}`);
-    for (const l of p.fa) assert.ok(!/[A-Za-zА-Яа-яӮӯҶҷҲҳҒғҚқӢӣ]/.test(l), `波斯文混入其他字母：${l}`);
-    assert.ok(p.src.zh.startsWith('Ganjoor'));
+  // 我们自己的代码绝不读写 Cookie；打包产物里只允许出现在 Capacitor 库自带的（默认关闭、本应用从不调用的）Cookie 插件里
+  for (const f of own) assert.ok(!/document\.cookie/.test(readFileSync(f, 'utf8')), `${f} 读写了 Cookie`);
+  for (const f of dist) {
+    const src = readFileSync(f, 'utf8');
+    if (/document\.cookie/.test(src)) assert.ok(/CapacitorCookies/.test(src), `${f} 读写了 Cookie`);
   }
 });

@@ -121,6 +121,9 @@ details.method summary { color: var(--green); }
 .page.home .date { order: 2; }
 .page.home .city-row { order: 3; margin-bottom: 6px; }
 .page.home .hero { order: 4; }
+.page.home .notify-slot { order: 4; }
+.notify-card { border: 1.5px solid var(--green); background: var(--green-soft); }
+.notify-card-t { font-family: var(--font-zh-serif); font-size: 1.2rem; font-weight: 700; color: var(--green); margin: 0; }
 .page.home [data-winter] { order: 5; }
 .page.home .ramadan-slot { order: 5; }
 .page.home .ramadan-slot.is-active { order: 4; }

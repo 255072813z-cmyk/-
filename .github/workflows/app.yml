@@ -1,0 +1,72 @@
+# 构建手机应用（测试版）
+# - 安卓：每次推送都构建一个测试用安装包（APK），在这次运行的 Artifacts 里下载，装到手机上试
+# - 苹果：在苹果电脑上编译（模拟器版本，不签名），确认工程能编过；上架用的签名版本以后加
+name: 构建手机应用
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'android/**'
+      - 'ios/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/app.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 测试
+        run: npm test
+      - name: 构建网页
+        run: npm run build
+        env:
+          VITE_PRESENCE_URL: ${{ vars.VITE_PRESENCE_URL }}
+      - run: npx cap sync android
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: 编译安卓安装包
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: masjid-android-test-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync ios
+      - name: 编译苹果应用（模拟器，不签名）
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          test "${PIPESTATUS[0]}" -eq 0

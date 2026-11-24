@@ -1,0 +1,12 @@
+{
+  "appId": "com.onlinemasjid.app",
+  "appName": "网上清真寺",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_masjid",
+      "iconColor": "#0F5940"
+    }
+  }
+}

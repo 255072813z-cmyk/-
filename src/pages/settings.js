@@ -7,6 +7,7 @@ import { toHijri } from '../core/hijri.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t, LANGS } from '../i18n/index.js';
 import { hijriLine } from '../i18n/format.js';
+import { isNativeApp, notifyStatus, askNotifyPermission, openExactSetting, testNotification } from '../core/notify.js';
 
 const signed = (v) => (v > 0 ? '+' : '') + v;
 
@@ -15,6 +16,7 @@ export function settingsPage(ctx) {
   const base = timesFor(ctx.city, ctx.sched.today);
   const h = toHijri(ctx.sched.today, s.hijriAdjust);
   const fs = ['settings.fs0', 'settings.fs1', 'settings.fs2'];
+  const app = isNativeApp();
   const html = `
   <div class="page settings">
     <div class="page-head"><a class="back" href="#/" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('nav.settings')}</h1></div>
@@ -26,12 +28,28 @@ export function settingsPage(ctx) {
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" data-remind-card>
       <h2 class="card-title">${star8(18)} ${t('settings.remindTitle')}</h2>
-      <label class="switch-row"><span><b>${t('settings.remind')}</b><small>${t('settings.remindSub')}</small></span>
+      ${app ? `<p class="notify-status" data-notify-status aria-live="polite">${t('common.loading')}</p>` : ''}
+      <label class="switch-row"><span><b>${t(app ? 'settings.remindApp' : 'settings.remind')}</b><small>${t(app ? 'settings.remindAppSub' : 'settings.remindSub')}</small></span>
         <input type="checkbox" data-remind ${s.remind ? 'checked' : ''}></label>
-      <label class="switch-row"><span><b>${t('settings.sound')}</b><small>${t('settings.soundSub')}</small></span>
-        <input type="checkbox" data-sound ${s.sound ? 'checked' : ''}></label>
+      <div class="notify-prayers" role="group" aria-label="${t('settings.whichPrayers')}">
+        ${PRAYERS.map((p) => `<label class="chip"><input type="checkbox" data-np="${p}" ${s.notify.prayers[p] ? 'checked' : ''}> ${t('prayer.' + p)}</label>`).join('')}
+      </div>
+      <p class="sub-title">${t('settings.advance')}</p>
+      <div class="segmented" role="group" aria-label="${t('settings.advance')}">
+        ${[0, 5, 10, 15].map((m) => `<button type="button" class="seg ${Number(s.notify.advance) === m ? 'is-on' : ''}" data-adv="${m}" aria-pressed="${Number(s.notify.advance) === m}">${m ? t('settings.advanceN', { n: m }) : t('settings.onTime')}</button>`).join('')}
+      </div>
+      <label class="switch-row"><span><b>${t('settings.ramadanRemind')}</b><small>${t('settings.ramadanRemindSub')}</small></span>
+        <input type="checkbox" data-nr ${s.notify.ramadan ? 'checked' : ''}></label>
+      ${
+        app
+          ? `<div class="step-btns"><button type="button" class="btn btn-ghost btn-sm" data-test>${t('settings.test')}</button></div>
+             <p class="note">${t('settings.weekly')}</p>`
+          : `<label class="switch-row"><span><b>${t('settings.sound')}</b><small>${t('settings.soundSub')}</small></span>
+               <input type="checkbox" data-sound ${s.sound ? 'checked' : ''}></label>
+             <p class="note">${t('settings.webOnly')}</p>`
+      }
     </section>
 
     <section class="card">
@@ -82,16 +100,39 @@ export function settingsPage(ctx) {
 
   return {
     html,
+    onNotify(r) {
+      const el = document.getElementById('app');
+      if (el) drawStatus(el, r);
+    },
     mount(el) {
       el.querySelectorAll('[data-fs]').forEach((b) => b.addEventListener('click', () => setSettings({ fontScale: +b.dataset.fs })));
-      el.querySelector('[data-remind]').addEventListener('change', (e) => setSettings({ remind: e.target.checked }));
-      el.querySelector('[data-sound]').addEventListener('change', (e) => {
-        if (e.target.checked) {
-          unlockAudio();
-          playChime();
-        }
-        setSettings({ sound: e.target.checked });
+      el.querySelector('[data-remind]').addEventListener('change', async (e) => {
+        // 手机应用里第一次打开提醒时，向系统要通知权限（必须在点按后要）
+        if (e.target.checked && app) await askNotifyPermission();
+        setSettings({ remind: e.target.checked });
       });
+      const sound = el.querySelector('[data-sound]');
+      if (sound)
+        sound.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            unlockAudio();
+            playChime();
+          }
+          setSettings({ sound: e.target.checked });
+        });
+      const notify = () => getSettings().notify;
+      el.querySelectorAll('[data-np]').forEach((cb) =>
+        cb.addEventListener('change', () => setSettings({ notify: { ...notify(), prayers: { ...notify().prayers, [cb.dataset.np]: cb.checked } } })),
+      );
+      el.querySelectorAll('[data-adv]').forEach((b) => b.addEventListener('click', () => setSettings({ notify: { ...notify(), advance: +b.dataset.adv } })));
+      el.querySelector('[data-nr]').addEventListener('change', (e) => setSettings({ notify: { ...notify(), ramadan: e.target.checked } }));
+      const test = el.querySelector('[data-test]');
+      if (test)
+        test.addEventListener('click', async () => {
+          if ((await notifyStatus()).display !== 'granted') await askNotifyPermission();
+          if (await testNotification()) test.textContent = t('settings.testSent');
+        });
+      if (app) drawStatus(el, ctx.notifyState);
       el.querySelectorAll('[data-adj]').forEach((b) =>
         b.addEventListener('click', () => {
           const cur = getSettings().offsets;
@@ -109,4 +150,35 @@ export function settingsPage(ctx) {
       el.querySelectorAll('[data-lang]:not([disabled])').forEach((b) => b.addEventListener('click', () => setSettings({ lang: b.dataset.lang })));
     },
   };
+}
+
+/** 手机应用里：提醒排好了没有，缺什么权限，一键去开 */
+async function drawStatus(el, r) {
+  const box = el.querySelector('[data-notify-status]');
+  if (!box) return;
+  const st = r && r.native ? r : await notifyStatus();
+  const s = getSettings();
+  let html;
+  if (!s.remind) html = t('settings.stOff');
+  else if (st.display !== 'granted')
+    html = `${t('settings.stNoPerm')} <button type="button" class="btn btn-primary btn-sm" data-perm>${t('settings.allow')}</button>`;
+  else {
+    const next = r && r.next ? fmtHM(new Date(r.next)) : '';
+    html = r && r.count != null ? t('settings.stOk', { n: r.count, next }) : t('settings.stOkShort');
+    if (st.exact && st.exact !== 'granted')
+      html += `<br>${t('settings.stInexact')} <button type="button" class="btn btn-ghost btn-sm" data-exact>${t('settings.allowExact')}</button>`;
+  }
+  box.innerHTML = html;
+  const perm = box.querySelector('[data-perm]');
+  if (perm)
+    perm.addEventListener('click', async () => {
+      await askNotifyPermission();
+      setSettings({});
+    });
+  const exact = box.querySelector('[data-exact]');
+  if (exact)
+    exact.addEventListener('click', async () => {
+      await openExactSetting();
+      setSettings({});
+    });
 }
