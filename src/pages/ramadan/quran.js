@@ -8,6 +8,8 @@ import { ymdKey } from '../../core/clock.js';
 import { earn } from '../../ui/cheer.js';
 
 export function quranPage(ctx) {
+  // 从"古兰经"标签进来（#/quran/plan）就回到古兰经，从斋月页进来就回到斋月页
+  const backTo = (location.hash || '').startsWith('#/quran') ? '#/quran' : '#/ramadan';
   const st = ramadanStatus(ctx.sched.today, ctx.hijriAdjust);
   const key = 'quran:' + st.year;
   const todayJuz = st.active ? Math.min(30, st.day) : 0;
@@ -21,13 +23,14 @@ export function quranPage(ctx) {
         <span class="juz-no">${j.n}</span>
         <span class="juz-main"><b>${t('quran.day', { n: j.n })}${j.n === todayJuz ? t('quran.today') : ''}</b>
           <span>${t('quran.from', { surah: j.from.surah, name: `<span lang="ar" dir="rtl">${s.ar}</span>`, ayah: j.from.ayah, p1: j.pages[0], p2: j.pages[1], n: pages })}</span></span>
+        <a class="btn btn-ghost btn-sm" href="#/quran/${j.from.surah}/${j.from.ayah}">${t('qr.read')}</a>
         <input type="checkbox" data-juz="${j.n}" ${on ? 'checked' : ''} aria-label="${t('quran.doneAria', { n: j.n })}">
       </li>`;
     }).join('');
 
   const html = `
   <div class="page quran">
-    <div class="page-head"><a class="back" href="#/ramadan" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('quran.title')}</h1></div>
+    <div class="page-head"><a class="back" href="${backTo}" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('quran.title')}</h1></div>
     <section class="card">
       <p class="lead" data-q-summary></p>
       <p class="note">${t('quran.tip')}</p>

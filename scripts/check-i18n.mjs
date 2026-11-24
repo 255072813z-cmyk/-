@@ -58,6 +58,8 @@ export function findHardcoded() {
   for (const file of walk(join(root, 'src'))) {
     const rel = relative(root, file);
     if (rel.startsWith('src/i18n/')) continue;
+    // 古兰经中文译文（马坚）本身就是按语言分开的内容文件，和 tg-*.js、ru-*.js 一样
+    if (/^src\/content\/quran\/zh-\d+\.js$/.test(rel)) continue;
     const isContent = rel.startsWith('src/content/');
     const lines = codeLines(readFileSync(file, 'utf8'));
     let inZhBlock = false;

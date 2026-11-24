@@ -1,5 +1,7 @@
-// 在家礼拜（冬季模式的核心）：去不了清真寺的日子，从这里开始。
-import { homeInterior, star8 } from '../../ui/art.js';
+// 礼拜（底部标签）：去不了清真寺的日子，从这里开始——跟着做、小净、朝向、赞念、补礼、一起礼拜（网上清真寺）。
+// 在家礼拜的依据、和家人一起礼拜的说明折叠起来，需要时点开。
+import { homeInterior, star8, ICONS } from '../../ui/art.js';
+import { flagOn } from '../../core/remote.js';
 import { isWinter, loadHadith } from '../home.js';
 import { PRAYER_INFO } from '../../content/prayers.js';
 import { fmtHM } from '../../core/clock.js';
@@ -13,27 +15,28 @@ export function hubPage(ctx) {
     s.today.wd === 5
       ? `<p class="note friday">${t('hub.friday')}</p>`
       : '';
+  const tile = (href, icon, title, sub) =>
+    `<a class="card card-link tool" href="${href}"><span class="tool-ico">${icon}</span><span class="tool-t">${title}</span><span class="tool-s">${sub}</span></a>`;
   const html = `
   <div class="page hub">
     <section class="interior-wrap">${homeInterior({ winter: isWinter(ctx) })}</section>
     <section class="hub-intro">
       <h1>${t('hub.title')}</h1>
       <p>${t('hub.lead')}</p>
-      <p class="soft">${t('hub.together')}</p>
       ${friday}
     </section>
 
-    <ol class="steps-nav">
-      <li><a class="card card-link step-link" href="#/pray/wudu">
-        <span class="step-no">1</span><span class="step-t">${t('hub.wudu')}</span><span class="step-s">${t('hub.wuduSub')}</span></a></li>
-      <li><a class="card card-link step-link" href="#/qibla">
-        <span class="step-no">2</span><span class="step-t">${t('hub.qibla')}</span><span class="step-s">${t('hub.qiblaSub')}</span></a></li>
-      <li><a class="card card-link step-link is-main" href="#/pray/guide/${target}">
-        <span class="step-no">3</span><span class="step-t">${t('home.follow', { name })}</span>
-        <span class="step-s">${s.current ? t('hub.nowIs', { name }) : t('hub.nextAt', { time: fmtHM(s.nextTime) })} · ${t('hub.everyStep')}</span></a></li>
-      <li><a class="card card-link step-link" href="#/tasbih">
-        <span class="step-no">4</span><span class="step-t">${t('guide.tasbih')}</span><span class="step-s">${t('hub.tasbihSub')}</span></a></li>
-    </ol>
+    <a class="card card-link step-link is-main hub-main" href="#/pray/guide/${target}">
+      <span class="step-t">${t('home.follow', { name })}</span>
+      <span class="step-s">${s.current ? t('hub.nowIs', { name }) : t('hub.nextAt', { time: fmtHM(s.nextTime) })} · ${t('hub.everyStep')}</span></a>
+
+    <div class="tools">
+      ${tile('#/pray/wudu', ICONS.drop, t('hub.wudu'), t('hub.wuduSub'))}
+      ${tile('#/qibla', ICONS.qibla, t('hub.qibla'), t('hub.qiblaSub'))}
+      ${tile('#/tasbih', ICONS.tasbih, t('guide.tasbih'), t('hub.tasbihSub'))}
+      ${tile('#/pray/qada', ICONS.qada, t('hub.qada'), t('hub.qadaSub'))}
+      ${flagOn(ctx.remote, 'masjid') ? tile('#/masjid', ICONS.masjid, t('hub.masjid'), t('hub.masjidSub')) : ''}
+    </div>
 
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('hub.other')}</h2>
@@ -47,23 +50,19 @@ export function hubPage(ctx) {
       </div>
     </section>
 
-    <section class="card soft-card excuse-card">
-      <h2 class="card-title">${star8(18)} ${t('hub.sickTitle')}</h2>
+    <details class="card fold excuse-card">
+      <summary>${t('hub.sickTitle')}</summary>
       <p>${t('hub.sickText')}</p>
+      <p class="soft">${t('hub.together')}</p>
       <div data-excuse-hadith></div>
       <p class="note">${t('hub.sickNote')}</p>
-    </section>
+    </details>
 
-    <a class="card card-link qada-link" href="#/pray/qada">
-      <span class="athome-t">${t('hub.qada')}</span>
-      <span class="athome-s">${t('hub.qadaSub')}</span>
-    </a>
-
-    <section class="card soft-card">
-      <h2 class="card-title">${star8(18)} ${t('hub.family')}</h2>
+    <details class="card fold">
+      <summary>${t('hub.family')}</summary>
       <p>${t('hub.familyText')}</p>
       <p class="note">${t('hub.madhab')}</p>
-    </section>
+    </details>
   </div>`;
   return {
     html,

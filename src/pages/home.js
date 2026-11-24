@@ -16,7 +16,7 @@ import { getSettings } from '../core/settings.js';
 import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
 import { platform } from '../core/api.js';
 import { ymdKey } from '../core/clock.js';
-import { prayedOn, togglePrayed } from '../core/prayed.js';
+import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
 import { streakCard } from '../ui/streak-ui.js';
 import { softToast } from '../core/reminder.js';
 import { shareText, shareLink } from '../core/share.js';
@@ -71,7 +71,7 @@ function weatherCard(ctx) {
     <div class="wx-head"><svg class="wx-icon" viewBox="0 0 24 24" aria-hidden="true">${WX_ICON[icon]}</svg>
       <p class="winter-msg">${t(msgKey, vars)}</p></div>
     <p class="winter-why">${t('wx.' + k + 'Why', vars)}</p>
-    ${HOME_PRAYER_KINDS.includes(k) ? `<div data-wx-hadith="${ctx.sched.today.wd === 5 ? 'b901' : 'b666'}">${HAD ? hadithQuote(HAD.HADITH[ctx.sched.today.wd === 5 ? 'b901' : 'b666'], 'wx-hadith') : ''}</div>` : ''}
+    ${HOME_PRAYER_KINDS.includes(k) ? `<details class="wx-more"><summary>${t('wx.proof')}</summary><div data-wx-hadith="${ctx.sched.today.wd === 5 ? 'b901' : 'b666'}">${HAD ? hadithQuote(HAD.HADITH[ctx.sched.today.wd === 5 ? 'b901' : 'b666'], 'wx-hadith') : ''}</div></details>` : ''}
     ${showActions ? `<div class="winter-actions">
       <a class="btn btn-primary" href="#/pray">${t('winter.go')}</a>
       <a class="btn btn-ghost" href="#/pray/wudu">${t('winter.wudu')}</a>
@@ -102,17 +102,6 @@ function hadithCard(ctx) {
     <h2 class="card-title">${star8(18)} ${t('hadith.title')}</h2>
     <div data-daily-hadith>${HAD ? hadithQuote(HAD.dailyHadith(ctx.sched.today)) : ''}</div>
     <button type="button" class="btn btn-ghost btn-sm" data-share-hadith>${t('hadith.share')}</button>
-    <p class="note" data-share-msg aria-live="polite"></p>
-  </section>`;
-}
-
-/** 把应用分享给亲友 */
-function shareCard() {
-  return `<section class="card share-card">
-    <p class="athome-t">${t('share.title')}</p>
-    <p class="athome-s">${t('share.sub')}</p>
-    <div class="step-btns"><button type="button" class="btn btn-primary btn-sm" data-share-app>${t('share.btn')}</button>
-    <a class="btn btn-ghost btn-sm" href="#/circle">${t('circle.title')} →</a></div>
     <p class="note" data-share-msg aria-live="polite"></p>
   </section>`;
 }
@@ -286,7 +275,7 @@ export function homePage(ctx) {
       <ul class="plist" data-list>${listHTML(ctx)}</ul>
       <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
       ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
-      <p class="note prayed-note">${t('home.prayedNote')}</p>
+      ${prayedDays().size ? '' : `<p class="note prayed-note">${t('home.prayedNote')}</p>`}
       <p class="local-note">${
         ctx.official
           ? t(adjusted ? 'home.localNoteOfficialAdjusted' : 'home.localNoteOfficial', { src: remoteText(ctx.official) })
@@ -319,18 +308,8 @@ export function homePage(ctx) {
     ${streakCard(ymdKey(ctx.sched.today))}
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
     <div data-winter>${winterCard(ctx)}</div>
-    <a class="card card-link athome" href="#/pray">
-      <span class="athome-t">${t('home.atHome')}</span>
-      <span class="athome-s">${t('home.atHomeSub')}</span>
-    </a>
     ${hadithCard(ctx)}
-    <a class="card card-link to-masjid" href="#/masjid">
-      <span class="athome-t">${t('home.toMasjid')}</span>
-      <span class="athome-s">${t('home.toMasjidSub')}</span>
-    </a>
     </div>
-    ${shareCard()}
-    <p class="privacy">${t('privacy')}</p>
   </div>`;
 
   let lastMinute = -1;

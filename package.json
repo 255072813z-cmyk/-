@@ -12,6 +12,7 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "map": "node scripts/build-map.mjs",
     "quran": "node scripts/fetch-quran.mjs",
+    "quran:all": "node scripts/fetch-quran-all.mjs",
     "juz": "node scripts/fetch-juz.mjs",
     "cities": "node scripts/build-cities.mjs",
     "check:times": "node scripts/check-times.mjs",

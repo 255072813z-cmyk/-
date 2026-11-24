@@ -401,6 +401,92 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   );
 }
 
+// 4e. 古兰经：目录、搜索、读一章（原文 + 译文）、太斯米、跳到某一节、继续读、字号和译文开关、三种语言的译文
+{
+  const ctx = await browser.newContext(phone);
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, lang: 'zh' }));
+  });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  const q = '?weather=clear&now=2026-12-18T15:20';
+  // 每次都整页重新打开（只改 # 后面不会重新加载，读到的可能还是上一页）
+  let k = 0;
+  const open = (hash) => page.goto(base + q + '&r=' + ++k + hash);
+  const bare = (x) => x.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, '');
+  await open('#/quran');
+  await page.waitForSelector('.sura');
+  const rows = await page.locator('.sura').count();
+  await page.fill('[data-q-search]', '黄牛');
+  const found = (await page.locator('.sura').allTextContents()).map((x) => x.replace(/\s+/g, ' ').trim());
+  await page.fill('[data-q-search]', '');
+  check('古兰经目录：114 章，按章名搜索"黄牛"找到第 2 章', rows === 114 && found.length === 1 && /^2 黄牛/.test(found[0]), found[0]);
+  // 第 112 章：太斯米单独一行，4 节，原文 + 马坚译文
+  await open('#/quran/112');
+  await page.waitForSelector('.ayah');
+  const n112 = await page.locator('.ayah').count();
+  const a1 = (await page.textContent('#a1 .ayah-ar')).trim();
+  const t1 = (await page.textContent('#a1 .ayah-tr')).trim();
+  const bas = await page.locator('.q-basmala').count();
+  check('读第 112 章：4 节，太斯米单独一行，阿拉伯原文 + 中文译文', n112 === 4 && bas === 1 && bare(a1).includes('قل هو الله أحد') && /独一/.test(t1), `${t1}`);
+  await open('#/quran/9');
+  await page.waitForSelector('.ayah');
+  const b9 = await page.locator('.q-basmala').count();
+  await open('#/quran/1');
+  await page.waitForSelector('.ayah');
+  const b1 = await page.locator('.q-basmala').count();
+  const f1 = (await page.textContent('#a1 .ayah-ar')).trim();
+  check('第 9 章没有太斯米；第 1 章的太斯米就是第 1 节', b9 === 0 && b1 === 0 && bare(f1).startsWith('بسم الله'));
+  // 跳到宝座经 2:255，高亮并在屏幕里；回目录显示"继续读 第 2 章 第 255 节"
+  await open('#/quran/2/255');
+  await page.waitForSelector('#a255.is-target');
+  await page.waitForTimeout(400);
+  const box = await page.locator('#a255').boundingBox();
+  const inView = box && box.y >= 0 && box.y < 844;
+  await open('#/quran');
+  await page.waitForSelector('.q-continue');
+  const cont = (await page.textContent('.q-continue')).replace(/\s+/g, ' ');
+  check('跳到 2:255（宝座经）：高亮并在屏幕里；目录页"继续读"记住第 2 章第 255 节', inView && /继续读/.test(cont) && /2\. 黄牛/.test(cont) && /255/.test(cont), cont.trim());
+  // 字号、只看原文：刷新后还在
+  await open('#/quran/112');
+  await page.waitForSelector('.ayah');
+  await page.click('[data-q-size="1"]');
+  await page.click('[data-q-tr]');
+  await page.reload();
+  await page.waitForSelector('.ayah');
+  const cls = await page.getAttribute('[data-q-page]', 'class');
+  const trShown = await page.locator('.ayah-tr:visible').count();
+  check('字号调大、关掉译文后刷新还在（只看阿拉伯原文）', /q-s2/.test(cls) && /no-tr/.test(cls) && trShown === 0, cls);
+  await page.click('[data-q-tr]');
+  // 俄语、塔吉克语：译文跟着界面语言
+  const tr = {};
+  for (const lang of ['ru', 'tg']) {
+    await page.evaluate((l) => {
+      const st = JSON.parse(localStorage.getItem('masjid:settings') || '{}');
+      localStorage.setItem('masjid:settings', JSON.stringify({ ...st, lang: l }));
+    }, lang);
+    await open('#/quran/112');
+    await page.waitForSelector('#a1 .ayah-tr');
+    tr[lang] = (await page.textContent('#a1 .ayah-tr')).trim();
+  }
+  check('俄语界面用库利耶夫译文，塔吉克语界面用奥亚提译文', /Скажи/.test(tr.ru) && /Бигӯ/.test(tr.tg), `${tr.ru.slice(0, 30)}｜${tr.tg.slice(0, 30)}`);
+  // 30 天通读：每卷有"读"，点开从这一卷开头读
+  await page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem('masjid:settings') || '{}');
+    localStorage.setItem('masjid:settings', JSON.stringify({ ...st, lang: 'zh' }));
+  });
+  await open('#/quran/plan');
+  await page.waitForSelector('.juz');
+  const back = await page.getAttribute('.page-head .back', 'href');
+  await page.click('.juz:nth-child(3) a');
+  await page.waitForSelector('.ayah.is-target');
+  const target = await page.getAttribute('.ayah.is-target', 'id');
+  check('30 天通读：返回到古兰经；第 3 卷点"读"从 2:253 开始', back === '#/quran' && /#\/quran\/2\/253$/.test(page.url()) && target === 'a253', `${back}，${page.url().split('#')[1]}`);
+  check('古兰经以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
 // 5. 网络请求：只允许本站资源 + 天气接口（只带城市坐标）
 {
   const ctx = await browser.newContext(phone);
@@ -548,7 +634,22 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('[data-daily-hadith] .hq-src', { timeout: 3000 }).catch(() => {});
   const hd = (await page.textContent('[data-daily-hadith]').catch(() => '')) || '';
   check('今日圣训有原文、意思和出处', /[\u0600-\u06FF]/.test(hd) && /出处：(布哈里|提尔密济)/.test(hd), hd.replace(/\s+/g, ' ').slice(-30));
-  check('首页有"分享给亲友"', (await page.locator('[data-share-app]').count()) === 1 && (await page.locator('[data-share-hadith]').count()) === 1);
+  // 首页只放今天要用的：不再有"在家礼拜""进清真寺""分享应用"大卡片和隐私长文（移到"礼拜""我的"）
+  const homeClean = (await page.locator('.athome, .to-masjid, [data-share-app], .page.home .privacy').count()) === 0;
+  const order = await page.evaluate(() => {
+    const y = (sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top + window.scrollY : -1; };
+    return [y('[data-hero]'), y('.list-card'), y('[data-streak]'), y('.hadith-card')];
+  });
+  check('首页精简：下一番 → 五番拜打勾 → 打卡 → 今日圣训（可分享），没有多余的大卡片', homeClean && order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])) && (await page.locator('[data-share-hadith]').count()) === 1, order.map(Math.round).join(' < '));
+  await page.goto(base + '?weather=snow&now=2026-12-18T15:20#/me');
+  await page.waitForSelector('.me-hero');
+  const me = (await page.textContent('#app')).replace(/\s+/g, ' ');
+  const tabs = (await page.locator('.tabbar .tab').allTextContents()).map((x) => x.trim());
+  check('底部五个标签：今天 · 礼拜 · 古兰经 · 封斋 · 我的；"我的"里有坚持、亲友圈、时间表、城市、设置、分享', tabs.join('·') === '今天·礼拜·古兰经·封斋·我的' && /亲友圈/.test(me) && /本月时间表/.test(me) && /提醒和设置/.test(me) && (await page.locator('[data-share-app]').count()) === 1, tabs.join(' · '));
+  await page.goto(base + '?weather=snow&now=2026-12-18T15:20#/pray');
+  await page.waitForSelector('.tools');
+  const tools = await page.locator('.tools .tool').count();
+  check('"礼拜"标签：跟着做 + 工具格（小净、朝向、赞念、补礼、一起礼拜），依据折叠起来', tools === 5 && (await page.locator('.hub-main').count()) === 1 && (await page.locator('details.excuse-card:not([open])').count()) === 1, `${tools} 个工具`);
   // 补礼记录
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/pray/qada');
   await page.waitForTimeout(500);

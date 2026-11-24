@@ -124,30 +124,32 @@ details.method summary { color: var(--green); }
 :root[data-theme='dark'] .athome, .athome { color: #fff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .athome { background: var(--primary); } }
 
-/* 手机：一列，按"插图 → 日期 → 城市 → 下一番 → 雪天提示 → 时间表 → 在家礼拜"排列 */
+/* 手机：一列，按"插图 → 日期 → 城市 → 提示 → 下一番 → 五番拜打勾 → 打卡 → 天气 → 今日圣训"排列（首页只放今天要用的） */
 .page.home { display: flex; flex-direction: column; }
 .page.home > .col { display: contents; }
 .page.home .card { margin: 6px 0; }
-.page.home .scene-wrap { order: 1; }
+.page.home .scene-wrap { order: 1; aspect-ratio: 16 / 8; }
 .page.home .date { order: 2; }
 .page.home .city-row { order: 3; margin-bottom: 6px; }
-.page.home .hero { order: 4; }
-.page.home .notify-slot { order: 4; }
+.page.home .notice-slot { order: 4; }
+.page.home .ramadan-slot.is-active { order: 5; }
+.page.home .hero { order: 6; }
+.page.home .list-card { order: 7; }
+.page.home .streak-card { order: 8; }
+.page.home .notify-slot { order: 9; }
 .notify-card { border: 1.5px solid var(--green); background: var(--green-soft); }
 .notify-card-t { font-family: var(--font-zh-serif); font-size: 1.2rem; font-weight: 700; color: var(--green); margin: 0; }
-.page.home [data-winter] { order: 5; }
-.page.home .ramadan-slot { order: 5; }
-.page.home .ramadan-slot.is-active { order: 4; }
-.page.home .list-card { order: 6; }
-.page.home .athome { order: 7; }
-.page.home .to-masjid { order: 7; }
-.to-masjid { display: grid; gap: 2px; padding: 18px; background: var(--gold-soft); border-color: var(--gold); }
+.page.home [data-winter] { order: 10; }
+.page.home .ramadan-slot { order: 10; }
+.page.home .hadith-card { order: 11; }
+.wx-more summary { cursor: pointer; font-weight: 600; margin: 4px 0; }
+.ramadan-slot:empty, .notify-slot:empty, [data-winter]:empty { display: none; }
 /* 浅色卡片上借用 athome 的标题样式时，换成深色字（白字在米色卡片上看不见） */
 .qada-link .athome-t, .city-set .athome-t, .share-card .athome-t, .circle-link .athome-t { color: var(--green); }
 .qada-link .athome-s, .city-set .athome-s, .share-card .athome-s, .circle-link .athome-s { color: var(--ink-2); }
+.to-masjid { display: grid; gap: 2px; padding: 18px; background: var(--gold-soft); border-color: var(--gold); }
 .to-masjid .athome-t { color: var(--gold-ink); }
 .to-masjid .athome-s { color: var(--ink-2); }
-.page.home .privacy { order: 8; }
 
 /* 电脑、平板横屏：左边插图和时间表，右边日期、下一番、提示 */
 @media (min-width: 900px) {
@@ -156,7 +158,6 @@ details.method summary { color: var(--green); }
   .page.home .card { margin: 12px 0; }
   .page.home .scene-wrap { aspect-ratio: 360 / 200; max-height: none; margin-top: 12px; }
   .page.home .date { align-items: flex-start; text-align: left; margin-top: 12px; }
-  .page.home .privacy { grid-column: 1 / -1; }
 }
 
 /* 首页城市按钮：点开选择城市 */
@@ -172,7 +173,6 @@ details.method summary { color: var(--green); }
 .notice-card.is-warn { border-color: var(--danger); }
 .notice-text { white-space: pre-line; margin-bottom: 8px; }
 .notice-card .btn-sm { margin-top: 4px; }
-.page.home .notice-slot { order: 3; }
 .notice-slot:empty { display: none; }
 .jumuah { white-space: nowrap; }
 .welcome-card { border: 1.5px solid var(--green); background: var(--green-soft); }
@@ -198,11 +198,9 @@ details.method summary { color: var(--green); }
 .weather-card.wx-clear .hadith-quote { background: var(--gold-soft); }
 .share-card, .hadith-card { display: grid; gap: 4px; }
 .share-card .btn, .hadith-card .btn { justify-self: start; }
-.page.home .hadith-card { order: 7; }
 .page.home .share-card { order: 8; }
 
 /* 坚持打卡卡片 */
-.page.home .streak-card { order: 4; }
 .streak-card { display: grid; gap: 8px; padding: 14px 16px; }
 .streak-top { display: flex; align-items: center; gap: 10px; }
 .streak-lamp svg { width: 34px; height: 34px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }

@@ -13,7 +13,10 @@
 //   #/circle                 亲友圈
 //   #/ramadan                斋月：封斋/开斋、打卡、节日
 //   #/ramadan/tarawih        间歇拜
-//   #/ramadan/quran          古兰经 30 天读完
+//   #/ramadan/quran          古兰经 30 天读完（也可从 #/quran/plan 进）
+//   #/quran                  古兰经：继续读、常念章节、114 章目录
+//   #/quran/章[/节]          读一章（原文 + 当前语言译文）
+//   #/me                     我的：坚持与徽章、亲友圈、时间表、城市、设置、分享
 //   #/masjid                 清真寺：三个空间的入口
 //   #/masjid/hall            礼拜大殿
 //   #/masjid/courtyard       庭院
@@ -39,6 +42,9 @@ const LAZY = {
   ramadan: () => import('./pages/ramadan/index.js').then((m) => m.ramadanPage),
   tarawih: () => import('./pages/ramadan/tarawih.js').then((m) => m.tarawihPage),
   quran: () => import('./pages/ramadan/quran.js').then((m) => m.quranPage),
+  qhome: () => import('./pages/quran/index.js').then((m) => m.quranHome),
+  qread: () => import('./pages/quran/read.js').then((m) => m.quranRead),
+  me: () => import('./pages/me.js').then((m) => m.mePage),
   spaces: () => import('./pages/spaces/index.js').then((m) => m.spacesPage),
   hall: () => import('./pages/spaces/hall.js').then((m) => m.hallPage),
   courtyard: () => import('./pages/spaces/courtyard.js').then((m) => m.courtyardPage),
@@ -88,6 +94,12 @@ export function resolveRoute(path, ctx) {
       return lazy('circle', ctx, []);
     case 'times':
       return lazy('times', ctx, [parts[1]]);
+    case 'quran':
+      if (parts[1] === 'plan') return lazy('quran', ctx, []);
+      if (parts[1]) return lazy('qread', ctx, [parts[1], parts[2]]);
+      return lazy('qhome', ctx, []);
+    case 'me':
+      return lazy('me', ctx, []);
     case 'masjid':
       if (!flagOn(ctx.remote, 'masjid')) return closedPage();
       if (parts[1] === 'hall') return lazy('hall', ctx, []);

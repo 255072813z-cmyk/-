@@ -113,3 +113,48 @@ test('红线：没有支付、登录、统计、Cookie', () => {
     if (/document\.cookie/.test(src)) assert.ok(/CapacitorCookies/.test(src), `${f} 读写了 Cookie`);
   }
 });
+
+test('古兰经全文：114 章 6236 节，三种译文节数一致、没有空的、没有乱码和网页标记', async () => {
+  const { SURAHS, PARTS } = await import('../src/content/quran/meta.js');
+  assert.equal(SURAHS.length, 114);
+  assert.equal(SURAHS.reduce((s, x) => s + x.ayahs, 0), 6236);
+  const bare = (s) => s.replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, '').replace(/ٱ/g, 'ا');
+  const data = {};
+  for (const l of ['ar', 'tg', 'ru', 'zh']) {
+    data[l] = {};
+    for (let p = 0; p < PARTS; p++) Object.assign(data[l], (await import(`../src/content/quran/${l}-${p}.js`)).default);
+  }
+  for (const s of SURAHS) {
+    assert.ok(s.zh && s.ru && s.tg && s.ar, `第 ${s.n} 章缺章名`);
+    for (const l of Object.keys(data)) {
+      const a = data[l][s.n];
+      assert.equal(a.length, s.ayahs, `${l} 第 ${s.n} 章节数`);
+      for (const [i, x] of a.entries()) {
+        assert.ok(typeof x === 'string' && x.trim(), `${l} ${s.n}:${i + 1} 是空的`);
+        assert.ok(!/[<>&]/.test(x), `${l} ${s.n}:${i + 1} 有网页标记`);
+        if (l === 'tg' || l === 'ru') assert.ok(!/[А-яӣӯқғҳҷЁё]\d|\d[А-яӣӯқғҳҷЁё]|[\^*\]]/.test(x), `${l} ${s.n}:${i + 1} 有扫描错误：${x.slice(0, 40)}`);
+      }
+    }
+  }
+  // 太斯米：第 1 章第 1 节就是它；第 2 章第 1 节是"艾列弗，俩目，米目"（太斯米已拿出来单独显示）；第 9 章没有
+  assert.equal(bare(data.ar[1][0]), 'بسم الله الرحمن الرحيم');
+  assert.equal(bare(data.ar[2][0]), 'الم');
+  assert.ok(bare(data.ar[9][0]).startsWith('براءة'));
+  assert.equal(bare(data.ar[112][0]), 'قل هو الله أحد');
+  assert.match(data.zh[112][0], /独一/);
+  assert.match(data.ru[112][0], /Скажи/);
+  assert.match(data.tg[112][0], /Бигӯ/);
+  // 第 4 章第 12 节中文数据源不完整：如实注明，没有凭记忆补
+  assert.match(data.zh[4][11], /数据源此节不完整/);
+});
+
+test('古兰经：章目录搜索（编号、三种语言的章名、阿拉伯文）', async () => {
+  const { searchSurahs, arNum } = await import('../src/core/quran.js');
+  assert.deepEqual(searchSurahs('112').map((s) => s.n), [112]);
+  assert.deepEqual(searchSurahs('黄牛').map((s) => s.n), [2]);
+  assert.deepEqual(searchSurahs('корова').map((s) => s.n), [2]);
+  assert.ok(searchSurahs('Ёсин').some((s) => s.n === 36));
+  assert.ok(searchSurahs('البقرة').some((s) => s.n === 2));
+  assert.equal(searchSurahs('').length, 114);
+  assert.equal(arNum(255), '٢٥٥');
+});

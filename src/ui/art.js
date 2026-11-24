@@ -233,6 +233,12 @@ export const ICONS = {
   tasbih: '<svg viewBox="0 0 24 24" aria-hidden="true">' + Array.from({ length: 9 }, (_, i) => { const a = (i / 9) * Math.PI * 2 - Math.PI / 2; return `<circle cx="${(12 + 7.5 * Math.cos(a)).toFixed(1)}" cy="${(11 + 7.5 * Math.sin(a)).toFixed(1)}" r="1.7"/>`; }).join('') + '<path d="M12 18.5V23" stroke-width="1.6"/></svg>',
   settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5ZM10.5 2H13.5L14 5L16.5 6.2L19 4.5L21 7L19 9.5L19.6 12L22 13V16L19.4 16.6L18.2 19L19.5 21.5L17 23L14.6 21L12 21.5L9.5 23L7 21.5L8 19L6.6 16.8L4 16V13L6.5 12L6.9 9.5L5 7L7 4.5L9.5 6.2L10 5Z" fill-rule="evenodd"/></svg>',
   back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4L7 12L15 20" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  // 古兰经：打开的书放在经架（rahla）上
+  quran: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.2C9.8 4.6 6.6 4.1 3.5 4.6v11.6c3.1-.4 6.3.1 8.5 1.7 2.2-1.6 5.4-2.1 8.5-1.7V4.6c-3.1-.5-6.3 0-8.5 1.6Z"/><path d="M4 20.5l8-3.2 8 3.2" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  // 我的：简单的人形图标（不画五官）
+  me: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.8 21c.6-4.6 3.9-7.2 8.2-7.2s7.6 2.6 8.2 7.2Z"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c4 5.2 6.5 8.8 6.5 12a6.5 6.5 0 0 1-13 0c0-3.2 2.5-6.8 6.5-12Z"/></svg>',
+  qada: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4.5V8h3.5"/><path d="M12 8v4.5l3 2"/></g></svg>',
 };
 
 /** 灯笼（法努斯） */

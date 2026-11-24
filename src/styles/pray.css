@@ -263,7 +263,7 @@
 .set.is-done { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .set.is-rest { box-shadow: 0 0 0 3px var(--gold-soft); }
 .juz-list { list-style: none; padding: 0; margin: 0; }
-.juz { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px dashed var(--line); }
+.juz { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px dashed var(--line); }
 .juz.is-today { background: var(--green-soft); border-radius: 12px; }
 .juz-no { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg-2); font-weight: 800; color: var(--green); }
 .juz.is-done .juz-no { background: var(--primary); color: var(--on-primary); }
@@ -316,3 +316,74 @@
 .vf-special { margin: 10px 0 0; font-size: 0.92rem; }
 .vf-special b { display: block; color: var(--green); }
 @media (prefers-reduced-motion: reduce) { .fasting .fast-card.is-pop { animation: none; } }
+
+/* ===== 礼拜标签：主按钮 + 工具格 ===== */
+.hub .interior-wrap { aspect-ratio: 16 / 7; overflow: hidden; border-radius: 22px; }
+.hub .interior-wrap svg { width: 100%; height: 100%; display: block; }
+.hub-main { display: grid; grid-template-columns: 1fr; grid-template-areas: 't' 's'; gap: 2px; padding: 18px; }
+.tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0; }
+.tool { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 14px 12px; margin: 0 !important; }
+.tool-ico { grid-row: span 2; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--green-soft); }
+.tool-ico svg { width: 24px; height: 24px; fill: var(--green); stroke: var(--green); }
+.tool-t { font-weight: 700; color: var(--ink); }
+.tool-s { font-size: 0.8rem; color: var(--muted); line-height: 1.35; }
+.fold > summary { cursor: pointer; font-weight: 700; color: var(--green); list-style-position: inside; }
+.fold[open] > summary { margin-bottom: 8px; }
+
+/* ===== 古兰经 ===== */
+.q-continue { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'k go' 'b go' 's go'; padding: 16px; background: var(--green); color: #fff; border-color: transparent; }
+.q-continue .q-continue-k { grid-area: k; font-size: 0.85rem; color: #d6ebe0; }
+.q-continue b { grid-area: b; font-size: 1.2rem; }
+.q-continue > span:not(.q-continue-k):not(.r-link-go) { grid-area: s; color: #e2efe8; }
+.q-continue .r-link-go { grid-area: go; align-self: center; color: #fff; }
+.q-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; font-weight: 600; }
+.chip:active { transform: scale(0.97); }
+.q-plan { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
+.q-plan .r-link-t, .q-plan .r-link-s, .q-plan .q-bar { grid-column: 1; }
+.q-plan .r-link-go { grid-column: 2; grid-row: 1 / span 3; align-self: center; }
+.q-bar { display: block; height: 6px; border-radius: 3px; background: var(--bg-2); overflow: hidden; }
+.q-bar i { display: block; height: 100%; background: var(--gold); }
+.q-search { width: 100%; margin: 4px 0 10px; min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
+.suras { list-style: none; margin: 0; padding: 0; }
+.sura { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 10px 2px; border-bottom: 1px dashed var(--line); color: var(--ink); text-decoration: none; }
+.sura-n { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; border: 1.5px solid var(--gold); background: var(--gold-soft); font-size: 0.85rem; font-weight: 700; color: var(--gold-ink); }
+.sura-n { font-variant-numeric: tabular-nums; }
+.sura-main { display: grid; }
+.sura-main small { color: var(--muted); }
+.sura-ar { font-family: var(--font-ar); font-size: 1.25rem; color: var(--green); }
+.quran-read .q-meta { color: var(--muted); margin: -4px 0 8px; }
+.q-tools { display: flex; gap: 8px; flex-wrap: wrap; position: sticky; top: 56px; z-index: 5; background: var(--bg); padding: 6px 0; }
+.q-tools .is-on { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+.q-basmala { text-align: center; font-family: var(--font-ar); font-size: 1.7rem; color: var(--green); margin: 12px 0; }
+.ayahs { display: grid; gap: 2px; }
+.ayah { padding: 12px 4px; border-bottom: 1px solid var(--line); scroll-margin-top: 120px; }
+.ayah.is-target { background: var(--gold-soft); border-radius: 12px; }
+.ayah-ar { font-family: var(--font-ar); font-size: 1.7rem; line-height: 2.2; margin: 0 0 6px; color: var(--ink); text-align: right; }
+.ayah-no { color: var(--gold-ink); font-size: 0.8em; white-space: nowrap; }
+.ayah-tr { margin: 0; color: var(--ink-2); line-height: 1.6; }
+.ayah-tr b { color: var(--muted); font-weight: 600; font-size: 0.8rem; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.no-tr .ayah-tr { display: none; }
+.q-s0 .ayah-ar { font-size: 1.4rem; }
+.q-s2 .ayah-ar { font-size: 2.05rem; }
+.q-s3 .ayah-ar { font-size: 2.5rem; line-height: 2.3; }
+.q-nav { display: flex; justify-content: space-between; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+.q-nav .btn { flex: 1 1 140px; }
+
+/* ===== 我的 ===== */
+.me h1 { margin: 10px 0 6px; }
+.me-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 16px; }
+.me-hero .streak-lamp svg { width: 40px; height: 40px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.me-hero .streak-lamp .lamp-flame { fill: var(--line); stroke: none; }
+.me-hero .streak-lamp.is-lit svg { stroke: var(--gold); }
+.me-hero .streak-lamp.is-lit .lamp-flame { fill: var(--lamp); }
+.me-hero-main { display: grid; gap: 4px; justify-items: start; }
+.me-hero-main b { font-size: 1.15rem; }
+.me-hero-main small { color: var(--muted); }
+.me-list { padding: 4px 16px; display: grid; }
+.me-row { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 't go' 's go'; padding: 12px 0; border-bottom: 1px dashed var(--line); color: var(--ink); text-decoration: none; }
+.me-row:last-child { border-bottom: 0; }
+.me-t { grid-area: t; font-weight: 700; }
+.me-s { grid-area: s; color: var(--muted); font-size: 0.88rem; }
+.me-go { align-self: center; color: var(--muted); font-size: 1.4rem; }
+.me-row .me-go { grid-area: go; }

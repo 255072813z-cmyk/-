@@ -28,7 +28,8 @@ export function homeRamadanCard(ctx) {
       return `<a class="card card-link home-ramadan is-active" href="#/ramadan"><b>${t('vf.homeFasting')}</b><span>${line}</span><span class="hr-go">→</span></a>`;
     }
   }
-  if (!st.start || st.start.inDays > 120) return '';
+  // 斋月快到了（10 天内）才在首页提一句；平时看"封斋"标签
+  if (!st.start || st.start.inDays > 10) return '';
   return `<a class="card card-link home-ramadan" href="#/ramadan"><b>${t('fast.daysLeft', { n: st.start.inDays })}</b><span>${t('card.startsOn', { date: dateShort(st.start) })}</span><span class="hr-go">→</span></a>`;
 }
 

@@ -63,6 +63,10 @@ const PAGES = [
   ['qada', '#/pray/qada'],
   ['streak', '#/streak', 0, '?weather=clear&now=2026-12-18T15:20', null, { streak: { cur: 9, best: 12, last: '2026-12-17', grace: ['2026-12-10'], titles: [3, 7], prev: 0 }, badges: { got: { firstPrayer: '2026-12-01', fiveDay: '2026-12-03', wudu: '2026-12-02', guide1: '2026-12-02', tasbih: '2026-12-05' }, days: { five: ['2026-12-03', '2026-12-09'], fajr: ['2026-12-03', '2026-12-09', '2026-12-15', '2026-12-16'] }, n: { guide: 11 } } }],
   ['circle', '#/circle'],
+  ['me', '#/me'],
+  ['quran-home', '#/quran'],
+  ['quran-read', '#/quran/112'],
+  ['quran-plan', '#/quran/plan'],
   // 俄罗斯城市（第 6 项：预先写入的设置）
   ['home-moscow', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'moscow' }],
   ['home-spb-summer', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'spb' }],
