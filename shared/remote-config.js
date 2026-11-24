@@ -49,7 +49,8 @@ export function cmpVersion(a, b) {
  */
 export function sanitizeConfig(raw, cityIds = []) {
   if (!isObj(raw) || raw.v !== 1 || typeof raw.issued !== 'string' || !isFinite(Date.parse(raw.issued))) return null;
-  const out = { v: 1, issued: raw.issued, notices: [], cityOffsets: {}, hijri: {}, flags: {}, minVersion: null, store: {} };
+  // 发布时间统一成标准格式，前后比较才可靠（旧配置不能覆盖新配置）
+  const out = { v: 1, issued: new Date(raw.issued).toISOString(), notices: [], cityOffsets: {}, hijri: {}, flags: {}, minVersion: null, store: {} };
 
   // 公告：最多 3 条；只有文字，不允许链接以外的任何格式（显示时一律当纯文字）
   for (const n of Array.isArray(raw.notices) ? raw.notices.slice(0, LIMITS.notices) : []) {

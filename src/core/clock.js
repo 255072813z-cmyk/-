@@ -2,10 +2,12 @@
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
 
-// 调试/演示：地址里加 ?now=2026-12-20T15:20 可以把时钟拨到杜尚别当地的这个时刻（之后照常走动）。
+import { devParam } from './dev.js';
+
+// 调试/演示：地址里加 ?now=2026-12-20T15:20 可以把时钟拨到杜尚别当地的这个时刻（之后照常走动）。只在本机和预览版生效。
 let shift = 0;
 try {
-  const q = new URLSearchParams(location.search).get('now');
+  const q = devParam('now');
   if (q) {
     const m = q.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
     if (m) {

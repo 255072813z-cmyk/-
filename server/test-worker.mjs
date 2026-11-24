@@ -97,7 +97,7 @@ ok('响应带安全头', r404.headers.get('x-content-type-options') === 'nosniff
 ok('还没发布配置时 /config 204', (await get('/config')).status === 204);
 const raw = {
   v: 1,
-  issued: '2026-11-24T10:00:00.000Z',
+  issued: new Date(Date.now() - 3600e3).toISOString(),
   notices: [{ id: 'n1', level: 'info', text: { zh: '主麻日清真寺开放', ru: 'В пятницу мечеть открыта', tg: 'Рӯзи ҷумъа масҷид кушода аст' } }],
   cityOffsets: { dushanbe: { fajr: 0, dhuhr: 10, asr: 0, maghrib: 2, isha: 0, src: { zh: '测试来源' } }, nowhere: { dhuhr: 5, src: { zh: 'x' } } },
   hijri: { TJ: { adjust: 1, src: { zh: '测试' } } },
@@ -119,13 +119,16 @@ const gotEnv = await got.json();
 const verified = await verifyEnvelope(gotEnv, keys.publicJwk);
 ok('手机取到的配置能验过签名', !!verified && verified.cityOffsets.dushanbe.dhuhr === 10);
 ok('换一把公钥就验不过', (await verifyEnvelope(gotEnv, other.publicJwk)) === null);
-const older = await signBody(JSON.stringify({ ...clean, issued: '2026-11-01T00:00:00.000Z' }), keys.privateJwk);
+const older = await signBody(JSON.stringify({ ...clean, issued: new Date(Date.now() - 2 * 864e5).toISOString() }), keys.privateJwk);
 ok('旧配置不能覆盖新配置', (await put(older)).status === 409);
-const newer = await signBody(JSON.stringify({ ...clean, issued: '2026-11-25T00:00:00.000Z', notices: [] }), keys.privateJwk);
+const future = await signBody(JSON.stringify({ ...clean, issued: new Date(Date.now() + 2 * 864e5).toISOString() }), keys.privateJwk);
+ok('发布时间在未来的配置被拒绝（防止以后发不出去）', (await put(future)).status === 400);
+const newIssued = new Date().toISOString();
+const newer = await signBody(JSON.stringify({ ...clean, issued: newIssued, notices: [] }), keys.privateJwk);
 ok('新配置可以覆盖', (await put(newer)).status === 200);
 ok('发布后 /config 立即是新的', JSON.parse((await (await get('/config')).json()).body).notices.length === 0);
 const hist = await (await get('/admin/api/history', { headers: adminH() })).json();
-ok('保留发布历史', hist.length === 2 && hist[0].issued === '2026-11-25T00:00:00.000Z');
+ok('保留发布历史', hist.length === 2 && hist[0].issued === newIssued);
 ok('超大请求被拒绝', (await put({ body: 'x'.repeat(80000), sig: env1.sig })).status === 400);
 
 // ---- 匿名统计 ----

@@ -372,7 +372,7 @@ $('[data-config-form]').addEventListener('submit', async (e) => {
       loadConfig();
     } else {
       msg.textContent =
-        { 'bad-signature': '签名不对：这个私钥和服务器上的公钥不是一对。', stale: '线上已有更新的配置，请刷新后再改。', 'no-public-key': '服务器还没设置公钥（CONFIG_PUBLIC_KEY）。', 'bad-config': '配置格式不对。' }[res.error] || '发布失败：' + res.error;
+        { 'bad-signature': '签名不对：这个私钥和服务器上的公钥不是一对。', stale: '线上已有更新的配置，请刷新后再改。', 'no-public-key': '服务器还没设置公钥（CONFIG_PUBLIC_KEY）。', 'bad-config': '配置格式不对。', future: '电脑时间不对（比现在晚），请校准电脑时间后再发布。' }[res.error] || '发布失败：' + res.error;
     }
   } catch (err) {
     msg.textContent = '发布失败：' + err.message;

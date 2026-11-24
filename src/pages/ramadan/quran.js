@@ -42,13 +42,15 @@ export function quranPage(ctx) {
   </div>`;
 
   function draw(el) {
-    const done = load(key, []);
+    const raw = load(key, []);
+    const done = Array.isArray(raw) ? [...new Set(raw.filter((n) => Number.isInteger(n) && n >= 1 && n <= 30))] : [];
     el.querySelector('[data-juz-list]').innerHTML = rows(done);
     el.querySelector('[data-q-summary]').textContent =
       done.length >= 30 ? t('quran.allDone') : t('quran.progress', { n: done.length, left: 30 - done.length });
     el.querySelectorAll('[data-juz]').forEach((cb) =>
       cb.addEventListener('change', () => {
-        const cur = load(key, []).filter((n) => n !== +cb.dataset.juz);
+        const raw = load(key, []);
+        const cur = (Array.isArray(raw) ? raw : []).filter((n) => Number.isInteger(n) && n !== +cb.dataset.juz);
         if (cb.checked) cur.push(+cb.dataset.juz);
         save(key, cur.sort((a, b) => a - b));
         draw(el);

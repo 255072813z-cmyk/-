@@ -13,7 +13,7 @@ export function tarawihPage(ctx) {
   const s = ctx.sched;
   const night = s.current === 'isha' && ctx.now < s.times.fajr ? addDays(s.today, -1) : s.today;
   const key = 'tarawih:' + ymdKey(night);
-  let done = Math.min(SETS, load(key, 0));
+  let done = Math.max(0, Math.min(SETS, Math.floor(Number(load(key, 0))) || 0));
 
   const html = `
   <div class="page tarawih">

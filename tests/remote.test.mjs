@@ -144,7 +144,7 @@ test('统计：地址对应功能名', () => {
 
 test('统计：手机发出的内容只有约定的几项，"我的位置"只报最近的城市', async () => {
   const sent = [];
-  globalThis.location = { search: '?api=http://127.0.0.1:8787' };
+  globalThis.location = { hostname: '127.0.0.1', search: '?api=http://127.0.0.1:8787' };
   const origFetch = globalThis.fetch;
   globalThis.fetch = async (url, init) => {
     sent.push({ url, init });
@@ -174,4 +174,36 @@ test('管理后台打包文件是最新的（改了后台页面要运行 npm run
   const { readFileSync } = await import('node:fs');
   const { OUTPUT } = await import('../scripts/build-admin.mjs');
   assert.equal(readFileSync(new URL('../server/admin-assets.js', import.meta.url), 'utf8'), OUTPUT);
+});
+
+test('安全：演示参数（拨时钟、演示天气、本机后台）在正式网站上不生效', async () => {
+  const { devParam } = await import('../src/core/dev.js');
+  globalThis.location = { hostname: 'example.github.io', search: '?now=2026-01-01T00:00&weather=heavy&api=http://127.0.0.1:1' };
+  try {
+    assert.equal(devParam('now'), null);
+    assert.equal(devParam('weather'), null);
+    globalThis.location = { hostname: '127.0.0.1', search: '?now=2026-01-01T00:00' };
+    assert.equal(devParam('now'), '2026-01-01T00:00');
+  } finally {
+    delete globalThis.location;
+  }
+});
+
+test('安全：网页有内容安全策略，只运行自己的脚本，不连陌生网站', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const f = new URL('../dist/index.html', import.meta.url);
+  if (!existsSync(f)) return; // 还没构建
+  const html = readFileSync(f, 'utf8');
+  const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
+  assert.match(csp, /script-src 'self'/);
+  assert.match(csp, /object-src 'none'/);
+  assert.match(csp, /connect-src 'self' https:\/\/api\.open-meteo\.com/);
+  assert.ok(!/connect-src[^;]*\s(https:|wss:|\*)(\s|;|$)/.test(csp), '不能允许连接任意网站');
+  assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>/.test(html), '页面里不能有行内脚本');
+  assert.match(html, /name="referrer" content="no-referrer"/);
+});
+
+test('安全：发布时间统一格式，旧配置判断可靠', () => {
+  const a = sanitizeConfig({ v: 1, issued: '2026-11-24' }, IDS);
+  assert.equal(a.issued, '2026-11-24T00:00:00.000Z');
 });

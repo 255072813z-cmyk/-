@@ -18,20 +18,52 @@ const DEFAULTS = {
 };
 
 const listeners = new Set();
-const saved = load('settings', {}) || {};
-let state = { ...DEFAULTS, ...saved };
-state.offsets = { ...DEFAULTS.offsets, ...(state.offsets || {}) };
-state.notify = { ...DEFAULT_NOTIFY, ...(state.notify || {}), prayers: { ...DEFAULT_NOTIFY.prayers, ...((state.notify || {}).prayers || {}) } };
-// 老版本里调过伊斯兰历的用户，视为手动调整
-if (typeof saved.hijriManual !== 'boolean') state.hijriManual = Number(state.hijriAdjust) !== 0;
-if (!CITIES[state.city] && !(state.city === 'here' && state.loc)) state.city = DEFAULT_CITY;
+
+const int = (v, lo, hi, d) => (Number.isInteger(v) && v >= lo && v <= hi ? v : d);
+const bool = (v, d) => (typeof v === 'boolean' ? v : d);
+
+/**
+ * 检查、修正设置（本机存储被清理一半、老版本格式、手动改坏等情况都不让应用出错）
+ * @param saved 存储里读出来的
+ */
+export function normalizeSettings(saved) {
+  const s = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  const out = { ...DEFAULTS };
+  out.city = typeof s.city === 'string' ? s.city : DEFAULTS.city;
+  const loc = s.loc;
+  out.loc =
+    loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lon) <= 180
+      ? { lat: loc.lat, lon: loc.lon, utcOffset: Number.isFinite(loc.utcOffset) && Math.abs(loc.utcOffset) <= 14 ? loc.utcOffset : undefined }
+      : null;
+  if (!CITIES[out.city] && !(out.city === 'here' && out.loc)) out.city = DEFAULT_CITY;
+  out.fontScale = int(s.fontScale, 0, 2, 0);
+  out.remind = bool(s.remind, true);
+  out.sound = bool(s.sound, false);
+  out.stats = bool(s.stats, true);
+  const o = s.offsets || {};
+  out.offsets = {};
+  for (const p of Object.keys(DEFAULTS.offsets)) out.offsets[p] = int(Number(o[p]), -30, 30, 0);
+  const n = s.notify || {};
+  out.notify = {
+    prayers: Object.fromEntries(Object.keys(DEFAULT_NOTIFY.prayers).map((p) => [p, bool((n.prayers || {})[p], true)])),
+    advance: [0, 5, 10, 15].includes(Number(n.advance)) ? Number(n.advance) : 0,
+    ramadan: bool(n.ramadan, true),
+  };
+  out.hijriAdjust = int(Number(s.hijriAdjust), -2, 2, 0);
+  // 老版本里调过伊斯兰历的用户，视为手动调整
+  out.hijriManual = typeof s.hijriManual === 'boolean' ? s.hijriManual : out.hijriAdjust !== 0;
+  out.lang = ['zh', 'tg', 'ru'].includes(s.lang) ? s.lang : DEFAULTS.lang;
+  return out;
+}
+
+let state = normalizeSettings(load('settings', {}));
 
 export function getSettings() {
   return state;
 }
 
 export function setSettings(patch) {
-  state = { ...state, ...patch };
+  state = normalizeSettings({ ...state, ...patch });
   save('settings', state);
   listeners.forEach((fn) => fn(state));
 }

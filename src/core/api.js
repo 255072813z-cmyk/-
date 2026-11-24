@@ -1,9 +1,10 @@
 // 后台服务地址。构建时设置 VITE_API_URL（例如 https://masjid-api.xxx.workers.dev）才会联系后台；
 // 没设置时：不取远程配置、不发统计、不显示在线人数——应用照常离线工作。
 // 本地测试可在地址后加 ?api=http://127.0.0.1:8787（只接受本机地址）。
+import { devParam } from './dev.js';
 export function apiBase() {
   try {
-    const q = new URLSearchParams(location.search).get('api');
+    const q = devParam('api'); // 只在本机测试时生效
     if (q) {
       const u = new URL(q);
       if ((u.protocol === 'http:' || u.protocol === 'https:') && ['127.0.0.1', 'localhost'].includes(u.hostname)) return u.origin;

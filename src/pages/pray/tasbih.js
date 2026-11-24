@@ -6,7 +6,7 @@ import { t, L } from '../../i18n/index.js';
 
 export function tasbihPage() {
   let st = load('tasbih', { phase: 0, count: 0 }); // phase 0-2 三句，3 = 第 100 句
-  if (!(st.phase >= 0 && st.phase <= 3)) st = { phase: 0, count: 0 };
+  if (!st || !Number.isInteger(st.phase) || st.phase < 0 || st.phase > 3 || !Number.isInteger(st.count) || st.count < 0 || st.count > 33) st = { phase: 0, count: 0 };
 
   const html = `
   <div class="page tasbih">

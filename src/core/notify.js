@@ -180,6 +180,6 @@ export async function listenNotificationTaps() {
   const { ln } = await plugin();
   ln.addListener('localNotificationActionPerformed', (e) => {
     const r = e && e.notification && e.notification.extra && e.notification.extra.route;
-    if (r) location.hash = r;
+    if (typeof r === 'string' && /^#\/[a-z0-9/]*$/.test(r)) location.hash = r; // 只接受本应用自己的页面地址
   });
 }

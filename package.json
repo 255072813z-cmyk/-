@@ -19,7 +19,7 @@
     "shots": "node scripts/shots.mjs",
     "verify": "node scripts/verify.mjs",
     "icons": "node scripts/build-icons.mjs",
-    "app:sync": "vite build && cap sync",
+    "app:sync": "APP_BUILD=1 vite build && cap sync",
     "presence": "node server/dev-server.mjs 8787",
     "admin": "node scripts/build-admin.mjs",
     "test:server": "node server/test-worker.mjs"

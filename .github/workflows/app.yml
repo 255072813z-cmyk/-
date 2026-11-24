@@ -36,6 +36,7 @@ jobs:
       - name: 构建网页
         run: npm run build
         env:
+          APP_BUILD: '1' # 手机应用：内容安全策略允许 Capacitor 插入的脚本
           VITE_PRESENCE_URL: ${{ vars.VITE_PRESENCE_URL }}
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_CONFIG_PUBKEY: ${{ vars.VITE_CONFIG_PUBKEY }}
@@ -65,6 +66,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          APP_BUILD: '1'
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_CONFIG_PUBKEY: ${{ vars.VITE_CONFIG_PUBKEY }}
       - run: npx cap sync ios

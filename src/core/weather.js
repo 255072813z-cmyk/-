@@ -1,6 +1,7 @@
 // 天气：只按"城市坐标"查询 Open-Meteo（免费、无需密钥），不读取用户位置，不发送任何个人信息。
 // 结果在本机缓存 1 小时；断网或查询失败时返回 null，页面不会凭空说"下雪"。
 import { load, save } from './storage.js';
+import { devParam } from './dev.js';
 
 const TTL = 60 * 60 * 1000;
 // WMO 天气代码：45/48 雾；51–57 毛毛雨；61–67 雨（66/67 冻雨）；71–77 雪；80–82 阵雨；85/86 阵雪；95–99 雷雨
@@ -50,13 +51,8 @@ const DEMO = {
   clear: { code: 0, dayCode: 0, temp: 12, minTemp: 4, maxTemp: 15, snowCm: 0, uv: 3 },
 };
 function override() {
-  try {
-    const v = new URLSearchParams(location.search).get('weather');
-    if (DEMO[v]) return { ...DEMO[v], demo: true };
-  } catch (e) {
-    /* ignore */
-  }
-  return null;
+  const v = devParam('weather'); // 只在本机和预览版生效
+  return DEMO[v] ? { ...DEMO[v], demo: true } : null;
 }
 
 // 预览版（VITE_PREVIEW=1 构建，用于在不能联网查天气的预览环境里展示冬季模式）固定显示演示大雪
@@ -77,7 +73,7 @@ export async function getWeather(city) {
       '&timezone=auto&forecast_days=1'; // 按城市当地的日期统计当天最高温、最大阵风
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timer = ctrl ? setTimeout(() => ctrl.abort(), 6000) : null;
-    const res = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
+    const res = await fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer', ...(ctrl ? { signal: ctrl.signal } : {}) });
     if (timer) clearTimeout(timer);
     if (!res.ok) throw new Error('http ' + res.status);
     const j = await res.json();

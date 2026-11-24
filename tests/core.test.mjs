@@ -79,3 +79,25 @@ test('天气归类', async () => {
   assert.equal(classify({ code: 71, temp: -2, minTemp: -6, snowCm: 1, gust: 70 }), 'snow');
   assert.equal(classify(null), null);
 });
+
+test('设置：存储里的数据坏了也能正常打开（数据异常检查）', async () => {
+  const { normalizeSettings } = await import('../src/core/settings.js');
+  const bad = normalizeSettings({ city: 'atlantis', fontScale: 'huge', offsets: { fajr: 999, dhuhr: '5', asr: 2 }, notify: { advance: 7, prayers: { fajr: 'yes' } }, hijriAdjust: 9, lang: 'xx', loc: { lat: 'a' }, stats: 'no' });
+  assert.equal(bad.city, 'dushanbe');
+  assert.equal(bad.fontScale, 0);
+  assert.deepEqual(bad.offsets, { fajr: 0, dhuhr: 5, asr: 2, maghrib: 0, isha: 0 });
+  assert.equal(bad.notify.advance, 0);
+  assert.equal(bad.notify.prayers.fajr, true);
+  assert.equal(bad.hijriAdjust, 0);
+  assert.equal(bad.lang, 'zh');
+  assert.equal(bad.loc, null);
+  assert.equal(bad.stats, true);
+  assert.equal(normalizeSettings(null).city, 'dushanbe');
+  assert.equal(normalizeSettings([]).city, 'dushanbe');
+  // "我的位置"没有坐标时回到默认城市
+  assert.equal(normalizeSettings({ city: 'here' }).city, 'dushanbe');
+  assert.equal(normalizeSettings({ city: 'here', loc: { lat: 55.7, lon: 37.6, utcOffset: 3 } }).city, 'here');
+  // 老版本调过伊斯兰历的，视为手动
+  assert.equal(normalizeSettings({ hijriAdjust: 1 }).hijriManual, true);
+  assert.equal(normalizeSettings({ hijriAdjust: 0 }).hijriManual, false);
+});

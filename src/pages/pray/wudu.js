@@ -9,7 +9,7 @@ const LEVEL_CLS = { fard: 'lv-fard', sunnah: 'lv-sunnah', mustahab: 'lv-opt' };
 const list = (prefix, n) => Array.from({ length: n }, (_, i) => `<li>${t(`${prefix}.${i + 1}`)}</li>`).join('');
 
 export function wuduPage() {
-  let i = Math.min(load('wudu:step', 0), WUDU_STEPS.length - 1);
+  let i = Math.max(0, Math.min(Math.floor(Number(load('wudu:step', 0))) || 0, WUDU_STEPS.length - 1));
   const html = `
   <div class="page wudu">
     <div class="page-head"><a class="back" href="#/pray" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('wudu.title')}</h1></div>

@@ -169,6 +169,8 @@ async function admin(request, env, url, ip) {
     if (!raw) return respond({ error: 'bad-signature' }, 400);
     const cfg = sanitizeConfig(raw, CITY_IDS);
     if (!cfg) return respond({ error: 'bad-config' }, 400);
+    // 发布时间不能在未来（否则以后的配置都发不出去）
+    if (Date.parse(cfg.issued) > Date.now() + 10 * 60e3) return respond({ error: 'future' }, 400);
     const r = await hubCall(env, '/config', { envelope: { body: envelope.body, sig: envelope.sig }, issued: cfg.issued });
     if (r.status === 200) await caches.default.delete(new Request(url.origin + '/config')).catch(() => {});
     return respond(await r.json(), r.status);

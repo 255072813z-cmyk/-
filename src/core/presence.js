@@ -4,6 +4,7 @@
 // 本地测试可在地址后加 ?presence=ws://127.0.0.1:8787（只接受本机地址）。
 
 import { apiBase } from './api.js';
+import { devParam } from './dev.js';
 
 let gate = () => true;
 /** main.js 设置：远程开关关掉时不连接 */
@@ -14,7 +15,7 @@ export function setPresenceGate(fn) {
 function baseUrl() {
   if (!gate()) return '';
   try {
-    const q = new URLSearchParams(location.search).get('presence');
+    const q = devParam('presence'); // 只在本机测试时生效
     if (q) {
       const u = new URL(q);
       if ((u.protocol === 'ws:' || u.protocol === 'wss:') && ['127.0.0.1', 'localhost'].includes(u.hostname)) return q.replace(/\/$/, '');
@@ -34,10 +35,38 @@ export async function fetchCounts() {
   if (!base) return null;
   try {
     const r = await fetch(base.replace(/^ws/, 'http') + '/counts', { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' });
-    return r.ok ? await r.json() : null;
+    return r.ok ? cleanCounts(await r.json()) : null;
   } catch (e) {
     return null;
   }
+}
+
+// 服务器发来的数据也按"不可信"处理：只留下数字和约定的几个事件名，页面上不会混进任何文字
+const num = (v, max = 100000) => (Number.isFinite(+v) ? Math.max(0, Math.min(max, Math.floor(+v))) : 0);
+const EVENTS = ['assigned', 'error:taken', 'error:queue', 'error:free', 'error:bad'];
+export function cleanState(m) {
+  if (!m || m.type !== 'state') return null;
+  const you = m.you || {};
+  return {
+    type: 'state',
+    online: num(m.online),
+    capacity: num(m.capacity, 1000),
+    taken: Array.isArray(m.taken) ? m.taken.slice(0, 1000).map((x) => num(x, 1000)) : [],
+    queue: num(m.queue),
+    you: { mat: you.mat == null ? null : num(you.mat, 1000), queuePos: you.queuePos == null ? null : num(you.queuePos) },
+    event: EVENTS.includes(m.event) ? m.event : m.event && String(m.event).startsWith('error:') ? 'error:bad' : null,
+  };
+}
+
+/** 只读人数也一样只留数字 */
+function cleanCounts(c) {
+  if (!c || typeof c !== 'object') return null;
+  const out = {};
+  for (const room of ['hall', 'courtyard', 'poetry']) {
+    const r = c[room] || {};
+    out[room] = { online: num(r.online), capacity: num(r.capacity, 1000), taken: num(r.taken, 1000) };
+  }
+  return out;
 }
 
 export function presenceEnabled() {
@@ -75,8 +104,8 @@ export function joinRoom(room, { onState, onStatus } = {}) {
     ws.onmessage = (e) => {
       if (e.data === 'pong') return;
       try {
-        const m = JSON.parse(e.data);
-        if (m && m.type === 'state' && onState) onState(m);
+        const m = cleanState(JSON.parse(e.data));
+        if (m && onState) onState(m);
       } catch (err) {
         /* ignore */
       }
