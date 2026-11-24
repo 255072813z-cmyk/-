@@ -2,7 +2,7 @@
   "name": "online-masjid",
   "private": true,
   "version": "0.1.0",
-  "description": "网上清真寺：给塔吉克斯坦穆斯林的在家礼拜助手（静态网站，无后端、无登录）",
+  "description": "拜毯（Ҷойнамоз / Джойнамоз，原名「网上清真寺」）：给塔吉克斯坦穆斯林的在家礼拜助手（静态网站，无后端、无登录）",
   "type": "module",
   "scripts": {
     "dev": "vite --host",

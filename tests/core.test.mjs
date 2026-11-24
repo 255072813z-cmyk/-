@@ -203,12 +203,71 @@ test('成就徽章：做到了才解锁，只解锁一次，坏数据不出错',
     assert.equal(award('wudu', '2026-11-10').id, 'wudu');
     assert.equal(award('wudu', '2026-11-11'), null);
     assert.equal(award('nope', '2026-11-11'), null, '不认识的徽章');
-    assert.equal(BADGES.length, 16);
+    assert.equal(BADGES.length, 18);
     // 存储坏了：当作还没有徽章，不报错
     mem.set('masjid:badges', '"坏了"');
     assert.equal(badgeList().filter((b) => b.got).length, 0);
     mem.set('masjid:badges', JSON.stringify({ got: { wudu: 5, bogus: '2026-01-01', tasbih: '2026-01-02' }, days: { five: 'x' }, n: { guide: -3 } }));
     assert.deepEqual(badgeList().filter((b) => b.got).map((b) => b.id), ['tasbih']);
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+test('平时封斋：圣行斋日、不能封斋的五天、补斋天数、计划', async () => {
+  const mem = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) } };
+  try {
+    const f = await import('../src/core/fasting.js');
+    const { findHijri } = await import('../src/core/ramadan.js');
+    const from = { y: 2026, m: 12, d: 1 };
+    const at = (m, d) => findHijri(from, m, d);
+    // 两个节日和古尔邦节后三天不封；那几天也不算圣行斋日（哪怕是星期一、四或 13 日）
+    assert.equal(f.forbiddenDay(at(10, 1)), 'fitr');
+    assert.equal(f.forbiddenDay(at(12, 10)), 'adha');
+    for (const d of [11, 12, 13]) assert.equal(f.forbiddenDay(at(12, d)), 'tashriq');
+    assert.deepEqual(f.sunnahReasons(at(12, 13)), [], '都尔黑哲月 13 日是晒肉日，不算白日');
+    assert.equal(f.forbiddenDay(at(12, 9)), null);
+    assert.ok(f.sunnahReasons(at(12, 9)).includes('arafah'));
+    assert.ok(f.sunnahReasons(at(1, 10)).includes('ashura'));
+    assert.ok(f.sunnahReasons(at(1, 9)).includes('tasua'));
+    assert.ok(f.sunnahReasons(at(10, 2)).includes('shawwal'));
+    assert.ok(f.sunnahReasons(at(7, 14)).includes('white'));
+    assert.deepEqual(f.sunnahReasons(at(9, 14)), [], '斋月里不另算');
+    assert.deepEqual(f.sunnahReasons({ y: 2026, m: 12, d: 21 }).slice(-1), ['mon']);
+    assert.deepEqual(f.sunnahReasons({ y: 2026, m: 12, d: 31 }).slice(-1), ['thu']);
+    const up = f.upcomingSunnah({ y: 2026, m: 12, d: 18 }, 0, 21);
+    assert.ok(up.list.length >= 6 && up.list.every((d) => d.reasons.length));
+    assert.deepEqual(up.special.map((d) => d.id).sort(), ['arafah', 'ashura']);
+    // 补斋：上个斋月记了 2 天没封 → 加进来；补一天减一；改成副功斋又加回去；不会变成负数
+    mem.set('masjid:fast:1447', JSON.stringify({ 3: 'no', 4: 'no', 5: 'yes' }));
+    assert.equal(f.ramadanMissed(1447), 2);
+    assert.equal(f.importMissed(1447), 2);
+    assert.equal(f.ramadanMissed(1447), 0, '只能加一次');
+    f.setFast('2026-12-21', 'qada');
+    assert.equal(f.oweDays(), 1);
+    f.setFast('2026-12-21', 'nafl');
+    assert.equal(f.oweDays(), 2);
+    f.setFast('2026-12-21', 'qada');
+    f.setFast('2026-12-24', 'qada');
+    f.setFast('2026-12-28', 'qada');
+    assert.equal(f.oweDays(), 0, '补的比欠的多也不会变成负数');
+    f.setFast('2026-12-28', null);
+    assert.equal(f.oweDays(), 0);
+    assert.equal(f.addOwe(3), 3);
+    assert.equal(f.addOwe(-5), 0);
+    assert.deepEqual(f.yearCount(2026), { nafl: 0, qada: 2 });
+    // 计划：过去的日子自动不算
+    f.togglePlan('2026-12-21', true, '2026-12-20');
+    f.togglePlan('2026-12-24', true, '2026-12-20');
+    assert.deepEqual(f.fastPlan('2026-12-22'), ['2026-12-24']);
+    f.togglePlan('2026-12-24', false, '2026-12-22');
+    assert.deepEqual(f.fastPlan('2026-12-22'), []);
+    // 坏数据
+    mem.set('masjid:vfast', '"x"');
+    mem.set('masjid:qadaFast', JSON.stringify({ base: -4 }));
+    assert.deepEqual(f.fastLog(), {});
+    assert.equal(f.oweDays(), 0);
   } finally {
     delete globalThis.window;
   }

@@ -301,14 +301,104 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('[data-hero]');
   const home = await page.textContent('#app');
   check('斋月里首页有封斋卡片（开斋/封斋饭时间）', /封斋饭|开斋/.test(home));
-  // 斋月前：显示还有几天、第一天的时间，不能打卡
+  // 斋月前：这一页变成全年可用的"封斋"页——没有点不动的斋月格子，有斋月倒计时和第一天的时间
   await page.clock.setSystemTime(new Date('2027-01-20T08:00:00Z'));
   await page.goto(base + '?weather=clear#/ramadan');
   await page.waitForSelector('.r-status h1');
-  const pre = (await page.textContent('.r-status h1')).trim();
-  check('斋月前：显示"斋月还有 N 天"和第一天的时间，不能打卡', /斋月还有 \d+ 天/.test(pre) && (await page.locator('[data-today]').count()) === 0 && (await page.locator('.ft-time').count()) === 2, pre);
+  const pre = (await page.textContent('[data-vf-ramadan]')).replace(/\s+/g, ' ');
+  check('斋月前：显示"斋月还有 N 天"和第一天的时间，没有点不动的斋月格子', /斋月还有 \d+ 天/.test(pre) && (await page.locator('.day').count()) === 0 && (await page.locator('[data-vf-fast]').count()) === 1, pre.slice(0, 40));
   check('斋月页以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
+}
+
+// 4c. 平时封斋（斋月以外）：圣行斋日、今天我在封斋、副功斋/补斋、补斋天数、明天的提醒、不能封斋的日子
+{
+  const ctx = await browser.newContext(phone);
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, lang: 'zh' }));
+    if (!localStorage.getItem('masjid:fast:1447')) localStorage.setItem('masjid:fast:1447', JSON.stringify({ 3: 'no', 4: 'no', 10: 'yes' }));
+  });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  // 2026-12-24 星期四，伊斯兰历赖哲卜月 15 日（白日）
+  const q = '?weather=clear&now=2026-12-24T11:20';
+  await page.goto(base + q + '#/ramadan');
+  await page.waitForSelector('[data-vf-today]');
+  const tab = (await page.textContent('.tabbar .tab.is-active')).trim();
+  const sunnah = (await page.textContent('.vf-sunnah')).trim();
+  const ups = await page.locator('.vf-day').count();
+  const special = (await page.locator('.vf-special').allTextContents()).join(' ');
+  check('平时的"封斋"页：标签叫"封斋"；今天是白日和星期四；列出近期圣行斋日和下一个阿拉法日、阿舒拉日', tab === '封斋' && /白日/.test(sunnah) && /星期四/.test(sunnah) && ups >= 5 && /阿拉法日：2027年5月15日/.test(special) && /阿舒拉日/.test(special), `${sunnah}；${ups} 天；${special.slice(0, 30)}`);
+  // 上个斋月记了 2 天没封 → 加到补斋
+  await page.click('[data-vf-import]');
+  const owe1 = (await page.textContent('[data-vf-owe-n]')).trim();
+  // 今天我在封斋：有要补的就先记成补斋，出现开斋倒计时，解锁"补上一天"
+  await page.click('[data-vf-fast]');
+  await page.waitForSelector('.celebrate', { timeout: 3000 }).catch(() => {});
+  const badge = (await page.textContent('.celebrate h2').catch(() => '')) || '';
+  if (badge) await page.click('[data-cele-ok]');
+  const count = (await page.textContent('[data-vf-count]').catch(() => '')) || '';
+  const owe2 = (await page.textContent('[data-vf-owe-n]')).trim();
+  const kindQ = await page.getAttribute('[data-vf-kind="qada"]', 'aria-pressed');
+  check('今天我在封斋：记成补斋，还要补 2 天 → 1 天，出现开斋倒计时，解锁"补上一天"', owe1 === '还要补 2 天' && owe2 === '还要补 1 天' && kindQ === 'true' && /\d/.test(count) && badge === '补上一天', `${owe1} → ${owe2}，倒计时 ${count.replace(/\s+/g, '')}，${badge}`);
+  // 改成副功斋：补斋恢复 2 天
+  await page.click('[data-vf-kind="nafl"]');
+  await page.waitForTimeout(200);
+  if (await page.locator('.celebrate').count()) await page.click('[data-cele-ok]');
+  const owe3 = (await page.textContent('[data-vf-owe-n]')).trim();
+  // 明天也封斋：提醒
+  await page.click('[data-vf-today] [data-vf-plan]');
+  const planned = await page.getAttribute('[data-vf-today] [data-vf-plan]', 'aria-pressed');
+  await page.reload();
+  await page.waitForSelector('[data-vf-today]');
+  const still = (await page.locator('[data-vf-kind="nafl"][aria-pressed="true"]').count()) === 1 && (await page.getAttribute('[data-vf-today] [data-vf-plan]', 'aria-pressed')) === 'true';
+  check('改成副功斋后补斋回到 2 天；"明天也封斋"可以设提醒；刷新后都还在', owe3 === '还要补 2 天' && planned === 'true' && still, `${owe3}，明天提醒 ${planned}`);
+  await page.goto(base + '?weather=clear&now=2026-12-24T11:25#/');
+  await page.waitForSelector('[data-hero]');
+  const home = (await page.textContent('.home-ramadan').catch(() => '')) || '';
+  check('今天在封斋时，首页显示开斋时间和还有多久', /今天在封斋/.test(home) && /开斋/.test(home), home.replace(/\s+/g, ' ').trim());
+  // 古尔邦节：不封斋，没有"今天我在封斋"按钮
+  await page.goto(base + '?weather=clear&now=2027-05-16T10:00#/ramadan');
+  await page.waitForSelector('[data-vf-today]');
+  const eid = (await page.textContent('[data-vf-today]')).replace(/\s+/g, ' ');
+  check('古尔邦节当天：写明这天不封斋（布哈里 1990），不能记封斋', /今天是古尔邦节/.test(eid) && /1990/.test(eid) && (await page.locator('[data-vf-fast]').count()) === 0, eid.slice(0, 30));
+  check('平时封斋页以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 4d. 启动画面：打开时显示图标、名称和一句话，按手机语言显示，几秒后自己淡出，内容安全策略不拦
+{
+  const res = [];
+  for (const locale of ['tg-TJ', 'ru-RU']) {
+    const ctx = await browser.newContext({ ...phone, locale });
+    await ctx.addInitScript(() => Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }));
+    const page = await ctx.newPage();
+    const csp = [];
+    page.on('console', (m) => /Content Security Policy/.test(m.text()) && csp.push(m.text()));
+    const t0 = Date.now();
+    await page.goto(base + '?weather=clear');
+    await page.waitForTimeout(500);
+    const name = (await page.textContent('.splash-name').catch(() => '')) || '';
+    const tag = (await page.textContent('.splash-tag').catch(() => '')) || '';
+    const visible = await page.locator('#splash.is-on').isVisible().catch(() => false);
+    await page.waitForSelector('#splash', { state: 'detached', timeout: 6000 }).catch(() => {});
+    const ms = Date.now() - t0;
+    res.push({ locale, name, tag, visible, ms, csp: csp.length });
+    if (locale === 'tg-TJ') {
+      await page.reload();
+      const t1 = Date.now();
+      await page.waitForSelector('#splash', { state: 'detached', timeout: 6000 }).catch(() => {});
+      res.push({ again: Date.now() - t1 });
+    }
+    await ctx.close();
+  }
+  const [tg, again, ru] = res;
+  check(
+    '启动画面：塔吉克语手机显示"Ҷойнамоз"、俄语手机显示"Джойнамоз"；第一次约 2.6 秒、以后约 1.4 秒后淡出；不被安全策略拦',
+    tg.visible && tg.name === 'Ҷойнамоз' && /Намоз дар хона/.test(tg.tag) && ru.name === 'Джойнамоз' && tg.ms >= 2600 && tg.ms < 4500 && again.again < tg.ms && tg.csp + ru.csp === 0,
+    `${tg.name} ${tg.ms} ms → 再次 ${again.again} ms；${ru.name} ${ru.ms} ms`,
+  );
 }
 
 // 5. 网络请求：只允许本站资源 + 天气接口（只带城市坐标）
@@ -518,7 +608,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   check('"我的坚持"页：已解锁 2 个称号（起步、一周）', got === 2, `${got} 个`);
   const badges = await page.locator('.badge').count();
   const gotB = (await page.locator('.badge.is-got .badge-name').allTextContents()).join('、');
-  check('"我的坚持"页：16 枚成就徽章，已得"第一步"（第一次记下已礼）', badges === 16 && /第一步/.test(gotB), `${badges} 枚，已得：${gotB}`);
+  check('"我的坚持"页：18 枚成就徽章，已得"第一步"（第一次记下已礼）', badges === 18 && /第一步/.test(gotB), `${badges} 枚，已得：${gotB}`);
   // 今天第一次打卡（没有新称号）：底部弹出"又坚持了一天"，数字跳到新的天数，几秒后自己收起
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20');
   await page.evaluate(() => {

@@ -114,7 +114,7 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
       // 语言选择按钮上的"中文"是语言自己的名字，不算
       const shown = await page.evaluate(() => {
         const c = document.body.cloneNode(true);
-        c.querySelectorAll('[data-lang]').forEach((x) => x.remove());
+        c.querySelectorAll('[data-lang], script, style').forEach((x) => x.remove()); // 脚本、样式不是页面上的字
         return c.innerText;
       });
       const cjk = shown.match(/[^\n]{0,20}[\u4e00-\u9fff]+[^\n]{0,20}/);

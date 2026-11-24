@@ -85,3 +85,19 @@ test('打卡提醒：晚上 9 点（宵礼前就推到宵礼后）；今天已�
   const off = buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, notify: { ...DEFAULT_NOTIFY, streak: false } });
   assert.equal(off.filter((x) => x.kind === 'streak').length, 0);
 });
+
+test('平时标了"要封斋"的日子：也提醒封斋饭和开斋；没标的日子不提醒', () => {
+  const now = at(2026, 12, 20, 21, 0); // 星期日晚上，标了星期一（12-21）要封斋
+  const plain = buildSchedule(city, now, base);
+  assert.equal(plain.filter((x) => x.kind === 'sahur' || x.kind === 'iftar').length, 0);
+  const list = buildSchedule(city, now, { ...base, fastDays: ['2026-12-21'] });
+  const f = fastTimes(city, { y: 2026, m: 12, d: 21 });
+  const sahur = list.find((x) => x.kind === 'sahur');
+  const iftar = list.find((x) => x.kind === 'iftar');
+  assert.equal(sahur.at.getTime(), f.sahurEnd.getTime() - SAHUR_WARN_MIN * 60000);
+  assert.equal(iftar.at.getTime(), f.iftar.getTime());
+  assert.equal(list.filter((x) => x.kind === 'sahur').length, 1);
+  // 封斋提醒关掉：标了也不提醒
+  const off = buildSchedule(city, now, { ...base, notify: { ...DEFAULT_NOTIFY, ramadan: false }, fastDays: ['2026-12-21'] });
+  assert.equal(off.filter((x) => x.kind === 'sahur').length, 0);
+});

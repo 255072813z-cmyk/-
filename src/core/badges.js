@@ -4,7 +4,7 @@
 import { load, save } from './storage.js';
 import { PRAYERS } from './prayer-times.js';
 
-// group：prayer 礼拜 / learn 学习 / ramadan 斋月 / together 同行；need：要累计多少（天或次）
+// group：prayer 礼拜 / learn 学习 / ramadan 封斋（斋月和平时） / together 同行；need：要累计多少（天或次）
 export const BADGES = [
   { id: 'firstPrayer', group: 'prayer' },
   { id: 'fiveDay', group: 'prayer' },
@@ -18,6 +18,8 @@ export const BADGES = [
   { id: 'qada', group: 'learn' },
   { id: 'fast1', group: 'ramadan' },
   { id: 'fastAll', group: 'ramadan', need: 29 },
+  { id: 'naflFast', group: 'ramadan' },
+  { id: 'qadaFast', group: 'ramadan' },
   { id: 'tarawih', group: 'ramadan' },
   { id: 'quran', group: 'ramadan' },
   { id: 'circle', group: 'together' },

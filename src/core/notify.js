@@ -14,7 +14,7 @@ export const SAHUR_WARN_MIN = 30; // 斋月：停止吃喝前 30 分钟提醒一
 export const DEFAULT_NOTIFY = {
   prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
   advance: 0, // 提前几分钟（0 = 准时）
-  ramadan: true, // 斋月里提醒封斋饭和开斋
+  ramadan: true, // 斋月里、和用户标了要封斋的日子，提醒封斋饭和开斋
   jumuah: true, // 星期五晌礼前 1 小时提醒主麻
   streak: true, // 晚上还没打卡时提醒一次
 };
@@ -66,7 +66,8 @@ export function buildSchedule(city, now, settings) {
       const at = new Date(times.dhuhr.getTime() - JUMUAH_WARN_MIN * 60000);
       if (at > now) out.push({ id: notifId(ymd, 8), at, title: t('notify.jumuahTitle'), body: t('notify.jumuahBody', { time: fmtHM(times.dhuhr, city.utcOffset) }), kind: 'jumuah', route: '#/pray' });
     }
-    if (n.ramadan && toHijri(ymd, settings.hijriAdjust).m === 9) {
+    const planned = Array.isArray(settings.fastDays) && settings.fastDays.includes(ymdKey(ymd));
+    if (n.ramadan && (planned || toHijri(ymd, settings.hijriAdjust).m === 9)) {
       const f = fastTimes(city, ymd, settings.offsets);
       const warn = new Date(f.sahurEnd.getTime() - SAHUR_WARN_MIN * 60000);
       if (warn > now)
@@ -148,8 +149,11 @@ export function syncNotifications(ctx) {
         /* 苹果没有频道 */
       }
       const { streakStatus } = await import('./streak.js');
-      const checkedToday = streakStatus(ymdKey(localParts(ctx.now, ctx.city.utcOffset))).today;
-      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust, checkedToday });
+      const { fastPlan } = await import('./fasting.js');
+      const todayKey = ymdKey(localParts(ctx.now, ctx.city.utcOffset));
+      const checkedToday = streakStatus(todayKey).today;
+      const fastDays = fastPlan(todayKey); // 用户标了要封斋的日子（斋月以外）
+      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust, checkedToday, fastDays });
       if (list.length)
         await ln.schedule({
           notifications: list.map((x) => ({

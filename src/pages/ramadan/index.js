@@ -9,6 +9,7 @@ import { t } from '../../i18n/index.js';
 import { ymdKey } from '../../core/clock.js';
 import { cheer } from '../../ui/cheer.js';
 import { onFast } from '../../core/badges.js';
+import { fastingPage } from './fasting.js';
 import { dateShort, durHTML, cityName } from '../../i18n/format.js';
 
 const dur = (ms) => durHTML(ms, true);
@@ -62,6 +63,8 @@ export function ramadanPage(ctx) {
   const adj = ctx.hijriAdjust;
   const today = ctx.sched.today;
   const st = ramadanStatus(today, adj);
+  // 斋月以外：全年可用的"封斋"页（今天的时间、副功斋、补斋、圣行斋日），不再显示一排点不动的格子
+  if (!st.active) return fastingPage(ctx, st);
   const hol = holidays(today, adj);
   const logKey = 'fast:' + st.year;
   const log = load(logKey, {});

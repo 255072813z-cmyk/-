@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732">
-  <rect width="2732" height="2732" fill="#f7f2e6"/>
-  <g transform="translate(1366 1366) scale(0.55) translate(-512 -512)">
-    <rect width="1024" height="1024" rx="220" fill="#0f5940"/>
-    <g fill="none" stroke="#d9b65e" stroke-width="34" stroke-linejoin="round">
-      <rect x="322" y="322" width="380" height="380"/>
-      <rect x="322" y="322" width="380" height="380" transform="rotate(45 512 512)"/>
+  <!-- 启动画面：品牌绿底 + 金色八角星和拱门（和网页里的启动画面一致，打开时无缝衔接） -->
+  <rect width="2732" height="2732" fill="#0f5940"/>
+  <g transform="translate(1366 1366) scale(1.35) translate(-512 -512)">
+    <g fill="none" stroke="#d9b65e" stroke-width="22" stroke-linejoin="round">
+      <rect x="362" y="362" width="300" height="300"/>
+      <rect x="362" y="362" width="300" height="300" transform="rotate(45 512 512)"/>
     </g>
-    <path d="M432 640V545Q432 475 512 455Q592 475 592 545V640Z" fill="#d9b65e"/>
+    <path d="M446 612V538Q446 482 512 466Q578 482 578 538V612Z" fill="#d9b65e"/>
+    <path d="M512 466V436" stroke="#d9b65e" stroke-width="11"/>
+    <circle cx="512" cy="428" r="10" fill="#d9b65e"/>
   </g>
 </svg>

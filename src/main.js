@@ -11,6 +11,7 @@ import { getSettings, onSettings } from './core/settings.js';
 import { getCity } from './core/cities.js';
 import { now, setDisplayOffset, ymdKey } from './core/clock.js';
 import { schedule } from './core/prayer-times.js';
+import { toHijri } from './core/hijri.js';
 import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
 import { isNativeApp, syncNotifications, listenNotificationTaps } from './core/notify.js';
@@ -31,7 +32,8 @@ const TABS = [
   { href: '#/', key: 'nav.home', icon: 'home', match: (p) => p === '' },
   { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => (p.startsWith('pray') && !p.startsWith('pray/guide/tarawih')) || p.startsWith('qibla') },
   { href: '#/masjid', key: 'nav.masjid', icon: 'masjid', match: (p) => p.startsWith('masjid') },
-  { href: '#/ramadan', key: 'nav.ramadan', icon: 'ramadan', match: (p) => p.startsWith('ramadan') || p.startsWith('pray/guide/tarawih') },
+  // 斋月里叫"斋月"，平时叫"封斋"（全年都能用：副功斋、补斋）
+  { href: '#/ramadan', key: () => (ctx.sched && toHijri(ctx.sched.today, ctx.hijriAdjust).m === 9 ? 'nav.ramadan' : 'nav.fast'), icon: 'ramadan', match: (p) => p.startsWith('ramadan') || p.startsWith('pray/guide/tarawih') },
   { href: '#/tasbih', key: 'nav.tasbih', icon: 'tasbih', match: (p) => p.startsWith('tasbih') },
 ];
 
@@ -115,7 +117,7 @@ function renderNav(path) {
   const html = TABS.map(
     (tab) =>
       `<a href="${tab.href}" class="tab ${tab.match(path) ? 'is-active' : ''}" ${tab.match(path) ? 'aria-current="page"' : ''}>
-        <span class="tab-icon">${ICONS[tab.icon]}</span><span class="tab-label">${t(tab.key)}</span></a>`,
+        <span class="tab-icon">${ICONS[tab.icon]}</span><span class="tab-label">${t(typeof tab.key === 'function' ? tab.key() : tab.key)}</span></a>`,
   ).join('');
   tabbar.innerHTML = html;
   topnav.innerHTML = html;
@@ -183,11 +185,24 @@ function resync() {
 document.querySelector('.brand-mark').innerHTML = star8(26);
 document.querySelector('.topbar-settings').innerHTML = ICONS.settings;
 
+/** 启动画面（index.html 里）：第一页画好、并且至少停了规定的时间后淡出；点一下可以提前跳过 */
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el || !window.__splash) return;
+  const out = () => {
+    el.classList.add('is-out');
+    setTimeout(() => el.remove(), 500);
+  };
+  el.addEventListener('click', out, { once: true });
+  setTimeout(out, Math.max(0, window.__splash.min - (Date.now() - window.__splash.t0)));
+}
+
 // 启动：先把所选语言的词典准备好再显示，避免先闪一下别的语言
 function start() {
   applyPrefs();
   window.addEventListener('hashchange', render);
   render();
+  hideSplash();
   loadWeather();
   resync(); // 手机应用：排好提醒（词典已就绪，提醒文字是所选语言）
   // 与整秒对齐地走时，倒计时更稳

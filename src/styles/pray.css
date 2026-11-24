@@ -292,3 +292,27 @@
 .sub-title { margin: 8px 0 4px; font-weight: 700; color: var(--ink-2); }
 .checkin-btn.is-pop { animation: check-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @media (prefers-reduced-motion: reduce) { .checkin-btn.is-pop { animation: none; } }
+
+/* 平时的"封斋"页（斋月以外） */
+.fasting .fast-card { display: grid; gap: 8px; }
+.fasting .fast-card.is-fasting { border-color: var(--green); background: linear-gradient(180deg, var(--card), var(--green-soft)); }
+.fasting .fast-card.is-pop { animation: check-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.vf-sunnah { margin: 0; color: var(--gold-ink); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.vf-sunnah .star8 { color: var(--gold); flex: none; }
+.vf-kind { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; background: var(--bg-2); border-radius: 14px; padding: 4px; }
+.vf-kind > span { color: var(--muted); font-size: 0.9rem; padding: 0 6px; }
+.vf-times-h { margin: 6px 0 -4px; color: var(--muted); font-size: 0.9rem; }
+.vf-plan small { display: block; font-weight: 500; color: var(--muted); }
+.vf-plan.is-done, .vf-day .is-done { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+.vf-forbid { border-color: var(--line); background: var(--card); }
+.vf-owe { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; text-align: center; }
+.vf-owe .lead { margin: 0; font-weight: 700; }
+.vf-days { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vf-day { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'date btn' 'why btn'; column-gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.vf-date { grid-area: date; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.vf-date small { color: var(--muted); }
+.vf-why { grid-area: why; color: var(--gold-ink); font-size: 0.88rem; }
+.vf-day .btn { grid-area: btn; white-space: nowrap; }
+.vf-special { margin: 10px 0 0; font-size: 0.92rem; }
+.vf-special b { display: block; color: var(--green); }
+@media (prefers-reduced-motion: reduce) { .fasting .fast-card.is-pop { animation: none; } }

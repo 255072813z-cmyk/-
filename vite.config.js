@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import legacy, { cspHashes } from '@vitejs/plugin-legacy';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
@@ -13,40 +14,52 @@ function contentSecurityPolicy(env) {
   return {
     name: 'csp',
     apply: 'build',
-    transformIndexHtml(html) {
-      const app = env.APP_BUILD === '1';
-      const origins = new Set(['https://api.open-meteo.com']);
-      for (const v of [env.VITE_API_URL, env.VITE_PRESENCE_URL]) {
-        try {
-          const u = new URL(v);
-          origins.add(u.origin.replace(/^ws/, 'http'));
-          origins.add(u.origin.replace(/^http/, 'ws'));
-        } catch (e) {
-          /* 没设置 */
-        }
-      }
-      // 本机测试（?api= ?presence= 只在本机生效）
-      const local = 'http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:*';
-      const policy = [
-        "default-src 'self'",
-        // 老浏览器兼容层的几段固定小脚本，按内容摘要放行（不是放开所有行内脚本）
-        `script-src 'self' ${cspHashes.map((h) => `'sha256-${h}'`).join(' ')}${app ? " 'unsafe-inline'" : ''}`,
-        "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob:",
-        "font-src 'self'",
-        `connect-src 'self' ${[...origins].join(' ')} ${local}`,
-        "manifest-src 'self'",
-        "worker-src 'self'",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "form-action 'none'",
-      ].join('; ');
-      return html.replace(
-        '<meta charset="UTF-8" />',
-        `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />\n    <meta name="referrer" content="no-referrer" />`,
-      );
-    },
+    transformIndexHtml: { order: 'post', handler: cspHandler },
   };
+  function cspHandler(html) {
+    const app = env.APP_BUILD === '1';
+    // 启动画面那一小段行内脚本：按内容摘要放行（内容一改，摘要跟着变）
+    const splash = html.match(/<script id="splash-js">([\s\S]*?)<\/script>/);
+    const own = splash ? [createHash('sha256').update(splash[1], 'utf8').digest('base64')] : [];
+    const origins = new Set(['https://api.open-meteo.com']);
+    for (const v of [env.VITE_API_URL, env.VITE_PRESENCE_URL]) {
+      try {
+        const u = new URL(v);
+        origins.add(u.origin.replace(/^ws/, 'http'));
+        origins.add(u.origin.replace(/^http/, 'ws'));
+      } catch (e) {
+        /* 没设置 */
+      }
+    }
+    // 本机测试（?api= ?presence= 只在本机生效）
+    const local = 'http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:*';
+    const policy = [
+      "default-src 'self'",
+      // 老浏览器兼容层的几段固定小脚本，按内容摘要放行（不是放开所有行内脚本）
+      // 注意：手机应用里 Capacitor 把桥接脚本插在 <head> 最前面、这条策略之前，所以不受影响（已用模拟测过）
+      `script-src 'self' ${[...cspHashes, ...own].map((h) => `'sha256-${h}'`).join(' ')}${app ? " 'unsafe-inline'" : ''}`,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self'",
+      `connect-src 'self' ${[...origins].join(' ')} ${local}`,
+      "manifest-src 'self'",
+      "worker-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'none'",
+    ].join('; ');
+    return html.replace(
+      '<meta charset="UTF-8" />',
+      `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />\n    <meta name="referrer" content="no-referrer" />`,
+    );
+  }
+}
+
+/** 启动画面里的默认语言跟 src/i18n/index.js 的 DEFAULT_LANG 保持一致（上线前改成 tg 时这里自动跟着变） */
+function splashLang() {
+  const m = readFileSync(new URL('./src/i18n/index.js', import.meta.url), 'utf8').match(/export const DEFAULT_LANG = '(\w+)'/);
+  const lang = m ? m[1] : 'tg';
+  return { name: 'splash-lang', transformIndexHtml: (html) => html.replace("'__DEFAULT_LANG__'", `'${lang}'`) };
 }
 
 export default defineConfig(({ mode }) => {
@@ -57,6 +70,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       // 老手机：不支持新版脚本的浏览器（约 2017 年以前的安卓浏览器、iOS 10）自动改用兼容版；新手机不受影响
       legacy({ targets: ['chrome >= 49', 'safari >= 10', 'ios >= 10', 'android >= 5'], modernPolyfills: false }),
+      splashLang(),
       contentSecurityPolicy(env),
     ],
     build: {

@@ -1,11 +1,11 @@
 {
-  "name": "网上清真寺",
-  "short_name": "网上清真寺",
+  "name": "拜毯 · Ҷойнамоз",
+  "short_name": "Ҷойнамоз",
   "description": "五番拜时间、在家礼拜指引、小净、朝向与赞念",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f7f2e6",
+  "background_color": "#0f5940",
   "theme_color": "#0f5940",
   "lang": "zh-CN",
   "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]

@@ -32,8 +32,10 @@ if (existsSync(res)) {
   for (const f of execSync(`find ${res} -name splash.png`).toString().trim().split('\n')) {
     const [w, h] = execSync(`python3 -c "import struct;f=open('${f}','rb');f.read(16);print(*struct.unpack('>II',f.read(8)))"`).toString().trim().split(' ').map(Number);
     const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
-    const s = Math.min(w, h) * 0.42;
-    await page.setContent(`<body style="margin:0;width:${w}px;height:${h}px;background:#f7f2e6;display:grid;place-items:center">${svg('icon-full.svg').replace('<svg ', `<svg width="${s}" height="${s}" style="border-radius:${s * 0.22}px" `)}</body>`);
+    // 品牌绿底 + 金色图案（取 splash.svg 中间那块），和网页启动画面一致
+    const s = Math.min(w, h);
+    const mark = svg('splash.svg').replace('viewBox="0 0 2732 2732"', 'viewBox="866 866 1000 1000"');
+    await page.setContent(`<body style="margin:0;width:${w}px;height:${h}px;background:#0f5940;display:grid;place-items:center">${mark.replace('<svg ', `<svg width="${s * 0.5}" height="${s * 0.5}" `)}</body>`);
     await page.screenshot({ path: f });
     await page.close();
   }
@@ -41,7 +43,7 @@ if (existsSync(res)) {
 const ios = join(root, 'ios/App/App/Assets.xcassets');
 if (existsSync(ios)) {
   await render(svg('icon-full.svg'), 1024, join(ios, 'AppIcon.appiconset/AppIcon-512@2x.png'), { bg: '#0f5940' });
-  for (const n of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) await render(svg('splash.svg'), 2732, join(ios, 'Splash.imageset', n), { bg: '#f7f2e6' });
+  for (const n of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) await render(svg('splash.svg'), 2732, join(ios, 'Splash.imageset', n), { bg: '#0f5940' });
 }
 await browser.close();
 console.log('图标和启动画面已生成');
