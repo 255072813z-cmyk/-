@@ -141,6 +141,7 @@ ul.dots { padding-left: 1.2em; margin: 0.4em 0; }
 ul.dots li { margin: 0.35em 0; }
 ul.dots li::marker { color: var(--gold); }
 
+.loading { text-align: center; color: var(--muted); padding: 48px 0; }
 .privacy { color: var(--muted); font-size: 0.85rem; text-align: center; margin: 24px 8px 8px; }
 
 /* 到点提示 */

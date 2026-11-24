@@ -8,7 +8,7 @@ import { setSettings } from '../core/settings.js';
 import { CITIES } from '../core/cities.js';
 import { PRAYER_INFO } from '../content/prayers.js';
 import { mosqueScene, star8 } from '../ui/art.js';
-import { homeRamadanCard } from './ramadan/index.js';
+import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
 
 const WEEK = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
@@ -150,6 +150,10 @@ export function homePage(ctx) {
     <a class="card card-link athome" href="#/pray">
       <span class="athome-t">${t('home.atHome')}</span>
       <span class="athome-s">小净 · 朝向 · 跟着做 · 礼拜后赞念</span>
+    </a>
+    <a class="card card-link to-masjid" href="#/masjid">
+      <span class="athome-t">进清真寺坐坐</span>
+      <span class="athome-s">礼拜大殿 · 庭院 · 诗歌夜</span>
     </a>
     </div>
     <p class="privacy">${t('privacy')}</p>

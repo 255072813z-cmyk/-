@@ -5,6 +5,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/home.css';
 import './styles/pray.css';
+import './styles/spaces.css';
 
 import { getSettings, onSettings } from './core/settings.js';
 import { getCity } from './core/cities.js';
@@ -14,7 +15,7 @@ import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
 import { t, setLang } from './i18n/index.js';
 import { ICONS, star8 } from './ui/art.js';
-import { resolveRoute } from './router.js';
+import { resolveRoute, prefetchPages } from './router.js';
 
 const app = document.getElementById('app');
 const tabbar = document.querySelector('.tabbar');
@@ -22,9 +23,9 @@ const topnav = document.querySelector('.topnav');
 
 const TABS = [
   { href: '#/', key: 'nav.home', icon: 'home', match: (p) => p === '' },
-  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => p.startsWith('pray') && !p.startsWith('pray/guide/tarawih') },
+  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => (p.startsWith('pray') && !p.startsWith('pray/guide/tarawih')) || p.startsWith('qibla') },
+  { href: '#/masjid', key: 'nav.masjid', icon: 'masjid', match: (p) => p.startsWith('masjid') },
   { href: '#/ramadan', key: 'nav.ramadan', icon: 'ramadan', match: (p) => p.startsWith('ramadan') || p.startsWith('pray/guide/tarawih') },
-  { href: '#/qibla', key: 'nav.qibla', icon: 'qibla', match: (p) => p.startsWith('qibla') },
   { href: '#/tasbih', key: 'nav.tasbih', icon: 'tasbih', match: (p) => p.startsWith('tasbih') },
 ];
 
@@ -120,8 +121,11 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) tick();
 });
 
+// 首屏显示后，空闲时把其他页面也下载好（配合离线缓存，断网也能打开）
+window.addEventListener('load', prefetchPages);
+
 // 离线缓存（微信 iOS 等不支持的环境会静默跳过）
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+if ('serviceWorker' in navigator && window.isSecureContext) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });

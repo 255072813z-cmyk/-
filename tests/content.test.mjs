@@ -98,3 +98,15 @@ test('红线：没有支付、登录、统计、Cookie', () => {
     for (const re of banned) assert.ok(!re.test(src), `${f} 命中 ${re}`);
   }
 });
+
+test('诗歌：波斯文、塔吉克文、中文行数一致，文字不混写', async () => {
+  const { POEMS } = await import('../src/content/poems.js');
+  assert.ok(POEMS.length >= 5);
+  for (const p of POEMS) {
+    assert.equal(p.fa.length, p.tg.length, p.src);
+    assert.equal(p.fa.length, p.zh.length, p.src);
+    for (const l of p.tg) assert.ok(!/[A-Za-z]/.test(l), `塔吉克文含拉丁字母：${l}`);
+    for (const l of p.fa) assert.ok(!/[A-Za-zА-Яа-яӮӯҶҷҲҳҒғҚқӢӣ]/.test(l), `波斯文混入其他字母：${l}`);
+    assert.ok(p.src.startsWith('Ganjoor'));
+  }
+});

@@ -11,6 +11,7 @@ import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startPresenceServer } from '../server/dev-server.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -165,6 +166,76 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   }
   await page.screenshot({ path: join(shots, 'verify-dark-witr.png'), fullPage: true });
   check('威特尔第 3 拜有"举手，念古努特"一步', title.includes('古努特') && count.startsWith('第 3 拜'), `${count.trim()}：${title}`);
+  await ctx.close();
+}
+
+// 7. 礼拜大殿：真实的多人连接（本地在线人数服务，垫子设为 2 张）
+{
+  const ps = startPresenceServer({ port: 0, hallCapacity: 2 });
+  await new Promise((r) => setTimeout(r, 200));
+  const q = `?weather=clear&now=2026-12-18T14:10&presence=ws://127.0.0.1:${ps.port}#/masjid/hall`;
+  const users = [];
+  for (let k = 0; k < 3; k++) {
+    const ctx = await browser.newContext(phone);
+    const page = await ctx.newPage();
+    await page.goto(base + q);
+    users.push({ ctx, page });
+  }
+  await users[2].page.waitForFunction(() => /此刻在大殿 3 人/.test(document.querySelector('[data-count]').textContent), null, { timeout: 5000 }).catch(() => {});
+  check('大殿显示真实在线人数', /此刻在大殿 3 人/.test(await users[2].page.textContent('[data-count]')), await users[2].page.textContent('[data-count]'));
+  await users[0].page.click('[data-mat="0"]');
+  await users[1].page.waitForSelector('[data-mat="1"].is-free');
+  await users[1].page.click('[data-mat="1"]');
+  await users[2].page.waitForSelector('[data-queue]', { timeout: 5000 }).catch(() => {});
+  check('垫子坐满后提示排队', (await users[2].page.locator('[data-queue]').count()) === 1);
+  await users[2].page.click('[data-queue]');
+  await users[2].page.waitForFunction(() => /你排在第 1 位/.test(document.querySelector('[data-panel]').textContent), null, { timeout: 5000 }).catch(() => {});
+  check('排队位置', /你排在第 1 位/.test(await users[2].page.textContent('[data-panel]')));
+  await users[0].page.click('[data-stand]');
+  await users[2].page.waitForFunction(() => /你坐在第 1 排第 1 张/.test(document.querySelector('[data-panel]').textContent), null, { timeout: 5000 }).catch(() => {});
+  const toastText = (await users[2].page.locator('.toast').textContent().catch(() => '')) || '';
+  check('有人起身，垫子自动给排队的人', /你坐在第 1 排第 1 张/.test(await users[2].page.textContent('[data-panel]')) && /轮到你了/.test(toastText), toastText.trim());
+  await users[2].page.screenshot({ path: join(shots, 'verify-hall-queue.png') });
+  await users[1].ctx.close();
+  await users[0].page.waitForFunction(() => /此刻在大殿 2 人/.test(document.querySelector('[data-count]').textContent), null, { timeout: 5000 }).catch(() => {});
+  check('有人离开，人数实时减少', /此刻在大殿 2 人/.test(await users[0].page.textContent('[data-count]')));
+  await users[0].page.goto(base + q.replace('#/masjid/hall', '#/masjid'));
+  await users[0].page.waitForFunction(() => /此刻/.test(document.querySelector('[data-count="hall"]').textContent), null, { timeout: 5000 }).catch(() => {});
+  check('入口页只读人数（看人数不算人头）', /此刻 1 人 · 垫子 1\/2/.test(await users[0].page.textContent('[data-count="hall"]')), await users[0].page.textContent('[data-count="hall"]'));
+  for (const u of users) await u.ctx.close().catch(() => {});
+  await ps.close();
+}
+
+// 8. 没有在线人数服务时：不显示任何人数
+{
+  const ctx = await browser.newContext(phone);
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear#/masjid/hall');
+  const t = await page.textContent('[data-count]');
+  check('未连接计数服务时不显示人数（不编造）', !/\d+ 人/.test(t), t);
+  await ctx.close();
+}
+
+// 9. 离线：打开一次后断网，礼拜时间和各页面照样能看
+{
+  const ctx = await browser.newContext(phone);
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear');
+  await page.evaluate(() => navigator.serviceWorker && navigator.serviceWorker.ready);
+  await page.reload(); // 让离线缓存接管页面
+  await page.waitForTimeout(5000); // 等空闲时预下载其他页面
+  await ctx.setOffline(true);
+  await page.reload();
+  const time = await page.textContent('[data-hero] .hero-time').catch(() => '');
+  check('断网后礼拜时间照样显示', /\d\d:\d\d/.test(time || ''), time);
+  const okPages = [];
+  for (const h of ['#/ramadan', '#/masjid/hall', '#/pray/guide/fajr/fard', '#/qibla']) {
+    await page.goto(base + '?weather=clear' + h);
+    await page.waitForTimeout(600);
+    const txt = await page.textContent('#app');
+    if (txt && !/稍等|没有网络/.test(txt) && txt.length > 50) okPages.push(h);
+  }
+  check('断网后斋月、大殿、跟做、朝向页都能打开', okPages.length === 4, okPages.join(' '));
   await ctx.close();
 }
 

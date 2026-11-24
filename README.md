@@ -36,10 +36,34 @@
 - 用户按清真寺微调时，封斋只会更早、开斋只会更晚
 - 斋月日期、节日按乌姆古拉历法推算（1448 年斋月：2027-02-08 起，开斋节 03-09，古尔邦节 05-16），页面写明"以当地清真寺公布为准"
 
-## 上线
+## 第三阶段：三个空间（已完成）
 
-`.github/workflows/deploy.yml`：合并到 `main` 后自动测试、核对时间、构建并发布到 GitHub Pages。
-第一次使用前，在仓库 Settings → Pages → Build and deployment → Source 选 **GitHub Actions**。
+| 空间 | 内容 |
+|---|---|
+| 清真寺（入口） | 三道门；门上显示真实在线人数（只读查询，看人数不算人头） |
+| 礼拜大殿 | 可左右走动的全景：米哈拉布、敏拜尔、吊灯、4 排 40 张垫子。点空垫子坐下，安静待一会儿；坐满了排队，有人起身时空垫子自动给排在最前面的人 |
+| 庭院 | 葡萄架、塔普昌、苏扎尼、茶和馕、小水池；倒茶、掰馕、听流水声（默认静音）；显示下一番拜，宣礼前 10 分钟请你进大殿 |
+| 诗歌夜 | 宵礼后到晨礼前开放；鲁达基、鲁米、哈菲兹、萨迪的诗句轮换（波斯文原文 + 塔吉克文 + 中文意译）；合成配乐默认静音 |
+
+- 画里的人是插画（剪影、背影，不画五官）；**在线人数只显示真实统计，没有连接计数服务时不显示任何人数**
+- 底部导航：今天 · 在家礼拜 · 清真寺 · 斋月 · 赞念（朝向在"在家礼拜"里）
+- 诗句原文出自 Ganjoor 古典诗歌库；塔吉克文为本站转写，中文为本站意译
+- 配乐、流水声都是在手机上实时合成的，不是录音
+
+**在线人数服务（`server/`）**
+
+- 只在内存里数连接：每个连接一个服务端随机编号，不收集、不保存任何个人信息，不写数据库
+- `room.js` 规则（垫子、排队）；`worker.js` 线上版（Cloudflare Workers + Durable Objects，免费套餐可用）；`dev-server.mjs` 本地版
+- 本地运行：`npm run presence`，网页地址后加 `?presence=ws://127.0.0.1:8787`
+- 线上版已在 Cloudflare 官方运行时（Miniflare/workerd）测试：`npm i --no-save miniflare@3.20250718.3 && node server/test-worker.mjs`
+
+## 上线（三个阶段都做完后一起上线）
+
+1. **在线人数服务**：需要一个 Cloudflare 账号。`cd server && npx wrangler deploy`，然后把 `wrangler.toml` 里的 `ALLOWED_ORIGINS` 改成网站地址再部署一次
+2. **网站**：仓库 Settings → Pages → Build and deployment → Source 选 **GitHub Actions**；在 Settings → Secrets and variables → Actions → Variables 里加 `VITE_PRESENCE_URL`（第 1 步得到的 `wss://` 地址）
+3. 合并到 `main`：`.github/workflows/deploy.yml` 自动测试、核对时间、构建并发布
+
+不部署第 1 步也能上线，只是不显示在线人数。
 
 ## 运行
 
@@ -61,7 +85,8 @@ npm test             # 单元测试：时区无关、拜数、步骤、念词完
 npm run check:astro  # 全年逐日与高精度天文库比对礼拜时间（离线）
 npm run check:times  # 与 aladhan.com 比对（需联网）
 npm run build && npm run shots    # 手机/平板/电脑三种尺寸截图 + 横向溢出 + 报错检查
-npm run build && npm run verify   # 首屏速度、到点提醒、罗盘、本地记录、第三方请求、夜间模式
+npm run build && npm run verify   # 首屏速度、到点提醒、罗盘、本地记录、第三方请求、夜间模式、
+                                  # 大殿多人连接与排队、离线可用
 ```
 
 ## 宗教内容的依据
@@ -87,20 +112,22 @@ npm run build && npm run verify   # 首屏速度、到点提醒、罗盘、本�
 ```
 src/
   main.js            入口：路由、导航、走时、提醒
-  router.js          路由（以后加 三个空间 spaces）
+  router.js          路由（首页之外的页面按需加载）
   core/              计算：礼拜时间、斋月、伊斯兰历、朝向、天气、存储、设置、提醒
   content/           宗教内容：念词、拜数与步骤、小净、古兰经与 30 卷（生成）、地图（生成）
   pages/home.js      首页
   pages/pray/        在家礼拜：入口、小净、跟做、朝向、赞念
   pages/ramadan/     斋月：封斋开斋、打卡、间歇拜、古兰经计划
+  pages/spaces/      三个空间：入口、礼拜大殿、庭院、诗歌夜
   pages/settings.js  设置
   ui/                插图（全部 SVG 剪影，无五官）、念词卡片
   i18n/              界面文字（现有中文；预留塔吉克语 tg、俄语 ru）
   styles/            样式（绿 + 金 + 米白；夜间自动深色）
 scripts/             生成数据、核对时间、截图与验收
+server/              在线人数服务（只计数，不存数据）
 tests/               单元测试
 ```
 
 ## 隐私
 
-唯一的对外请求是天气：只带城市坐标去 Open-Meteo（免费、无需密钥），结果在本机缓存 1 小时。不用定位、不设 Cookie、不接任何统计或广告。
+对外请求只有两种：天气（只带城市坐标去 Open-Meteo，免费、无需密钥，本机缓存 1 小时），以及上线后的在线人数服务（只收发人数和垫子状态）。不用定位、不设 Cookie、不接任何统计或广告。

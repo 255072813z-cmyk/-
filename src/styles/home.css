@@ -126,6 +126,10 @@ details.method summary { color: var(--green); }
 .page.home .ramadan-slot.is-active { order: 4; }
 .page.home .list-card { order: 6; }
 .page.home .athome { order: 7; }
+.page.home .to-masjid { order: 7; }
+.to-masjid { display: grid; gap: 2px; padding: 18px; background: var(--gold-soft); border-color: var(--gold); }
+.to-masjid .athome-t { color: var(--gold-ink); }
+.to-masjid .athome-s { color: var(--ink-2); }
 .page.home .privacy { order: 8; }
 
 /* 电脑、平板横屏：左边插图和时间表，右边日期、下一番、提示 */

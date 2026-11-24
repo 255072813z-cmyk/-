@@ -31,6 +31,9 @@ jobs:
       - name: 礼拜时间全年天文核对
         run: npm run check:astro
       - run: npm run build
+        env:
+          # 在线人数服务地址（仓库 Settings → Secrets and variables → Actions → Variables）；不设就不显示人数
+          VITE_PRESENCE_URL: ${{ vars.VITE_PRESENCE_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

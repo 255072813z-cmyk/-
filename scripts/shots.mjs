@@ -48,6 +48,12 @@ const PAGES = [
   ['home-ramadan', '', 0, '?weather=clear&now=2027-02-20T05:20'],
   ['tarawih', '#/ramadan/tarawih', 0, '?weather=clear&now=2027-02-20T20:30'],
   ['quran', '#/ramadan/quran', 0, '?weather=clear&now=2027-02-20T12:00'],
+  ['masjid', '#/masjid', 0, '?weather=clear&now=2026-12-18T14:10'],
+  ['hall', '#/masjid/hall', 0, '?weather=clear&now=2026-12-18T14:10'],
+  ['hall-sit', '#/masjid/hall', 0, '?weather=clear&now=2026-12-18T14:10', '[data-mat="34"]'],
+  ['courtyard', '#/masjid/courtyard', 0, '?weather=clear&now=2026-12-18T14:10', '[data-tea]'],
+  ['poetry', '#/masjid/poetry', 0, '?weather=clear&now=2026-12-18T20:30'],
+  ['poetry-closed', '#/masjid/poetry', 0, '?weather=clear&now=2026-12-18T14:10'],
 ];
 const query = process.env.SHOTS_QUERY ?? '?weather=heavy&now=2026-12-18T15:20';
 const only = process.env.SHOTS_ONLY;
@@ -62,10 +68,15 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  for (const [name, hash, clicks, q] of PAGES) {
+  for (const [name, hash, clicks, q, clickSel] of PAGES) {
     await page.goto(base + 'index.html' + (q || query) + hash);
     await page.waitForLoadState('networkidle');
     for (let i = 0; i < (clicks || 0); i++) await page.click('[data-next]');
+    if (clickSel) {
+      await page.locator(clickSel).first().scrollIntoViewIfNeeded();
+      await page.click(clickSel);
+      await page.waitForTimeout(1600);
+    }
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(250);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

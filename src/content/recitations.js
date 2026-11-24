@@ -201,5 +201,4 @@ export function surah(n) {
   };
 }
 
-/** 第 r 拜（从 1 开始）跟读的短章 */
-export const SHORT_SURAHS = [103, 108, 112, 113];
+export { SHORT_SURAHS } from './prayers.js';

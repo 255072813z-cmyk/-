@@ -226,6 +226,7 @@ export function kaaba(size = 28) {
 export const ICONS = {
   home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11Q4 6 12 3Q20 6 20 11V20H14V15Q14 13 12 13Q10 13 10 15V20Z"/></svg>',
   pray: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="5" r="2.2"/><path d="M6 9Q9 8 12 9L13 15L19 15Q21 15 21 17V20H4L5 15Z"/></svg>',
+  masjid: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21V13Q7 8 12 6Q17 8 17 13V21H14V17Q14 15 12 15Q10 15 10 17V21Z"/><rect x="2.5" y="9" width="2.6" height="12"/><rect x="18.9" y="9" width="2.6" height="12"/><path d="M12 6V3M2.5 9L3.8 6L5.1 9ZM18.9 9L20.2 6L21.5 9Z" stroke-width="1.2"/></svg>',
   ramadan: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 1 0 7.5 14A7.2 7.2 0 1 1 13 3Z"/><path d="M18 5l.8 1.7 1.8.3-1.3 1.3.3 1.8-1.6-.9-1.6.9.3-1.8L15.4 7l1.8-.3Z"/></svg>',
   qibla: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke-width="2"/><path d="M12 5L15 13L12 11.5L9 13Z"/></svg>',
   tasbih: '<svg viewBox="0 0 24 24" aria-hidden="true">' + Array.from({ length: 9 }, (_, i) => { const a = (i / 9) * Math.PI * 2 - Math.PI / 2; return `<circle cx="${(12 + 7.5 * Math.cos(a)).toFixed(1)}" cy="${(11 + 7.5 * Math.sin(a)).toFixed(1)}" r="1.7"/>`; }).join('') + '<path d="M12 18.5V23" stroke-width="1.6"/></svg>',

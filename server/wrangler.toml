@@ -1,0 +1,17 @@
+# 在线人数服务的 Cloudflare 配置。上线时：npx wrangler deploy
+name = "masjid-presence"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# 免费套餐需要 SQLite 版的 Durable Object（本服务并不写任何数据）
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+# 只允许本站页面连接。上线时填网站地址，多个用英文逗号隔开；留空表示不限制
+ALLOWED_ORIGINS = ""

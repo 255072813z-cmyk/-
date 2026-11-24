@@ -3,6 +3,7 @@ export default {
   'app.name': '网上清真寺',
   'nav.home': '今天',
   'nav.pray': '在家礼拜',
+  'nav.masjid': '清真寺',
   'nav.ramadan': '斋月',
   'nav.qibla': '朝向',
   'nav.tasbih': '赞念',
