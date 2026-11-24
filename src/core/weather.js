@@ -30,8 +30,11 @@ function override() {
   return null;
 }
 
+// 预览版（VITE_PREVIEW=1 构建，用于在不能联网查天气的预览环境里展示冬季模式）固定显示演示大雪
+const PREVIEW = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_PREVIEW === '1';
+
 export async function getWeather(city) {
-  const o = override();
+  const o = override() || (PREVIEW ? { code: 75, dayCode: 75, temp: -4, minTemp: -9, snowCm: 12, demo: true } : null);
   if (o) return o;
   const key = 'weather:' + city.id;
   const cached = load(key, null);

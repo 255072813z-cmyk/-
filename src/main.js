@@ -103,6 +103,7 @@ onSettings((s) => {
   if (cityChanged) loadWeather();
 });
 
+document.documentElement.lang = 'zh-CN';
 document.querySelector('.brand-mark').innerHTML = star8(26);
 document.querySelector('.topbar-settings').innerHTML = ICONS.settings;
 applyPrefs();
