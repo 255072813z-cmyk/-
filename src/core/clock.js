@@ -23,8 +23,15 @@ export function now() {
 
 const pad = (n) => (n < 10 ? '0' : '') + n;
 
-/** 某一时刻在给定 UTC 偏移下的年月日时分秒 */
-export function localParts(date, offsetH = 5) {
+// 页面显示用的时区（当前所选城市的 UTC 偏移）。切换城市时由 main.js 设置。
+let displayOffset = 5;
+export function setDisplayOffset(h) {
+  if (isFinite(h)) displayOffset = h;
+}
+export const getDisplayOffset = () => displayOffset;
+
+/** 某一时刻在给定 UTC 偏移下的年月日时分秒（不给偏移时按当前所选城市） */
+export function localParts(date, offsetH = displayOffset) {
   const d = new Date(date.getTime() + offsetH * HOUR);
   return {
     y: d.getUTCFullYear(),
@@ -37,7 +44,7 @@ export function localParts(date, offsetH = 5) {
   };
 }
 
-export function fmtHM(date, offsetH = 5) {
+export function fmtHM(date, offsetH = displayOffset) {
   const p = localParts(date, offsetH);
   return pad(p.hh) + ':' + pad(p.mm);
 }

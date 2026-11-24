@@ -6,7 +6,7 @@ import { fmtHM } from '../core/clock.js';
 import { toHijri } from '../core/hijri.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t, LANGS } from '../i18n/index.js';
-import { hijriLine } from '../i18n/format.js';
+import { hijriLine, cityName } from '../i18n/format.js';
 import { isNativeApp, notifyStatus, askNotifyPermission, openExactSetting, testNotification } from '../core/notify.js';
 
 const signed = (v) => (v > 0 ? '+' : '') + v;
@@ -20,6 +20,11 @@ export function settingsPage(ctx) {
   const html = `
   <div class="page settings">
     <div class="page-head"><a class="back" href="#/" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('nav.settings')}</h1></div>
+
+    <a class="card card-link city-set" href="#/city">
+      <span class="athome-t">${t('settings.cityIs', { name: cityName(ctx.city) })}</span>
+      <span class="athome-s">${t('settings.cityChange')} →</span>
+    </a>
 
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('settings.fontTitle')}</h2>
@@ -54,7 +59,7 @@ export function settingsPage(ctx) {
 
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('home.adjust')}</h2>
-      <p class="note">${t('settings.adjustNote', { city: t('city.' + ctx.city.id) })}</p>
+      <p class="note">${t('settings.adjustNote', { city: cityName(ctx.city) })}</p>
       <ul class="adj-list">
         ${PRAYERS.map((p) => {
           const v = Number(s.offsets[p]) || 0;

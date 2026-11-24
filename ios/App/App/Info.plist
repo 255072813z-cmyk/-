@@ -66,5 +66,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>只在你点"用我的位置"时使用，按你所在的地方计算礼拜时间和朝向。位置只在手机上使用，不会上传。</string>
 </dict>
 </plist>

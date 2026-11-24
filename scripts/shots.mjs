@@ -58,6 +58,12 @@ const PAGES = [
   ['courtyard', '#/masjid/courtyard', 0, '?weather=clear&now=2026-12-18T14:10', '[data-tea]'],
   ['poetry', '#/masjid/poetry', 0, '?weather=clear&now=2026-12-18T20:30'],
   ['poetry-closed', '#/masjid/poetry', 0, '?weather=clear&now=2026-12-18T14:10'],
+  ['city', '#/city'],
+  // 俄罗斯城市（第 6 项：预先写入的设置）
+  ['home-moscow', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'moscow' }],
+  ['home-spb-summer', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'spb' }],
+  ['qibla-vladivostok', '#/qibla', 0, '?weather=clear', null, { city: 'vladivostok' }],
+  ['qibla-here', '#/qibla', 0, '?weather=clear', null, { city: 'here', loc: { lat: 48.48, lon: 135.08, utcOffset: 10 } }],
 ];
 const query = process.env.SHOTS_QUERY ?? '?weather=heavy&now=2026-12-18T15:20';
 const only = process.env.SHOTS_ONLY;
@@ -72,7 +78,9 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  for (const [name, hash, clicks, q, clickSel] of PAGES) {
+  for (const [name, hash, clicks, q, clickSel, preset] of PAGES) {
+    await page.goto(base + 'index.html?preset=1');
+    await page.evaluate((p) => (p ? localStorage.setItem('masjid:settings', JSON.stringify(p)) : localStorage.clear()), preset || null);
     await page.goto(base + 'index.html' + (q || query) + hash);
     await page.waitForLoadState('networkidle');
     for (let i = 0; i < (clicks || 0); i++) await page.click('[data-next]');

@@ -1,0 +1,313 @@
+// 自动生成：npm run cities（scripts/build-cities.mjs）。请勿手改。
+// 坐标与时区：Open-Meteo 地名库（数据来自 GeoNames，geonameId 可查）；磁偏角：WMM-2025（2026 年 12 月）。
+// 塔吉克斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
+export const CITY_DATA = [
+ {
+  "id": "dushanbe",
+  "cc": "TJ",
+  "lat": 38.53575,
+  "lon": 68.77905,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.7,
+  "method": "karachi",
+  "geonameId": 1221874
+ },
+ {
+  "id": "khujand",
+  "cc": "TJ",
+  "lat": 40.28256,
+  "lon": 69.62216,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 5.3,
+  "method": "karachi",
+  "geonameId": 1514879
+ },
+ {
+  "id": "kulob",
+  "cc": "TJ",
+  "lat": 37.91459,
+  "lon": 69.78454,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.4,
+  "method": "karachi",
+  "geonameId": 1221194
+ },
+ {
+  "id": "bokhtar",
+  "cc": "TJ",
+  "lat": 37.83654,
+  "lon": 68.77762,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.5,
+  "method": "karachi",
+  "geonameId": 1220747
+ },
+ {
+  "id": "istaravshan",
+  "cc": "TJ",
+  "lat": 39.9142,
+  "lon": 69.00328,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 5.2,
+  "method": "karachi",
+  "geonameId": 1220253
+ },
+ {
+  "id": "vahdat",
+  "cc": "TJ",
+  "lat": 38.55632,
+  "lon": 69.01354,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.7,
+  "method": "karachi",
+  "geonameId": 1220855
+ },
+ {
+  "id": "tursunzoda",
+  "cc": "TJ",
+  "lat": 38.51271,
+  "lon": 68.23163,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.8,
+  "method": "karachi",
+  "geonameId": 1282601
+ },
+ {
+  "id": "hisor",
+  "cc": "TJ",
+  "lat": 38.52504,
+  "lon": 68.55124,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.8,
+  "method": "karachi",
+  "geonameId": 1221714
+ },
+ {
+  "id": "isfara",
+  "cc": "TJ",
+  "lat": 40.12649,
+  "lon": 70.62526,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 5.1,
+  "method": "karachi",
+  "geonameId": 1514896
+ },
+ {
+  "id": "konibodom",
+  "cc": "TJ",
+  "lat": 40.29414,
+  "lon": 70.43122,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 5.2,
+  "method": "karachi",
+  "geonameId": 1514891
+ },
+ {
+  "id": "panjakent",
+  "cc": "TJ",
+  "lat": 39.49524,
+  "lon": 67.60931,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 5.2,
+  "method": "karachi",
+  "geonameId": 1220798
+ },
+ {
+  "id": "khorog",
+  "cc": "TJ",
+  "lat": 37.49039,
+  "lon": 71.55337,
+  "tz": "Asia/Dushanbe",
+  "utcOffset": 5,
+  "declination": 4.1,
+  "method": "karachi",
+  "geonameId": 1221328
+ },
+ {
+  "id": "moscow",
+  "cc": "RU",
+  "lat": 55.75204,
+  "lon": 37.61781,
+  "tz": "Europe/Moscow",
+  "utcOffset": 3,
+  "declination": 12.2,
+  "method": "dumrf",
+  "geonameId": 524901
+ },
+ {
+  "id": "spb",
+  "cc": "RU",
+  "lat": 59.93863,
+  "lon": 30.31413,
+  "tz": "Europe/Moscow",
+  "utcOffset": 3,
+  "declination": 12.2,
+  "method": "dumrf",
+  "geonameId": 498817
+ },
+ {
+  "id": "kazan",
+  "cc": "RU",
+  "lat": 55.78874,
+  "lon": 49.12214,
+  "tz": "Europe/Moscow",
+  "utcOffset": 3,
+  "declination": 14.2,
+  "method": "dumrf",
+  "geonameId": 551487
+ },
+ {
+  "id": "nnovgorod",
+  "cc": "RU",
+  "lat": 56.32867,
+  "lon": 44.00205,
+  "tz": "Europe/Moscow",
+  "utcOffset": 3,
+  "declination": 13.8,
+  "method": "dumrf",
+  "geonameId": 520555
+ },
+ {
+  "id": "krasnodar",
+  "cc": "RU",
+  "lat": 45.04534,
+  "lon": 38.98178,
+  "tz": "Europe/Moscow",
+  "utcOffset": 3,
+  "declination": 7.9,
+  "method": "dumrf",
+  "geonameId": 542420
+ },
+ {
+  "id": "rostov",
+  "cc": "RU",
+  "lat": 47.21997,
+  "lon": 39.70769,
+  "tz": "Europe/Moscow",
+  "utcOffset": 3,
+  "declination": 8.7,
+  "method": "dumrf",
+  "geonameId": 501175
+ },
+ {
+  "id": "samara",
+  "cc": "RU",
+  "lat": 53.20767,
+  "lon": 50.13553,
+  "tz": "Europe/Samara",
+  "utcOffset": 4,
+  "declination": 12.6,
+  "method": "dumrf",
+  "geonameId": 499099
+ },
+ {
+  "id": "yekaterinburg",
+  "cc": "RU",
+  "lat": 56.85733,
+  "lon": 60.61529,
+  "tz": "Asia/Yekaterinburg",
+  "utcOffset": 5,
+  "declination": 15.5,
+  "method": "dumrf",
+  "geonameId": 1486209
+ },
+ {
+  "id": "chelyabinsk",
+  "cc": "RU",
+  "lat": 55.1611,
+  "lon": 61.42877,
+  "tz": "Asia/Yekaterinburg",
+  "utcOffset": 5,
+  "declination": 14.2,
+  "method": "dumrf",
+  "geonameId": 1508291
+ },
+ {
+  "id": "ufa",
+  "cc": "RU",
+  "lat": 54.74306,
+  "lon": 55.96779,
+  "tz": "Asia/Yekaterinburg",
+  "utcOffset": 5,
+  "declination": 14,
+  "method": "dumrf",
+  "geonameId": 479561
+ },
+ {
+  "id": "tyumen",
+  "cc": "RU",
+  "lat": 57.15222,
+  "lon": 65.52722,
+  "tz": "Asia/Yekaterinburg",
+  "utcOffset": 5,
+  "declination": 15.3,
+  "method": "dumrf",
+  "geonameId": 1488754
+ },
+ {
+  "id": "surgut",
+  "cc": "RU",
+  "lat": 61.25757,
+  "lon": 73.41775,
+  "tz": "Asia/Yekaterinburg",
+  "utcOffset": 5,
+  "declination": 17,
+  "method": "dumrf",
+  "geonameId": 1490624
+ },
+ {
+  "id": "novosibirsk",
+  "cc": "RU",
+  "lat": 55.02259,
+  "lon": 82.93175,
+  "tz": "Asia/Novosibirsk",
+  "utcOffset": 7,
+  "declination": 8.2,
+  "method": "dumrf",
+  "geonameId": 1496747
+ },
+ {
+  "id": "krasnoyarsk",
+  "cc": "RU",
+  "lat": 56.03742,
+  "lon": 92.93136,
+  "tz": "Asia/Krasnoyarsk",
+  "utcOffset": 7,
+  "declination": 2.7,
+  "method": "dumrf",
+  "geonameId": 1502026
+ },
+ {
+  "id": "irkutsk",
+  "cc": "RU",
+  "lat": 52.29566,
+  "lon": 104.29076,
+  "tz": "Asia/Irkutsk",
+  "utcOffset": 8,
+  "declination": -4.8,
+  "method": "dumrf",
+  "geonameId": 2023469
+ },
+ {
+  "id": "vladivostok",
+  "cc": "RU",
+  "lat": 43.10562,
+  "lon": 131.87354,
+  "tz": "Asia/Vladivostok",
+  "utcOffset": 10,
+  "declination": -10.9,
+  "method": "dumrf",
+  "geonameId": 2013348
+ }
+];

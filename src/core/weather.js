@@ -59,19 +59,22 @@ function override() {
   return null;
 }
 
+// 预览版（VITE_PREVIEW=1 构建，用于在不能联网查天气的预览环境里展示冬季模式）固定显示演示大雪
+const PREVIEW = typeof import.meta !== 'undefined' && !!import.meta.env && import.meta.env.VITE_PREVIEW === '1';
+
 export async function getWeather(city) {
   const o = override() || (PREVIEW ? { ...DEMO.heavy, demo: true } : null);
   if (o) return o;
-  const key = 'weather2:' + city.id; // 数据字段有变，换个缓存名
+  const key = 'weather2:' + (city.near || city.id); // 按查询的城市缓存（"我的位置"用最近城市）
   const cached = load(key, null);
   if (cached && Date.now() - cached.at < TTL) return cached.data;
   try {
     const url =
       'https://api.open-meteo.com/v1/forecast' +
-      `?latitude=${city.lat}&longitude=${city.lon}` +
+      `?latitude=${city.weatherLat ?? city.lat}&longitude=${city.weatherLon ?? city.lon}` + // "我的位置"时用最近城市，不发出用户位置
       '&current=temperature_2m,weather_code,snowfall,wind_speed_10m,wind_gusts_10m' +
       '&daily=weather_code,temperature_2m_min,temperature_2m_max,snowfall_sum,uv_index_max,wind_gusts_10m_max' +
-      '&timezone=Asia%2FDushanbe&forecast_days=1';
+      '&timezone=auto&forecast_days=1'; // 按城市当地的日期统计当天最高温、最大阵风
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timer = ctrl ? setTimeout(() => ctrl.abort(), 6000) : null;
     const res = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);

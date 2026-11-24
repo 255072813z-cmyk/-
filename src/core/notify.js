@@ -44,7 +44,7 @@ export function buildSchedule(city, now, settings) {
         id: notifId(ymd, idx),
         at,
         title: n.advance ? t('notify.soonTitle', { name, n: n.advance }) : t('remind.title', { name }),
-        body: t('notify.body', { time: fmtHM(times[p]) }),
+        body: t('notify.body', { time: fmtHM(times[p], city.utcOffset) }),
         kind: 'prayer',
         prayer: p,
         route: '#/pray/guide/' + p,
@@ -54,7 +54,7 @@ export function buildSchedule(city, now, settings) {
       const f = fastTimes(city, ymd, settings.offsets);
       const warn = new Date(f.sahurEnd.getTime() - SAHUR_WARN_MIN * 60000);
       if (warn > now)
-        out.push({ id: notifId(ymd, 6), at: warn, title: t('notify.sahurTitle'), body: t('notify.sahurBody', { time: fmtHM(f.sahurEnd), n: SAHUR_WARN_MIN }), kind: 'sahur', route: '#/ramadan' });
+        out.push({ id: notifId(ymd, 6), at: warn, title: t('notify.sahurTitle'), body: t('notify.sahurBody', { time: fmtHM(f.sahurEnd, city.utcOffset), n: SAHUR_WARN_MIN }), kind: 'sahur', route: '#/ramadan' });
       if (f.iftar > now) out.push({ id: notifId(ymd, 7), at: f.iftar, title: t('notify.iftarTitle'), body: t('notify.iftarBody'), kind: 'iftar', route: '#/ramadan' });
     }
   }

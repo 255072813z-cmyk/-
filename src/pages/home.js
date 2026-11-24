@@ -1,12 +1,11 @@
 // 首页：今天的礼拜
 // 用户一打开就要看到三件事：下一番拜是什么、还有多久、今天在家礼拜行不行。
 import { t } from '../i18n/index.js';
-import { dateLine, hijriLine, durHTML } from '../i18n/format.js';
+import { dateLine, hijriLine, durHTML, cityName } from '../i18n/format.js';
 import { fmtHM, splitDuration, addDays } from '../core/clock.js';
-import { PRAYERS, skyPhase } from '../core/prayer-times.js';
+import { PRAYERS, skyPhase, highLatitudeDay } from '../core/prayer-times.js';
 import { toHijri } from '../core/hijri.js';
 import { setSettings } from '../core/settings.js';
-import { CITIES } from '../core/cities.js';
 import { PRAYER_INFO } from '../content/prayers.js';
 import { mosqueScene, star8 } from '../ui/art.js';
 import { isHeavyRain } from '../core/weather.js';
@@ -148,12 +147,8 @@ function dateHTML(ctx) {
 export function homePage(ctx) {
   const s = ctx.sched;
   const phase = skyPhase(s.times, ctx.now);
-  const cityBtns = Object.keys(CITIES)
-    .map(
-      (id) =>
-        `<button type="button" class="seg ${ctx.city.id === id ? 'is-on' : ''}" data-city="${id}" aria-pressed="${ctx.city.id === id}">${t('city.' + id)}</button>`,
-    )
-    .join('');
+  const ru = ctx.city.method === 'dumrf';
+  const highLat = highLatitudeDay(ctx.city, s.today);
   const adjusted = Object.values(ctx.settings.offsets).some((v) => Number(v));
   const html = `
   <div class="page home">
@@ -168,11 +163,13 @@ export function homePage(ctx) {
       <h2 class="card-title">${star8(18)} ${t('home.today')}</h2>
       <ul class="plist" data-list>${listHTML(ctx)}</ul>
       <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
+      ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
       <p class="local-note">${adjusted ? t('home.localNoteAdjusted') : t('home.localNote')}</p>
       <details class="method">
         <summary>${t('home.howCalc')}</summary>
-        <p>${t('home.method')}</p>
-        <p>${t('home.methodLocal')}</p>
+        <p>${t(ru ? 'home.methodRu' : 'home.method')}</p>
+        <p>${t(ru ? 'home.methodLocalRu' : 'home.methodLocal')}</p>
+        ${Math.abs(ctx.city.lat) >= 45 ? `<p>${t('home.methodHighLat')}</p>` : ''}
         <p>${t('home.offline')}</p>
       </details>
       <a class="link-row" href="#/settings">${adjusted ? t('home.adjusted') : t('home.adjust')} →</a>
@@ -181,7 +178,9 @@ export function homePage(ctx) {
     <div class="col col-b">
     <div class="date" data-date>${dateHTML(ctx)}</div>
     <div class="city-row">
-      <div class="segmented" role="group" aria-label="${t('city.switch')}">${cityBtns}</div>
+      <a class="city-btn" href="#/city" aria-label="${t('city.choose', { name: cityName(ctx.city) })}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+        <span>${cityName(ctx.city)}</span><span class="city-caret" aria-hidden="true">▾</span></a>
       <span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>
     </div>
     <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
@@ -205,9 +204,6 @@ export function homePage(ctx) {
   return {
     html,
     mount(el) {
-      el.querySelectorAll('[data-city]').forEach((b) =>
-        b.addEventListener('click', () => setSettings({ city: b.dataset.city })),
-      );
       bindNotifyCard(el);
     },
     onNotify(r) {

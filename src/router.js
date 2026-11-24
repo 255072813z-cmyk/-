@@ -6,6 +6,7 @@
 //   #/qibla                  朝向
 //   #/tasbih                 赞念
 //   #/settings               设置
+//   #/city                   选择城市
 //   #/ramadan                斋月：封斋/开斋、打卡、节日
 //   #/ramadan/tarawih        间歇拜
 //   #/ramadan/quran          古兰经 30 天读完
@@ -24,6 +25,7 @@ const LAZY = {
   qibla: () => import('./pages/pray/qibla.js').then((m) => m.qiblaPage),
   tasbih: () => import('./pages/pray/tasbih.js').then((m) => m.tasbihPage),
   settings: () => import('./pages/settings.js').then((m) => m.settingsPage),
+  city: () => import('./pages/city.js').then((m) => m.cityPage),
   ramadan: () => import('./pages/ramadan/index.js').then((m) => m.ramadanPage),
   tarawih: () => import('./pages/ramadan/tarawih.js').then((m) => m.tarawihPage),
   quran: () => import('./pages/ramadan/quran.js').then((m) => m.quranPage),
@@ -67,6 +69,8 @@ export function resolveRoute(path, ctx) {
       return lazy('tasbih', ctx, []);
     case 'settings':
       return lazy('settings', ctx, []);
+    case 'city':
+      return lazy('city', ctx, []);
     case 'masjid':
       if (parts[1] === 'hall') return lazy('hall', ctx, []);
       if (parts[1] === 'courtyard') return lazy('courtyard', ctx, []);
@@ -86,6 +90,7 @@ export function prefetchPages() {
   const go = () => {
     Object.values(LAZY).forEach((f) => f().catch(() => {}));
     import('./content/region-map.js').catch(() => {}); // 朝向页的地图
+    import('./content/wide-map.js').catch(() => {});
   };
   if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
   else setTimeout(go, 2500);

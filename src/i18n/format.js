@@ -31,3 +31,10 @@ export function durText(ms) {
   const { h, m } = splitDuration(ms);
   return h > 0 ? t('dur.textHM', { h, m }) : t('dur.textM', { m });
 }
+
+/** 城市名："我的位置"在某城市附近时显示为"我的位置（杜尚别附近）"，离得远就只写"我的位置" */
+export function cityName(city) {
+  if (!city) return '';
+  if (city.id === 'here') return city.nearKm > 150 ? t('city.here') : t('city.hereNear', { name: t('city.' + city.near) });
+  return t('city.' + city.id);
+}

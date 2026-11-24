@@ -38,4 +38,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- "用我的位置"：只要粗略位置，只在用户点按钮时申请，只在手机上算礼拜时间，不上传。
+         安卓 12 起只申请粗略位置；更老的系统 WebView 必须同时有精确位置权限才给位置，所以只对老系统声明。 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
 </manifest>

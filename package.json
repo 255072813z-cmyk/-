@@ -13,6 +13,7 @@
     "map": "node scripts/build-map.mjs",
     "quran": "node scripts/fetch-quran.mjs",
     "juz": "node scripts/fetch-juz.mjs",
+    "cities": "node scripts/build-cities.mjs",
     "check:times": "node scripts/check-times.mjs",
     "check:astro": "node scripts/check-astronomy.mjs",
     "shots": "node scripts/shots.mjs",

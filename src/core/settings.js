@@ -5,6 +5,7 @@ import { DEFAULT_NOTIFY } from './notify.js';
 
 const DEFAULTS = {
   city: DEFAULT_CITY,
+  loc: null, // "我的位置"：{ lat, lon, utcOffset }，只存本机
   fontScale: 0, // 0 标准 / 1 大 / 2 特大
   remind: true, // 按时提醒（网页：页面开着时提示；手机应用：系统通知）
   notify: DEFAULT_NOTIFY, // 提醒哪几番、提前几分钟、斋月提醒
@@ -18,7 +19,7 @@ const listeners = new Set();
 let state = { ...DEFAULTS, ...load('settings', {}) };
 state.offsets = { ...DEFAULTS.offsets, ...(state.offsets || {}) };
 state.notify = { ...DEFAULT_NOTIFY, ...(state.notify || {}), prayers: { ...DEFAULT_NOTIFY.prayers, ...((state.notify || {}).prayers || {}) } };
-if (!CITIES[state.city]) state.city = DEFAULT_CITY;
+if (!CITIES[state.city] && !(state.city === 'here' && state.loc)) state.city = DEFAULT_CITY;
 
 export function getSettings() {
   return state;

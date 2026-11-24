@@ -170,3 +170,16 @@ ul.dots li::marker { color: var(--gold); }
 }
 .seg-sub { display: block; font-size: 0.7em; font-weight: 500; color: var(--muted); }
 .seg:disabled { opacity: 0.6; cursor: default; }
+
+/* 选择城市 */
+.city-search { display: block; position: sticky; top: 0; z-index: 2; padding: 6px 0; background: var(--bg); }
+.city-search input { width: 100%; min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
+.city-search input:focus { outline: 2px solid var(--green); outline-offset: 1px; }
+.city-list { list-style: none; margin: 0; padding: 0; }
+.city-list li + li { border-top: 1px solid var(--line); }
+.city-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 8px 4px; border: 0; background: none; color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
+.city-item-name { flex: 1; font-weight: 600; }
+.city-item-time { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.city-item.is-on .city-item-name { color: var(--green); }
+.here-now { margin-bottom: 10px; }
+.group-time { margin-inline-start: auto; font-family: inherit; font-weight: 400; }

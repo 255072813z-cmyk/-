@@ -9,7 +9,7 @@ import './styles/spaces.css';
 
 import { getSettings, onSettings } from './core/settings.js';
 import { getCity } from './core/cities.js';
-import { now } from './core/clock.js';
+import { now, setDisplayOffset } from './core/clock.js';
 import { schedule } from './core/prayer-times.js';
 import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
@@ -35,7 +35,7 @@ export const ctx = {
   notifyState: null, // 手机应用里提醒的状态（权限、排了几条）
   resync: () => resync(),
   settings: getSettings(),
-  city: getCity(getSettings().city),
+  city: getCity(getSettings().city, getSettings().loc),
   now: now(),
   sched: null,
   weather: undefined, // undefined 还在查；null 查不到；对象为天气
@@ -44,6 +44,7 @@ export const ctx = {
 };
 
 function refreshSchedule() {
+  setDisplayOffset(ctx.city.utcOffset);
   ctx.now = now();
   ctx.sched = schedule(ctx.city, ctx.now, ctx.settings.offsets);
 }
@@ -70,6 +71,7 @@ let lastPath = null;
 function render() {
   const path = (location.hash || '#/').replace(/^#\/?/, '');
   const changed = path !== lastPath;
+  if (changed) ctx.prevPath = lastPath;
   if (page && page.unmount) page.unmount();
   refreshSchedule();
   page = resolveRoute(path, ctx);
@@ -100,9 +102,10 @@ async function loadWeather() {
 }
 
 onSettings((s) => {
-  const cityChanged = s.city !== ctx.city.id;
+  const next = getCity(s.city, s.loc);
+  const cityChanged = next.id !== ctx.city.id || next.lat !== ctx.city.lat || next.lon !== ctx.city.lon;
   ctx.settings = s;
-  ctx.city = getCity(s.city);
+  ctx.city = next;
   applyPrefs();
   render();
   if (cityChanged) loadWeather();

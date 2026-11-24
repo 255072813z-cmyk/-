@@ -8,16 +8,42 @@
 //
 // 塔吉克斯坦乌莱玛委员会另有官方日历，部分时间与天文计算相差几分钟甚至更多，
 // 因此页面一律提示"以当地清真寺公布为准"，并允许用户按自己清真寺的时间微调（offsets）。
-import { Coordinates, CalculationMethod, PrayerTimes, Madhab, Rounding } from 'adhan';
+import { Coordinates, CalculationMethod, PrayerTimes, Madhab, Rounding, HighLatitudeRule } from 'adhan';
 import { localParts, addDays } from './clock.js';
 
 export const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-export const METHOD = { fajrAngle: 18, ishaAngle: 18, asr: 'hanafi', name: 'karachi' };
 
-function params() {
-  const p = CalculationMethod.Karachi(); // 含该方法的标准调整：晌礼在太阳过中天后 +1 分钟
+// 算法：karachi（塔吉克斯坦）晨礼、宵礼 18°；dumrf（俄罗斯）晨礼 16°、宵礼 15°。
+// 纬度 48° 以上的夏天，太阳整夜到不了这个角度，按"夜晚七分之一"规则估算（adhan 推荐做法），页面会提示以当地清真寺为准。
+export const METHODS = { karachi: { fajr: 18, isha: 18 }, dumrf: { fajr: 16, isha: 15 } };
+
+/** 太阳赤纬（度，近似公式，误差约 0.5°，只用来判断"太阳整夜到不到规定角度"） */
+function solarDeclination(ymd) {
+  const n = Math.round((Date.UTC(ymd.y, ymd.m - 1, ymd.d) - Date.UTC(ymd.y, 0, 0)) / 864e5);
+  return 23.44 * Math.sin(((2 * Math.PI) / 365) * (284 + n));
+}
+
+/**
+ * 这一天晨礼或宵礼的规定角度太阳整夜都到不了（高纬度夏天），需要按规则估算。
+ * 太阳夜里最低时的高度 = 纬度 + 赤纬 − 90°（北半球）。
+ */
+export function highLatitudeDay(city, ymd) {
+  const m = METHODS[city.method] || METHODS.karachi;
+  const lowest = Math.abs(city.lat) + solarDeclination(ymd) * Math.sign(city.lat || 1) - 90;
+  // 留 1.5° 余地：刚好够得着的那几天，到达时刻在半夜附近、对误差极敏感，也按规则估算
+  return lowest > -(Math.max(m.fajr, m.isha) + 1.5);
+}
+
+function params(city, ymd) {
+  const m = METHODS[city.method] || METHODS.karachi;
+  const p = city.method === 'dumrf' ? CalculationMethod.Other() : CalculationMethod.Karachi();
+  p.fajrAngle = m.fajr;
+  p.ishaAngle = m.isha;
+  p.methodAdjustments = { ...p.methodAdjustments, dhuhr: 1 }; // 晌礼在太阳过中天后 +1 分钟
   p.madhab = Madhab.Hanafi;
+  // 平常按角度算；只有太阳到不了规定角度的日子，才按"夜晚七分之一"估算
+  p.highLatitudeRule = ymd && highLatitudeDay(city, ymd) ? HighLatitudeRule.SeventhOfTheNight : HighLatitudeRule.MiddleOfTheNight;
   p.rounding = Rounding.None; // 取整由下面按谨慎原则自己做
   return p;
 }
@@ -25,9 +51,14 @@ function params() {
 // 谨慎原则（宁晚勿早）：
 // 各番拜的"开始时间" = 计算值 + 安全余量，再向后取整到整分；日出是晨礼的"结束时间"，减余量后向前取整。
 // 余量依据：与高精度天文库 astronomy-engine 全年逐日比对（scripts/check-astronomy.mjs），
-// adhan 的晡礼最多比真实时刻早 31 秒（计入大气折射时），其余各项误差在 5 秒以内。
+// adhan 的晡礼最多比真实时刻早 31 秒（塔吉克斯坦；计入大气折射时），其余各项误差在 5 秒以内；
+// 俄罗斯北部冬天晡礼误差更大，余量见 asrMargin。
 const MIN = 60000;
 const MARGIN_S = { fajr: 5, dhuhr: 5, asr: 45, maghrib: 5, isha: 5, sunrise: 5 };
+// 高纬度冬天太阳很低，晡礼对误差更敏感（核对：北纬 61° 最多早 114 秒），余量按纬度加大
+const asrMargin = (lat) => (Math.abs(lat) >= 55 ? 180 : Math.abs(lat) >= 50 ? 150 : Math.abs(lat) >= 45 ? 90 : MARGIN_S.asr);
+// 高纬度夏末，太阳贴着规定角度慢慢下沉，晨礼、宵礼也加一点余量（核对：最多早 8 秒）
+const twilightMargin = (lat, key) => (Math.abs(lat) >= 45 ? 30 : MARGIN_S[key]);
 const ceilMin = (t, s = 0) => new Date(Math.ceil((t.getTime() + s * 1000) / MIN) * MIN);
 const floorMin = (t, s = 0) => new Date(Math.floor((t.getTime() - s * 1000) / MIN) * MIN);
 
@@ -41,8 +72,9 @@ export function timesFor(city, ymd, offsets = {}) {
   // adhan 读取的是 Date 对象的"本地年月日"，所以这里用本地构造函数放入杜尚别的日期，
   // 结果是绝对时刻，与手机时区无关。
   const date = new Date(ymd.y, ymd.m - 1, ymd.d);
-  const pt = new PrayerTimes(new Coordinates(city.lat, city.lon), date, params());
-  const adj = (key, t) => new Date(ceilMin(t, MARGIN_S[key]).getTime() + (Number(offsets[key]) || 0) * MIN);
+  const pt = new PrayerTimes(new Coordinates(city.lat, city.lon), date, params(city, ymd));
+  const margin = (key) => (key === 'asr' ? asrMargin(city.lat) : key === 'fajr' || key === 'isha' ? twilightMargin(city.lat, key) : MARGIN_S[key]);
+  const adj = (key, t) => new Date(ceilMin(t, margin(key)).getTime() + (Number(offsets[key]) || 0) * MIN);
   return {
     date: ymd,
     fajr: adj('fajr', pt.fajr),

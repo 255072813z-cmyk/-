@@ -2,6 +2,7 @@
 import { qiblaBearing, distanceKm, compassPoint, startCompass, greatCirclePoints, KAABA } from '../../core/qibla.js';
 import { kaaba, ICONS, star8 } from '../../ui/art.js';
 import { t, getLang, LANGS } from '../../i18n/index.js';
+import { cityName } from '../../i18n/format.js';
 
 function dial(bearing) {
   const ticks = Array.from({ length: 72 }, (_, i) => {
@@ -32,8 +33,11 @@ function dial(bearing) {
   </svg>`;
 }
 
+// 中亚的城市用中亚—阿拉伯半岛小图（看得清）；俄罗斯等更远的地方用大图
+const inRegion = (c) => c.lon >= 32 && c.lon <= 78 && c.lat >= 14 && c.lat <= 45;
+
 async function mapSVG(city) {
-  const { MAP, LAND, TAJIKISTAN, SAUDI } = await import('../../content/region-map.js');
+  const { MAP, LAND, HOME, SAUDI } = await (inRegion(city) ? import('../../content/region-map.js') : import('../../content/wide-map.js'));
   const px = (lon) => (lon - MAP.lonMin) * MAP.kx;
   const py = (lat) => (MAP.latMax - lat) * MAP.k;
   const line = greatCirclePoints(city.lat, city.lon)
@@ -41,12 +45,13 @@ async function mapSVG(city) {
     .join('');
   const cx = px(city.lon);
   const cy = py(city.lat);
-  return `<svg class="map" viewBox="0 0 ${MAP.width} ${MAP.height}" role="img" aria-label="${t('qibla.mapAria', { city: t('city.' + city.id) })}">
+  const flip = cx > MAP.width * 0.65; // 靠右边的城市，名字写在点的左边，免得出界
+  return `<svg class="map" viewBox="0 0 ${MAP.width} ${MAP.height}" role="img" aria-label="${t('qibla.mapAria', { city: cityName(city) })}">
     <rect width="${MAP.width}" height="${MAP.height}" class="sea"/>
-    <path d="${LAND}" class="land"/><path d="${TAJIKISTAN}" class="land tj"/><path d="${SAUDI}" class="land sa"/>
+    <path d="${LAND}" class="land"/><path d="${HOME}" class="land tj"/><path d="${SAUDI}" class="land sa"/>
     <path d="${line}" class="route"/>
     <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" class="pin"/>
-    <text x="${(cx + 8).toFixed(1)}" y="${(cy - 8).toFixed(1)}" class="lbl">${t('city.' + city.id)}</text>
+    <text x="${(cx + (flip ? -8 : 8)).toFixed(1)}" y="${(cy - 8).toFixed(1)}" class="lbl"${flip ? ' text-anchor="end"' : ''}>${city.id === 'here' ? t('city.here') : cityName(city)}</text>
     <circle cx="${px(KAABA.lon).toFixed(1)}" cy="${py(KAABA.lat).toFixed(1)}" r="5" class="pin mecca"/>
     <text x="${(px(KAABA.lon) + 8).toFixed(1)}" y="${(py(KAABA.lat) + 4).toFixed(1)}" class="lbl">${t('qibla.mecca')}</text>
     <text x="8" y="${MAP.height - 8}" class="credit">${t('qibla.credit')}</text>
@@ -70,7 +75,8 @@ export function qiblaPage(ctx) {
         <div class="dial-wrap" data-dial>${dial(b)}</div>
         <p class="turn" data-turn aria-live="polite">${hasSensor ? t('qibla.tapStart') : t('qibla.noSensor')}</p>
         ${hasSensor ? `<button class="btn btn-primary btn-wide" type="button" data-start>${t('qibla.start')}</button>` : ''}
-        <p class="note">${t('qibla.distance', { city: t('city.' + c.id), km: Math.round(km).toLocaleString(LANGS[getLang()].locale), decl: c.declination })}</p>
+        <p class="note">${t(c.declination < 0 ? 'qibla.distanceW' : 'qibla.distance', { city: cityName(c), km: Math.round(km).toLocaleString(LANGS[getLang()].locale), decl: Math.abs(c.declination) })}</p>
+        ${c.id === 'here' && c.nearKm > 150 ? `<p class="note">${t('city.farNote', { name: t('city.' + c.near), km: c.nearKm.toLocaleString(LANGS[getLang()].locale) })}</p>` : ''}
       </section>
       <section class="card map-card">
         <h2 class="card-title">${star8(18)} ${t('qibla.map')}</h2>

@@ -155,3 +155,11 @@ details.method summary { color: var(--green); }
   .page.home .date { align-items: flex-start; text-align: left; margin-top: 12px; }
   .page.home .privacy { grid-column: 1 / -1; }
 }
+
+/* 首页城市按钮：点开选择城市 */
+.city-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 14px 6px 10px; border-radius: 12px; background: var(--bg-2); color: var(--ink); text-decoration: none; font-weight: 700; max-width: 100%; }
+.city-btn svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--green); stroke-width: 2; }
+.city-btn span:not(.city-caret) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.city-caret { color: var(--muted); font-size: 0.85em; }
+.city-btn:active { transform: scale(0.98); }
+.high-lat { margin: 8px 0 0; }

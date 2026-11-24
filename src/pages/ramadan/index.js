@@ -6,7 +6,7 @@ import { load, save } from '../../core/storage.js';
 import { ramadanScene, star8 } from '../../ui/art.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
-import { dateShort, durHTML } from '../../i18n/format.js';
+import { dateShort, durHTML, cityName } from '../../i18n/format.js';
 
 const dur = (ms) => durHTML(ms, true);
 
@@ -65,7 +65,7 @@ export function ramadanPage(ctx) {
   const f = fastPhase(ctx.city, ctx.now, ctx.settings.offsets);
   const iftarLit = st.active && f.phase === 'after';
   const todayYes = st.active && log[st.day] === 'yes';
-  const city = t('city.' + ctx.city.id);
+  const city = cityName(ctx.city);
 
   const table = (() => {
     if (!st.start) return '';

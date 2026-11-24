@@ -92,11 +92,19 @@ test('红线：没有支付、登录、统计、Cookie', () => {
   own.push(new URL('../index.html', import.meta.url).pathname);
   const distDir = new URL('../dist/assets', import.meta.url).pathname;
   const dist = existsSync(distDir) ? walkDir(distDir) : [];
-  const banned = [/type=["']password/, /gtag\(|google-analytics|googletagmanager|hm\.baidu|umami|yandex.*metrika|firebase-analytics|appmetrica/i, /navigator\.geolocation/, /payment|PaymentRequest|stripe|alipay|wechatpay/i];
+  const banned = [/type=["']password/, /gtag\(|google-analytics|googletagmanager|hm\.baidu|umami|yandex.*metrika|firebase-analytics|appmetrica/i, /payment|PaymentRequest|stripe|alipay|wechatpay/i];
   for (const f of [...own, ...dist]) {
     const src = readFileSync(f, 'utf8');
     for (const re of banned) assert.ok(!re.test(src), `${f} 命中 ${re}`);
   }
+  // 位置：只允许 src/core/location.js 读取（用户点"用我的位置"时，粗略位置，不上传）
+  for (const f of own) {
+    if (f.endsWith('/src/core/location.js')) continue;
+    assert.ok(!/navigator\.geolocation/.test(readFileSync(f, 'utf8')), `${f} 读取了位置`);
+  }
+  const geoChunks = dist.filter((f) => /navigator\.geolocation/.test(readFileSync(f, 'utf8')));
+  assert.ok(geoChunks.length <= 1, '打包产物里读取位置的地方不止一处');
+  for (const f of geoChunks) assert.ok(/enableHighAccuracy:\s*(!1|false)/.test(readFileSync(f, 'utf8')), `${f} 读取位置时没有限定粗略位置`);
   // 我们自己的代码绝不读写 Cookie；打包产物里只允许出现在 Capacitor 库自带的（默认关闭、本应用从不调用的）Cookie 插件里
   for (const f of own) assert.ok(!/document\.cookie/.test(readFileSync(f, 'utf8')), `${f} 读写了 Cookie`);
   for (const f of dist) {
