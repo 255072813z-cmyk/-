@@ -47,6 +47,11 @@ export function hubPage(ctx) {
       </div>
     </section>
 
+    <a class="card card-link qada-link" href="#/pray/qada">
+      <span class="athome-t">${t('hub.qada')}</span>
+      <span class="athome-s">${t('hub.qadaSub')}</span>
+    </a>
+
     <section class="card soft-card">
       <h2 class="card-title">${star8(18)} ${t('hub.family')}</h2>
       <p>${t('hub.familyText')}</p>

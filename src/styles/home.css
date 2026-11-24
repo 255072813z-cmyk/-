@@ -171,3 +171,6 @@ details.method summary { color: var(--green); }
 .notice-card .btn-sm { margin-top: 4px; }
 .page.home .notice-slot { order: 3; }
 .notice-slot:empty { display: none; }
+.jumuah { white-space: nowrap; }
+.welcome-card { border: 1.5px solid var(--green); background: var(--green-soft); }
+.welcome-card .step-btns { flex-wrap: wrap; }

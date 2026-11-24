@@ -2,7 +2,7 @@
 import { TASBIH, TASBIH_100 } from '../../content/recitations.js';
 import { load, save } from '../../core/storage.js';
 import { star8 } from '../../ui/art.js';
-import { t, L } from '../../i18n/index.js';
+import { t, L, TR } from '../../i18n/index.js';
 
 export function tasbihPage() {
   let st = load('tasbih', { phase: 0, count: 0 }); // phase 0-2 三句，3 = 第 100 句
@@ -27,7 +27,7 @@ export function tasbihPage() {
         <div class="tb-dots">${TASBIH.map(() => '<span class="on"></span>').join('')}</div>
         <p class="tb-label">${t('tasbih.last')}</p>
         <p class="ar big" lang="ar" dir="rtl">${TASBIH_100.ar}</p>
-        <p class="tr" lang="en">${TASBIH_100.tr}</p>
+        <p class="tr" lang="${TR(TASBIH_100).lang}">${TR(TASBIH_100).text}</p>
         <p class="zh">${L(TASBIH_100)}</p>
         <button class="btn btn-primary btn-wide" type="button" data-reset>${t('tasbih.again')}</button>`;
       box.querySelector('[data-reset]').addEventListener('click', () => {
@@ -53,7 +53,7 @@ export function tasbihPage() {
         <span class="tb-num"><b data-num>${st.count}</b><small>/ ${cur.count}</small></span>
       </button>
       <p class="ar big" lang="ar" dir="rtl">${cur.ar}</p>
-      <p class="tr" lang="en">${cur.tr}</p>
+      <p class="tr" lang="${TR(cur).lang}">${TR(cur).text}</p>
       <p class="zh">${L(cur)}</p>
       <div class="step-btns">
         <button class="btn btn-ghost btn-sm" type="button" data-undo ${st.count === 0 ? 'disabled' : ''}>${t('tasbih.undo')}</button>

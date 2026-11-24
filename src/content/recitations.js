@@ -17,6 +17,7 @@
 // 译音为方便跟读的简化拼法（拉丁字母）；以后给塔吉克语、俄语用户加西里尔字母译音 trCyrl。
 // 每条的意思和出处按语言分字段：{ zh, tg, ru }，界面用 L() 取当前语言。
 import { SURAHS, RABBANA_201 } from './quran.js';
+import { RT, TASBIH_T, TASBIH_100_T, SURAH_NAME_T, SURAH_TRC, QURAN_MEANING, QURAN_NOTE } from './recitations-tr.js';
 
 export const R = {
   takbir: {
@@ -202,11 +203,33 @@ export function surah(n) {
   const s = SURAHS[n];
   return {
     number: n,
-    name: SURAH_NAME[n],
+    name: { ...SURAH_NAME[n], ...SURAH_NAME_T[n] },
     nameAr: s.nameAr,
-    ayahs: s.ayahs.map((a, i) => ({ ...a, tr: SURAH_TR[n][i] })),
-    src: { zh: `《古兰经》第 ${n} 章，马坚译` },
+    ayahs: s.ayahs.map((a, i) => ({
+      ...a,
+      tg: QURAN_MEANING.tg[n][i],
+      ru: QURAN_MEANING.ru[n][i],
+      tr: SURAH_TR[n][i],
+      trc: { tg: SURAH_TRC.tg[n][i], ru: SURAH_TRC.ru[n][i] },
+    })),
+    src: { zh: `《古兰经》第 ${n} 章，马坚译`, tg: `Қуръон, сураи ${n}; ${QURAN_NOTE.tg}`, ru: `Коран, сура ${n}; ${QURAN_NOTE.ru}` },
   };
 }
+
+// 合并塔吉克语、俄语（意思、出处、西里尔字母译音），见 recitations-tr.js
+for (const [k, v] of Object.entries(RT)) {
+  const r = R[k];
+  if (v.tg) Object.assign(r, { tg: v.tg, ru: v.ru });
+  r.src = { ...r.src, ...v.src };
+  r.trc = v.trc;
+}
+// 古兰经里的两条：意思用经文的工作译文，出处注明
+Object.assign(R.basmala, { tg: QURAN_MEANING.tg[1][0], ru: QURAN_MEANING.ru[1][0] });
+R.basmala.src = { ...R.basmala.src, tg: `${RT.basmala.src.tg}; ${QURAN_NOTE.tg}`, ru: `${RT.basmala.src.ru}; ${QURAN_NOTE.ru}` };
+Object.assign(R.rabbana, { tg: QURAN_MEANING.tg.rabbana, ru: QURAN_MEANING.ru.rabbana });
+R.rabbana.src = { ...R.rabbana.src, tg: `${RT.rabbana.src.tg}; ${QURAN_NOTE.tg}`, ru: `${RT.rabbana.src.ru}; ${QURAN_NOTE.ru}` };
+for (const x of TASBIH) Object.assign(x, TASBIH_T[x.key]);
+Object.assign(TASBIH_100, { tg: TASBIH_100_T.tg, ru: TASBIH_100_T.ru, trc: TASBIH_100_T.trc });
+TASBIH_100.src = { ...TASBIH_100.src, ...TASBIH_100_T.src };
 
 export { SHORT_SURAHS } from './prayers.js';

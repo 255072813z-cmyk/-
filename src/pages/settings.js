@@ -50,6 +50,8 @@ export function settingsPage(ctx) {
       </div>
       <label class="switch-row"><span><b>${t('settings.ramadanRemind')}</b><small>${t('settings.ramadanRemindSub')}</small></span>
         <input type="checkbox" data-nr ${s.notify.ramadan ? 'checked' : ''}></label>
+      ${app ? `<label class="switch-row"><span><b>${t('settings.jumuahRemind')}</b><small>${t('settings.jumuahRemindSub')}</small></span>
+        <input type="checkbox" data-nj ${s.notify.jumuah ? 'checked' : ''}></label>` : ''}
       ${
         app
           ? `<div class="step-btns"><button type="button" class="btn btn-ghost btn-sm" data-test>${t('settings.test')}</button></div>
@@ -152,6 +154,8 @@ export function settingsPage(ctx) {
       );
       el.querySelectorAll('[data-adv]').forEach((b) => b.addEventListener('click', () => setSettings({ notify: { ...notify(), advance: +b.dataset.adv } })));
       el.querySelector('[data-nr]').addEventListener('change', (e) => setSettings({ notify: { ...notify(), ramadan: e.target.checked } }));
+      const nj = el.querySelector('[data-nj]');
+      if (nj) nj.addEventListener('change', (e) => setSettings({ notify: { ...notify(), jumuah: e.target.checked } }));
       const test = el.querySelector('[data-test]');
       if (test)
         test.addEventListener('click', async () => {

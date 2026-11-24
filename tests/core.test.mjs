@@ -101,3 +101,29 @@ test('设置：存储里的数据坏了也能正常打开（数据异常检查�
   assert.equal(normalizeSettings({ hijriAdjust: 1 }).hijriManual, true);
   assert.equal(normalizeSettings({ hijriAdjust: 0 }).hijriManual, false);
 });
+
+test('补礼记录：坏数据回到 0；分享文字包含城市和五番拜', async () => {
+  const { readQada } = await import('../src/pages/pray/qada.js');
+  assert.deepEqual(readQada(), { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 });
+  const { dayText } = await import('../src/pages/times.js');
+  const { getCity } = await import('../src/core/cities.js');
+  const { setDisplayOffset } = await import('../src/core/clock.js');
+  const city = getCity('moscow');
+  setDisplayOffset(city.utcOffset);
+  const txt = dayText({ city, offsets: {}, official: null }, { y: 2026, m: 12, d: 18, wd: 5 });
+  const lines = txt.split('\n');
+  assert.equal(lines.length, 8); // 标题 + 晨礼 + 日出 + 4 番 + 说明
+  assert.match(lines[0], /莫斯科/);
+  assert.ok(lines.slice(1, 7).every((l) => /\d\d:\d\d$/.test(l)));
+  setDisplayOffset(5);
+});
+
+test('第一次打开：按手机时区猜城市，并请用户确认；老用户不打扰', async () => {
+  const { normalizeSettings } = await import('../src/core/settings.js');
+  const fresh = normalizeSettings({});
+  assert.equal(fresh.cityConfirmed, false);
+  assert.ok(typeof fresh.city === 'string');
+  const old = normalizeSettings({ city: 'khujand' });
+  assert.equal(old.city, 'khujand');
+  assert.equal(old.cityConfirmed, true);
+});

@@ -47,3 +47,31 @@ export function getCity(id, loc) {
   }
   return CITIES[id] || CITIES[DEFAULT_CITY];
 }
+
+// 第一次打开时按手机的时区猜城市（不读位置）：在莫斯科打工的人一打开就是莫斯科的时间。
+const TZ_CITY = {
+  'Asia/Dushanbe': 'dushanbe',
+  'Europe/Moscow': 'moscow',
+  'Europe/Volgograd': 'rostov',
+  'Europe/Kirov': 'kazan',
+  'Europe/Samara': 'samara',
+  'Europe/Ulyanovsk': 'samara',
+  'Europe/Saratov': 'samara',
+  'Europe/Astrakhan': 'samara',
+  'Asia/Yekaterinburg': 'yekaterinburg',
+  'Asia/Novosibirsk': 'novosibirsk',
+  'Asia/Barnaul': 'novosibirsk',
+  'Asia/Tomsk': 'novosibirsk',
+  'Asia/Novokuznetsk': 'novosibirsk',
+  'Asia/Krasnoyarsk': 'krasnoyarsk',
+  'Asia/Irkutsk': 'irkutsk',
+  'Asia/Vladivostok': 'vladivostok',
+};
+export function guessCity() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return TZ_CITY[tz] || DEFAULT_CITY;
+  } catch (e) {
+    return DEFAULT_CITY;
+  }
+}

@@ -183,3 +183,31 @@ ul.dots li::marker { color: var(--gold); }
 .city-item.is-on .city-item-name { color: var(--green); }
 .here-now { margin-bottom: 10px; }
 .group-time { margin-inline-start: auto; font-family: inherit; font-weight: 400; }
+
+/* 本月时间表 */
+.times-sub { color: var(--ink-2); margin: -6px 0 8px; }
+.times-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.times-card { padding: 8px; overflow-x: auto; }
+.times-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.92rem; }
+.times-table th, .times-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.times-table thead th { font-size: 0.78rem; color: var(--ink-2); font-weight: 600; white-space: normal; }
+.times-table tbody th { text-align: start; font-weight: 600; }
+.times-table tbody th small { color: var(--muted); font-weight: 400; }
+.times-table .sun { color: var(--muted); }
+.times-table tr.is-fri th { color: var(--green); }
+.times-table tr.is-today { background: var(--gold-soft); }
+.qada-link { display: grid; gap: 2px; padding: 16px; }
+.qada-total { font-weight: 700; color: var(--green); margin: 8px 0; }
+
+@media print {
+  .topbar, .tabbar, .no-print, .skip { display: none !important; }
+  body { background: #fff; }
+  .card { box-shadow: none; border: 0; }
+  .times-table th, .times-table td { padding: 2px 4px; }
+}
+@media (max-width: 440px) {
+  .times-card { padding: 6px 2px; }
+  .times-table { font-size: 0.8rem; }
+  .times-table th, .times-table td { padding: 5px 1px; }
+  .times-table thead th { font-size: 0.68rem; }
+}

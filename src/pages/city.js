@@ -64,7 +64,7 @@ export function cityPage(ctx) {
     mount(el) {
       el.querySelectorAll('[data-pick]').forEach((b) =>
         b.addEventListener('click', () => {
-          setSettings({ city: b.dataset.pick });
+          setSettings({ city: b.dataset.pick, cityConfirmed: true });
           done();
         }),
       );
@@ -92,7 +92,7 @@ export function cityPage(ctx) {
         locate()
           .then((loc) => {
             markFeature('here', ymdKey(ctx.sched.today));
-            setSettings({ city: 'here', loc });
+            setSettings({ city: 'here', loc, cityConfirmed: true });
             done();
           })
           .catch((e) => {

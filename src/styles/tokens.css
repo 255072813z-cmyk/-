@@ -22,8 +22,9 @@
   --cap: #3f5148;
   --shadow: 0 1px 2px rgba(60, 45, 10, 0.06), 0 8px 24px rgba(60, 45, 10, 0.07);
   --radius: 18px;
-  --font-zh: 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
-  --font-zh-serif: 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', var(--font-zh);
+  /* Noto Sans / Noto Serif 只含西里尔字母（塔吉克语、俄语），中文、拉丁字母仍用后面的字体 */
+  --font-zh: 'Noto Sans', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
+  --font-zh-serif: 'Noto Serif', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', var(--font-zh);
   --font-ar: 'Amiri', 'Noto Naskh Arabic', 'Geeza Pro', 'Traditional Arabic', serif;
   color-scheme: light;
 }

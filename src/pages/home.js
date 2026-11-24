@@ -94,6 +94,19 @@ function bindNotifyCard(root) {
     });
 }
 
+/** 第一次打开：请用户确认城市（按手机时区猜的，可能不对） */
+function welcomeHTML(ctx) {
+  if (ctx.settings.cityConfirmed) return '';
+  return `<section class="card welcome-card">
+    <p class="notify-card-t">${t('home.welcomeTitle')}</p>
+    <p>${t('home.welcomeText', { city: cityName(ctx.city) })}</p>
+    <div class="step-btns">
+      <button type="button" class="btn btn-primary" data-city-ok>${t('home.welcomeOk', { city: cityName(ctx.city) })}</button>
+      <a class="btn btn-ghost" href="#/city">${t('home.welcomeChoose')}</a>
+    </div>
+  </section>`;
+}
+
 /** 后台发布的公告（纯文字）和"请更新应用"提示 */
 function noticesHTML(ctx) {
   const list = activeNotices(ctx.remote, ymdKey(ctx.sched.today));
@@ -210,6 +223,7 @@ export function homePage(ctx) {
         <p>${t('home.offline')}</p>
       </details>
       <a class="link-row" href="#/settings">${adjusted ? t('home.adjusted') : t('home.adjust')} →</a>
+      <a class="link-row" href="#/times">${t('home.monthTable')} →</a>
     </section>
     </div>
     <div class="col col-b">
@@ -220,7 +234,7 @@ export function homePage(ctx) {
         <span>${cityName(ctx.city)}</span><span class="city-caret" aria-hidden="true">▾</span></a>
       <span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>
     </div>
-    <div class="notice-slot">${noticesHTML(ctx)}</div>
+    <div class="notice-slot">${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
     <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
@@ -244,6 +258,8 @@ export function homePage(ctx) {
     mount(el) {
       bindNotifyCard(el);
       bindNotices(el);
+      const ok = el.querySelector('[data-city-ok]');
+      if (ok) ok.addEventListener('click', () => setSettings({ cityConfirmed: true }));
     },
     onNotify(r) {
       const box = document.querySelector('[data-notify-card]');

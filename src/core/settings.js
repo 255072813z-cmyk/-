@@ -1,10 +1,12 @@
 // 用户设置（存在本机）。改动后通知订阅者重新渲染。
 import { load, save } from './storage.js';
-import { DEFAULT_CITY, CITIES } from './cities.js';
+import { DEFAULT_CITY, CITIES, guessCity } from './cities.js';
 import { DEFAULT_NOTIFY } from './notify.js';
+import { guessLang } from '../i18n/index.js';
 
 const DEFAULTS = {
   city: DEFAULT_CITY,
+  cityConfirmed: false,
   loc: null, // "我的位置"：{ lat, lon, utcOffset }，只存本机
   fontScale: 0, // 0 标准 / 1 大 / 2 特大
   remind: true, // 按时提醒（网页：页面开着时提示；手机应用：系统通知）
@@ -14,7 +16,7 @@ const DEFAULTS = {
   hijriAdjust: 0, // 伊斯兰历按当地宣布调整（天）——只在 hijriManual 为 true 时使用
   hijriManual: false, // false：跟随当地宣布（后台发布的调整）；true：用户自己调
   stats: true, // 匿名使用统计（可关闭）
-  lang: 'zh', // 预留：tg 塔吉克语、ru 俄语
+  lang: 'zh', // zh 中文（开发用）/ tg 塔吉克语 / ru 俄语；第一次打开按手机语言选
 };
 
 const listeners = new Set();
@@ -29,7 +31,9 @@ const bool = (v, d) => (typeof v === 'boolean' ? v : d);
 export function normalizeSettings(saved) {
   const s = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
   const out = { ...DEFAULTS };
-  out.city = typeof s.city === 'string' ? s.city : DEFAULTS.city;
+  out.city = typeof s.city === 'string' ? s.city : guessCity(); // 第一次打开：按手机时区猜
+  // 城市确认过没有（第一次打开时首页请用户确认一下）；老用户存过城市的算确认过
+  out.cityConfirmed = bool(s.cityConfirmed, typeof s.city === 'string');
   const loc = s.loc;
   out.loc =
     loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lon) <= 180
@@ -48,11 +52,12 @@ export function normalizeSettings(saved) {
     prayers: Object.fromEntries(Object.keys(DEFAULT_NOTIFY.prayers).map((p) => [p, bool((n.prayers || {})[p], true)])),
     advance: [0, 5, 10, 15].includes(Number(n.advance)) ? Number(n.advance) : 0,
     ramadan: bool(n.ramadan, true),
+    jumuah: bool(n.jumuah, true),
   };
   out.hijriAdjust = int(Number(s.hijriAdjust), -2, 2, 0);
   // 老版本里调过伊斯兰历的用户，视为手动调整
   out.hijriManual = typeof s.hijriManual === 'boolean' ? s.hijriManual : out.hijriAdjust !== 0;
-  out.lang = ['zh', 'tg', 'ru'].includes(s.lang) ? s.lang : DEFAULTS.lang;
+  out.lang = ['zh', 'tg', 'ru'].includes(s.lang) ? s.lang : guessLang(); // 第一次打开：按手机语言
   return out;
 }
 

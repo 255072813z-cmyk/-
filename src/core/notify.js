@@ -15,9 +15,11 @@ export const DEFAULT_NOTIFY = {
   prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
   advance: 0, // 提前几分钟（0 = 准时）
   ramadan: true, // 斋月里提醒封斋饭和开斋
+  jumuah: true, // 星期五晌礼前 1 小时提醒主麻
 };
+export const JUMUAH_WARN_MIN = 60;
 
-/** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，6 封斋饭，7 开斋），同一条提醒重排时编号不变 */
+/** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，6 封斋饭，7 开斋，8 主麻），同一条提醒重排时编号不变 */
 export function notifId(ymd, idx) {
   return (ymd.y * 10000 + ymd.m * 100 + ymd.d) * 10 + idx;
 }
@@ -50,6 +52,10 @@ export function buildSchedule(city, now, settings) {
         route: '#/pray/guide/' + p,
       });
     });
+    if (n.jumuah && ymd.wd === 5) {
+      const at = new Date(times.dhuhr.getTime() - JUMUAH_WARN_MIN * 60000);
+      if (at > now) out.push({ id: notifId(ymd, 8), at, title: t('notify.jumuahTitle'), body: t('notify.jumuahBody', { time: fmtHM(times.dhuhr, city.utcOffset) }), kind: 'jumuah', route: '#/pray' });
+    }
     if (n.ramadan && toHijri(ymd, settings.hijriAdjust).m === 9) {
       const f = fastTimes(city, ymd, settings.offsets);
       const warn = new Date(f.sahurEnd.getTime() - SAHUR_WARN_MIN * 60000);

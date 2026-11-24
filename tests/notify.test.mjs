@@ -12,9 +12,9 @@ const at = (y, m, d, hh, mm) => new Date(Date.UTC(y, m - 1, d, hh - 5, mm)); // 
 
 test('7 天 × 5 番拜 = 35 条；已过去的不排', () => {
   const early = buildSchedule(city, at(2026, 12, 1, 3, 0), base);
-  assert.equal(early.length, 35);
+  assert.equal(early.filter((x) => x.kind === 'prayer').length, 35);
   const noon = buildSchedule(city, at(2026, 12, 1, 13, 0), base);
-  assert.equal(noon.length, 33); // 当天晨礼、晌礼已过
+  assert.equal(noon.filter((x) => x.kind === 'prayer').length, 33); // 当天晨礼、晌礼已过
   assert.ok(noon.every((x) => x.at > at(2026, 12, 1, 13, 0)));
   assert.equal(new Set(early.map((x) => x.id)).size, early.length);
 });
@@ -32,7 +32,7 @@ test('时间与礼拜时间一致；提前 10 分钟', () => {
 test('关掉的番拜不提醒；总开关关掉一条都不排', () => {
   const s = { ...base, notify: { ...DEFAULT_NOTIFY, prayers: { ...DEFAULT_NOTIFY.prayers, fajr: false, isha: false } } };
   const list = buildSchedule(city, at(2026, 12, 1, 3, 0), s);
-  assert.equal(list.length, 21);
+  assert.equal(list.filter((x) => x.kind === 'prayer').length, 21);
   assert.ok(!list.some((x) => x.prayer === 'fajr' || x.prayer === 'isha'));
   assert.equal(buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, remind: false }).length, 0);
 });
@@ -54,10 +54,22 @@ test('斋月：每天多两条（停止吃喝前 30 分钟、开斋），总数�
   const f = fastTimes(city, { y: 2027, m: 2, d: 10 });
   assert.equal(sahur[0].at.getTime(), f.sahurEnd.getTime() - SAHUR_WARN_MIN * 60000);
   assert.equal(iftar[0].at.getTime(), f.iftar.getTime());
-  assert.equal(buildSchedule(city, now, { ...base, notify: { ...DEFAULT_NOTIFY, ramadan: false } }).filter((x) => x.kind !== 'prayer').length, 0);
+  assert.equal(buildSchedule(city, now, { ...base, notify: { ...DEFAULT_NOTIFY, ramadan: false } }).filter((x) => x.kind === 'sahur' || x.kind === 'iftar').length, 0);
 });
 
 test('提醒编号：同一天同一番拜，重排时编号不变', () => {
   assert.equal(notifId({ y: 2026, m: 12, d: 1 }, 2), 202612012);
   assert.ok(notifId({ y: 2099, m: 12, d: 31 }, 7) < 2 ** 31); // 安卓要求 32 位整数
+});
+
+test('主麻日提醒：星期五晌礼前 1 小时，一周一条；可以关掉', () => {
+  const list = buildSchedule(city, at(2026, 12, 1, 3, 0), base); // 12 月 1 日是星期二，4 日是星期五
+  const j = list.filter((x) => x.kind === 'jumuah');
+  assert.equal(j.length, 1);
+  const t = timesFor(city, { y: 2026, m: 12, d: 4 });
+  assert.equal(j[0].at.getTime(), t.dhuhr.getTime() - 60 * 60000);
+  assert.equal(j[0].id, notifId({ y: 2026, m: 12, d: 4 }, 8));
+  assert.equal(new Set(list.map((x) => x.id)).size, list.length);
+  const off = buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, notify: { ...DEFAULT_NOTIFY, jumuah: false } });
+  assert.equal(off.filter((x) => x.kind === 'jumuah').length, 0);
 });

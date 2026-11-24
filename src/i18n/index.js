@@ -9,11 +9,41 @@ import zh from './zh.js';
 
 export const LANGS = {
   zh: { name: '中文', locale: 'zh-CN', ready: true },
-  tg: { name: 'Тоҷикӣ', locale: 'tg-TJ', ready: false }, // 待翻译
-  ru: { name: 'Русский', locale: 'ru-RU', ready: false }, // 待翻译
+  tg: { name: 'Тоҷикӣ', locale: 'tg-TJ', ready: true }, // 初稿，待母语者和伊玛目审定
+  ru: { name: 'Русский', locale: 'ru-RU', ready: true }, // 初稿，待母语者和伊玛目审定
 };
+// 手机语言既不是塔吉克语、俄语也不是中文时用哪种。开发阶段为中文；上线前改成 'tg'（或 'ru'）。
+export const DEFAULT_LANG = 'zh';
 
 const DICTS = { zh };
+// 塔吉克语、俄语按需下载（不增加首屏体积）
+const LOADERS = { tg: () => import('./tg.js'), ru: () => import('./ru.js') };
+
+/** 下载某种语言的词典；成功返回 true */
+export function loadLang(l) {
+  if (DICTS[l]) return Promise.resolve(true);
+  if (!LOADERS[l]) return Promise.resolve(false);
+  return LOADERS[l]()
+    .then((m) => {
+      DICTS[l] = m.default;
+      return true;
+    })
+    .catch(() => false);
+}
+
+/** 第一次打开时按手机语言选：塔吉克语 → 俄语 → 中文，都不是就用 DEFAULT_LANG */
+export function guessLang() {
+  try {
+    const list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    for (const x of list) {
+      const p = String(x || '').toLowerCase().slice(0, 2);
+      if (p === 'tg' || p === 'ru' || p === 'zh') return p;
+    }
+  } catch (e) {
+    /* 非浏览器环境 */
+  }
+  return DEFAULT_LANG;
+}
 let lang = 'zh';
 
 export function setLang(l) {
@@ -68,6 +98,12 @@ export function L(obj) {
   if (obj == null) return '';
   if (typeof obj === 'string') return obj;
   return obj[lang] != null ? obj[lang] : obj.zh;
+}
+
+/** 念词的译音：塔吉克语、俄语界面用西里尔字母（trc），其他用拉丁字母（tr）。返回 { text, lang } */
+export function TR(obj) {
+  const c = obj && obj.trc && obj.trc[lang];
+  return c ? { text: c, lang: lang === 'tg' ? 'tg-Cyrl' : 'ru-Cyrl' } : { text: (obj && obj.tr) || '', lang: 'en' };
 }
 
 /** 这个词条在当前语言里有没有（用来决定某段说明要不要显示） */

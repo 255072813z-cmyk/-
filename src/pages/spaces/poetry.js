@@ -61,7 +61,7 @@ export function poetryPage(ctx) {
     void box.offsetWidth;
     box.classList.add('fade-in');
     box.innerHTML = `
-      <p class="poet">${L(p.poet)} <span lang="tg">${p.poet.cyr}</span> <span class="ar-sm" lang="fa" dir="rtl">${p.poet.fa}</span></p>
+      <p class="poet">${getLang() === 'zh' ? `${L(p.poet)} <span lang="tg">${p.poet.cyr}</span>` : `<span lang="${getLang()}">${L(p.poet)}</span>`} <span class="ar-sm" lang="fa" dir="rtl">${p.poet.fa}</span></p>
       <div class="fa" lang="fa" dir="rtl">${p.fa.map((l) => `<p>${l}</p>`).join('')}</div>
       <div class="tg" lang="tg">${p.cyr.map((l) => `<p>${l}</p>`).join('')}</div>
       ${getLang() === 'tg' ? '' : `<div class="zh">${L(p).map((l) => `<p>${l}</p>`).join('')}</div>`}

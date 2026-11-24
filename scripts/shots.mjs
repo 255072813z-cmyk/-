@@ -59,6 +59,8 @@ const PAGES = [
   ['poetry', '#/masjid/poetry', 0, '?weather=clear&now=2026-12-18T20:30'],
   ['poetry-closed', '#/masjid/poetry', 0, '?weather=clear&now=2026-12-18T14:10'],
   ['city', '#/city'],
+  ['times', '#/times'],
+  ['qada', '#/pray/qada'],
   // 俄罗斯城市（第 6 项：预先写入的设置）
   ['home-moscow', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'moscow' }],
   ['home-spb-summer', '', 0, '?weather=clear&now=2027-06-21T12:00', null, { city: 'spb' }],
@@ -66,6 +68,8 @@ const PAGES = [
   ['qibla-here', '#/qibla', 0, '?weather=clear', null, { city: 'here', loc: { lat: 48.48, lon: 135.08, utcOffset: 10 } }],
 ];
 const query = process.env.SHOTS_QUERY ?? '?weather=heavy&now=2026-12-18T15:20';
+// SHOTS_LANG=tg|ru：用塔吉克语或俄语截图，并检查页面上还有没有中文
+const LANG = process.env.SHOTS_LANG || '';
 const only = process.env.SHOTS_ONLY;
 await mkdir(outDir, { recursive: true });
 const browser = await chromium.launch();
@@ -79,8 +83,9 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   for (const [name, hash, clicks, q, clickSel, preset] of PAGES) {
-    await page.goto(base + 'index.html?preset=1');
-    await page.evaluate((p) => (p ? localStorage.setItem('masjid:settings', JSON.stringify(p)) : localStorage.clear()), preset || null);
+    await page.goto(base + 'index.html?preset=1&weather=clear');
+    const settings = preset || LANG ? { ...(preset || {}), ...(LANG ? { lang: LANG } : {}) } : null;
+    await page.evaluate((p) => (p ? localStorage.setItem('masjid:settings', JSON.stringify(p)) : localStorage.clear()), settings);
     await page.goto(base + 'index.html' + (q || query) + hash);
     await page.waitForLoadState('networkidle');
     for (let i = 0; i < (clicks || 0); i++) await page.click('[data-next]');
@@ -97,12 +102,25 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
       problems++;
       console.log(`页面露出词条名 ${vname}/${name}: ${raw[0]}`);
     }
+    if (LANG && LANG !== 'zh') {
+      // 语言选择按钮上的"中文"是语言自己的名字，不算
+      const shown = await page.evaluate(() => {
+        const c = document.body.cloneNode(true);
+        c.querySelectorAll('[data-lang]').forEach((x) => x.remove());
+        return c.innerText;
+      });
+      const cjk = shown.match(/[^\n]{0,20}[\u4e00-\u9fff]+[^\n]{0,20}/);
+      if (cjk) {
+        problems++;
+        console.log(`页面上还有中文 ${vname}/${name}: ${cjk[0]}`);
+      }
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (overflow > 0) {
       problems++;
       console.log(`横向溢出 ${vname}/${name}: ${overflow}px`);
     }
-    await page.screenshot({ path: join(outDir, `${vname}-${name}.png`), fullPage: true });
+    await page.screenshot({ path: join(outDir, `${LANG ? LANG + '-' : ''}${vname}-${name}.png`), fullPage: true });
   }
   if (errors.length) {
     problems++;

@@ -7,6 +7,8 @@
 //   #/tasbih                 赞念
 //   #/settings               设置
 //   #/city                   选择城市
+//   #/times[/月份偏移]       本月时间表（可分享、打印）
+//   #/pray/qada              补礼记录
 //   #/ramadan                斋月：封斋/开斋、打卡、节日
 //   #/ramadan/tarawih        间歇拜
 //   #/ramadan/quran          古兰经 30 天读完
@@ -28,6 +30,8 @@ const LAZY = {
   tasbih: () => import('./pages/pray/tasbih.js').then((m) => m.tasbihPage),
   settings: () => import('./pages/settings.js').then((m) => m.settingsPage),
   city: () => import('./pages/city.js').then((m) => m.cityPage),
+  times: () => import('./pages/times.js').then((m) => m.timesPage),
+  qada: () => import('./pages/pray/qada.js').then((m) => m.qadaPage),
   ramadan: () => import('./pages/ramadan/index.js').then((m) => m.ramadanPage),
   tarawih: () => import('./pages/ramadan/tarawih.js').then((m) => m.tarawihPage),
   quran: () => import('./pages/ramadan/quran.js').then((m) => m.quranPage),
@@ -63,6 +67,7 @@ export function resolveRoute(path, ctx) {
       return homePage(ctx);
     case 'pray':
       if (parts[1] === 'wudu') return lazy('wudu', ctx, []);
+      if (parts[1] === 'qada') return lazy('qada', ctx, []);
       if (parts[1] === 'guide') return lazy('guide', ctx, [parts[2], parts[3]]);
       return hubPage(ctx);
     case 'qibla':
@@ -73,6 +78,8 @@ export function resolveRoute(path, ctx) {
       return lazy('settings', ctx, []);
     case 'city':
       return lazy('city', ctx, []);
+    case 'times':
+      return lazy('times', ctx, [parts[1]]);
     case 'masjid':
       if (!flagOn(ctx.remote, 'masjid')) return closedPage();
       if (parts[1] === 'hall') return lazy('hall', ctx, []);

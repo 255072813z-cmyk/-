@@ -1,6 +1,13 @@
 // 应用入口：路由、底部导航、每秒走时、到点提醒
 import '@fontsource/amiri/arabic-400.css';
 import '@fontsource/amiri/arabic-700.css';
+// 塔吉克语、俄语用的西里尔字母字体（含 ӣ ӯ ҳ қ ҷ ғ）。只有页面上出现西里尔字母时才会下载。
+import '@fontsource/noto-sans/cyrillic-400.css';
+import '@fontsource/noto-sans/cyrillic-ext-400.css';
+import '@fontsource/noto-sans/cyrillic-700.css';
+import '@fontsource/noto-sans/cyrillic-ext-700.css';
+import '@fontsource/noto-serif/cyrillic-700.css';
+import '@fontsource/noto-serif/cyrillic-ext-700.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/home.css';
@@ -17,7 +24,7 @@ import { isNativeApp, syncNotifications, listenNotificationTaps } from './core/n
 import { cachedRemote, refreshRemote, effectiveOffsets, effectiveHijri, flagOn } from './core/remote.js';
 import { setStatsGate, markUse, sendDaily, reportError } from './core/stats.js';
 import { setPresenceGate } from './core/presence.js';
-import { t, setLang, getLang } from './i18n/index.js';
+import { t, setLang, getLang, loadLang } from './i18n/index.js';
 import { ICONS, star8 } from './ui/art.js';
 import { resolveRoute, prefetchPages } from './router.js';
 
@@ -75,6 +82,36 @@ function applyPrefs() {
   const s = ctx.settings;
   document.documentElement.dataset.fs = String(s.fontScale || 0);
   setLang(s.lang);
+  if (getLang() !== s.lang) {
+    // 词典还没下载：下载好再切换（期间先显示原来的语言）
+    loadLang(s.lang).then((ok) => {
+      if (ok && ctx.settings.lang === s.lang) {
+        setLang(s.lang);
+        updateShell();
+        render();
+        resync(); // 提醒的文字也换成新语言
+      }
+    });
+  }
+  updateShell();
+}
+
+// 页面外框（标题、跳转链接、导航说明）也跟着语言走
+function updateShell() {
+  const name = t('app.name');
+  document.title = name;
+  const set = (sel, attr, v) => {
+    const el = document.querySelector(sel);
+    if (el) el.setAttribute(attr, v);
+  };
+  const skip = document.querySelector('.skip');
+  if (skip) skip.textContent = t('a11y.skip');
+  const brand = document.querySelector('.brand-name');
+  if (brand) brand.textContent = name;
+  set('.brand', 'aria-label', t('a11y.homeLink', { name }));
+  set('.topnav', 'aria-label', t('a11y.mainNav'));
+  set('.tabbar', 'aria-label', t('a11y.mainNav'));
+  set('.topbar-settings', 'aria-label', t('nav.settings'));
 }
 
 function renderNav(path) {
@@ -146,18 +183,23 @@ function resync() {
   });
 }
 
-document.documentElement.lang = 'zh-CN';
 document.querySelector('.brand-mark').innerHTML = star8(26);
 document.querySelector('.topbar-settings').innerHTML = ICONS.settings;
-applyPrefs();
-window.addEventListener('hashchange', render);
-render();
-loadWeather();
-// 与整秒对齐地走时，倒计时更稳
-setTimeout(() => {
-  tick();
-  setInterval(tick, 1000);
-}, 1000 - (Date.now() % 1000));
+
+// 启动：先把所选语言的词典准备好再显示，避免先闪一下别的语言
+function start() {
+  applyPrefs();
+  window.addEventListener('hashchange', render);
+  render();
+  loadWeather();
+  resync(); // 手机应用：排好提醒（词典已就绪，提醒文字是所选语言）
+  // 与整秒对齐地走时，倒计时更稳
+  setTimeout(() => {
+    tick();
+    setInterval(tick, 1000);
+  }, 1000 - (Date.now() % 1000));
+}
+loadLang(ctx.settings.lang).then(start, start);
 // 联系后台（设置了后台地址才会）：每天一次匿名统计；最多每 6 小时取一次远程配置
 function phoneHome() {
   sendDaily(ctx.city, getLang(), todayKey());
@@ -186,7 +228,6 @@ window.addEventListener('unhandledrejection', (e) => reportError(String((e.reaso
 if (isNativeApp()) {
   document.documentElement.classList.add('is-app');
   listenNotificationTaps();
-  resync();
 }
 
 // 首屏显示后，空闲时把其他页面也下载好（配合离线缓存，断网也能打开）

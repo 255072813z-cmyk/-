@@ -86,3 +86,59 @@ test('词条的占位符写法正确（{名字} 成对出现）', () => {
     assert.equal((s.match(/\{/g) || []).length, (s.match(/\}/g) || []).length, k);
   }
 });
+
+test('塔吉克语、俄语：词条和中文一一对应，占位符一致，单复数写全', async () => {
+  const ph = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
+  for (const l of ['tg', 'ru']) {
+    const d = (await import(`../src/i18n/${l}.js`)).default;
+    const missing = Object.keys(zh).filter((k) => d[k] == null);
+    const extra = Object.keys(d).filter((k) => zh[k] == null);
+    assert.deepEqual(missing, [], `${l} 缺少词条`);
+    assert.deepEqual(extra, [], `${l} 多出词条`);
+    const bad = [];
+    for (const [k, v] of Object.entries(d)) {
+      // 日期格式里月份可以写数字 {m} 或月名 {month}（程序两个都给）
+      const norm = (x) => (k.startsWith('date.') ? x.replace(/month/g, 'm') : x);
+      const want = norm(ph(typeof zh[k] === 'object' ? zh[k].other : zh[k]));
+      const forms = (typeof v === 'object' ? Object.values(v) : [v]).map(norm);
+      if (typeof v === 'object') for (const f of ['one', 'few', 'many', 'other']) if (l === 'ru' && v[f] == null) bad.push(`${k} 缺 ${f}`);
+      for (const f of forms) if (norm(ph(f)) !== want) bad.push(`${k}: ${f}`);
+      if (/[一-鿿]/.test(forms.join(''))) bad.push(`${k} 里还有中文`);
+    }
+    assert.deepEqual(bad, [], `${l} 的问题`);
+  }
+});
+
+test('内容：念词、经文、诗歌都有塔吉克语和俄语（意思、出处、西里尔字母译音）', async () => {
+  const { R, TASBIH, TASBIH_100, surah } = await import('../src/content/recitations.js');
+  const { SHORT_SURAHS } = await import('../src/content/prayers.js');
+  const miss = [];
+  const need = (o, name, keys = ['tg', 'ru']) => keys.forEach((k) => (o == null || !o[k] ? miss.push(`${name}.${k}`) : 0));
+  for (const [k, r] of Object.entries(R)) {
+    need(r, k);
+    need(r.src, k + '.src');
+    need(r.trc, k + '.trc');
+  }
+  for (const x of TASBIH) {
+    need(x, x.key);
+    need(x.trc, x.key + '.trc');
+  }
+  need(TASBIH_100, 'tasbih100');
+  need(TASBIH_100.src, 'tasbih100.src');
+  for (const n of [1, ...SHORT_SURAHS.map((x) => x.surah || x)]) {
+    const s = surah(n);
+    need(s.name, `surah${n}.name`);
+    need(s.src, `surah${n}.src`);
+    s.ayahs.forEach((a, i) => {
+      need(a, `surah${n}.${i + 1}`);
+      need(a.trc, `surah${n}.${i + 1}.trc`);
+    });
+  }
+  for (const [i, p] of POEMS.entries()) {
+    need(p.poet, `poem${i}.poet`);
+    need(p.note, `poem${i}.note`);
+    need(p.src, `poem${i}.src`);
+    if (!Array.isArray(p.ru) || p.ru.length !== p.zh.length) miss.push(`poem${i}.ru 行数`);
+  }
+  assert.deepEqual(miss, []);
+});
