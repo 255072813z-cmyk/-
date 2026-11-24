@@ -1,0 +1,81 @@
+/* 设计变量：绿色 + 金色 + 米白；夜间（深色）自动切换 */
+:root {
+  --bg: #f7f2e6;
+  --bg-2: #efe6d0;
+  --card: #fffcf4;
+  --ink: #1d2b24;
+  --ink-2: #44534b;
+  --muted: #5f6b64;
+  --line: #e2d6bb;
+  --green: #0f5940;
+  --green-2: #1b7354;
+  --green-soft: #e2eee6;
+  --gold: #b98a2e;
+  --gold-ink: #7a5a14;
+  --gold-soft: #f4e8c8;
+  --primary: #0f5940;
+  --on-primary: #ffffff;
+  --focus: #b98a2e;
+  --danger: #9b3a26;
+  --lamp: #ffcf6b;
+  --silhouette: #24352d;
+  --cap: #3f5148;
+  --shadow: 0 1px 2px rgba(60, 45, 10, 0.06), 0 8px 24px rgba(60, 45, 10, 0.07);
+  --radius: 18px;
+  --font-zh: 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
+  --font-zh-serif: 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', var(--font-zh);
+  --font-ar: 'Amiri', 'Noto Naskh Arabic', 'Geeza Pro', 'Traditional Arabic', serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0f1a16;
+    --bg-2: #15231e;
+    --card: #17271f;
+    --ink: #f0e9d9;
+    --ink-2: #d2c9b4;
+    --muted: #a5ada6;
+    --line: #2b3d34;
+    --green: #6cc79f;
+    --green-2: #4fae86;
+    --green-soft: #1d3a2f;
+    --gold: #d9b65e;
+    --gold-ink: #e7c97c;
+    --gold-soft: #2f2a1a;
+    --primary: #2a7d5b;
+    --on-primary: #ffffff;
+    --focus: #e7c97c;
+    --silhouette: #d9cdb0;
+    --cap: #8f7f5c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0f1a16;
+  --bg-2: #15231e;
+  --card: #17271f;
+  --ink: #f0e9d9;
+  --ink-2: #d2c9b4;
+  --muted: #a5ada6;
+  --line: #2b3d34;
+  --green: #6cc79f;
+  --green-2: #4fae86;
+  --green-soft: #1d3a2f;
+  --gold: #d9b65e;
+  --gold-ink: #e7c97c;
+  --gold-soft: #2f2a1a;
+  --primary: #2a7d5b;
+  --on-primary: #ffffff;
+  --focus: #e7c97c;
+  --silhouette: #d9cdb0;
+  --cap: #8f7f5c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+
+/* 字号：标准 18px，大 20px，特大 22px（老人也能看清） */
+html { font-size: 112.5%; }
+html[data-fs='1'] { font-size: 125%; }
+html[data-fs='2'] { font-size: 137.5%; }

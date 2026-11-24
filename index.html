@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>网上清真寺</title>
+    <meta name="description" content="五番拜时间、在家礼拜指引、小净、朝向与赞念。不用注册，不收集个人信息。" />
+    <meta name="theme-color" content="#0f5940" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <style>
+      /* 首屏占位：脚本加载前就有底色和标题，避免白屏 */
+      html { background: #f7f2e6; }
+      @media (prefers-color-scheme: dark) { html { background: #0f1a16; } }
+      .boot { min-height: 100vh; display: grid; place-items: center; font: 600 20px/1.6 "PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif; color: #0f5940; }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#app">跳到正文</a>
+    <header class="topbar">
+      <a class="brand" href="#/" aria-label="网上清真寺 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">网上清真寺</span>
+      </a>
+      <nav class="topnav" aria-label="主导航"></nav>
+      <a class="topbar-settings" href="#/settings" aria-label="设置"></a>
+    </header>
+    <main id="app" tabindex="-1"><div class="boot">网上清真寺</div></main>
+    <nav class="tabbar" aria-label="主导航"></nav>
+    <div class="toast-layer" aria-live="polite"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
