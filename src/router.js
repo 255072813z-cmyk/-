@@ -24,7 +24,7 @@
 // 首页和"在家礼拜"随首屏一起加载；其余页面第一次打开时才下载（首屏更快）。
 import { homePage } from './pages/home.js';
 import { hubPage } from './pages/pray/hub.js';
-import { t } from './i18n/index.js';
+import { t, getLang } from './i18n/index.js';
 import { flagOn } from './core/remote.js';
 import { ICONS } from './ui/art.js';
 
@@ -130,6 +130,13 @@ export function prefetchPages() {
     import('./content/region-map.js').catch(() => {}); // 朝向页的地图
     import('./content/wide-map.js').catch(() => {});
     import('./content/hadith.js').catch(() => {}); // 今日圣训、在家礼拜的依据
+    // 古兰经"继续读"的那一章：先下载好，断网也能接着读（只这一块，不整本下载，省流量）
+    import('./core/quran.js')
+      .then((q) => {
+        const r = q.lastRead();
+        return r ? q.loadSurah(r.s, getLang()) : null;
+      })
+      .catch(() => {});
   };
   if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
   else setTimeout(go, 2500);

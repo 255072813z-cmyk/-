@@ -101,3 +101,21 @@ test('平时标了"要封斋"的日子：也提醒封斋饭和开斋；没标的
   const off = buildSchedule(city, now, { ...base, notify: { ...DEFAULT_NOTIFY, ramadan: false }, fastDays: ['2026-12-21'] });
   assert.equal(off.filter((x) => x.kind === 'sahur').length, 0);
 });
+
+test('手机应用：排 14 天；最后加一条"打开一下就能续上"；苹果不超过 64 条', async () => {
+  const { APP_DAYS, CAP } = await import('../src/core/notify.js');
+  const now = at(2026, 12, 1, 3, 0);
+  const android = buildSchedule(city, now, { ...base, days: APP_DAYS, cap: CAP.android, renew: true });
+  const prayers = android.filter((x) => x.kind === 'prayer');
+  assert.equal(prayers.length, 14 * 5, '安卓：14 天 × 5 番拜');
+  const last = android[android.length - 1];
+  assert.equal(last.kind, 'renew', '最后一条是续排提醒');
+  assert.ok(last.at > prayers[prayers.length - 1].at);
+  assert.equal(new Set(android.map((x) => x.id)).size, android.length, '编号不重复');
+  const ios = buildSchedule(city, now, { ...base, days: APP_DAYS, cap: CAP.ios, renew: true });
+  assert.ok(ios.length <= 64, '苹果最多 64 条');
+  assert.equal(ios[ios.length - 1].kind, 'renew');
+  assert.ok(ios.filter((x) => x.kind === 'prayer').length >= 45, '苹果也能排 9 天以上的礼拜提醒');
+  // 不开提醒：什么都不排，也没有续排提醒
+  assert.equal(buildSchedule(city, now, { ...base, remind: false, days: APP_DAYS, renew: true }).length, 0);
+});

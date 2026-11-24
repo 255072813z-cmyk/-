@@ -588,19 +588,22 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.evaluate(() => navigator.serviceWorker && navigator.serviceWorker.ready);
   await page.reload(); // 让离线缓存接管页面
   await page.waitForTimeout(5000); // 等空闲时预下载其他页面
+  // 先看一眼隐私政策页（不能把离线缓存里的应用首页顶掉）
+  await page.goto(base.replace('index.html', 'privacy.html'));
+  const policy = (await page.textContent('body')).includes('Сиёсати махфият');
   await ctx.setOffline(true);
-  await page.reload();
+  await page.goto(base + '?weather=clear');
   const time = await page.textContent('[data-hero] .hero-time').catch(() => '');
-  check('断网后礼拜时间照样显示', /\d\d:\d\d/.test(time || ''), time);
+  check('隐私政策页能打开；看过它之后断网，打开应用仍是礼拜时间', policy && /\d\d:\d\d/.test(time || ''), time);
   const okPages = [];
-  for (const h of ['#/ramadan', '#/masjid/hall', '#/pray/guide/fajr/fard', '#/qibla']) {
+  for (const h of ['#/ramadan', '#/masjid/hall', '#/pray/guide/fajr/fard', '#/qibla', '#/quran', '#/me']) {
     await page.goto(base + '?weather=clear' + h);
     await page.waitForTimeout(600);
     const txt = await page.textContent('#app');
     const stuck = await page.locator('#app > .page > .loading').count();
     if (txt && !stuck && txt.length > 50) okPages.push(h);
   }
-  check('断网后斋月、大殿、跟做、朝向页都能打开', okPages.length === 4, okPages.join(' '));
+  check('断网后斋月、大殿、跟做、朝向、古兰经目录、"我的"页都能打开', okPages.length === 6, okPages.join(' '));
   await ctx.close();
 }
 

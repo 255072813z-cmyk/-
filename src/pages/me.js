@@ -42,6 +42,7 @@ export function mePage(ctx) {
     <details class="card fold">
       <summary>${t('me.privacy')}</summary>
       <p class="privacy">${t('privacy')}</p>
+      <a class="link-row" href="./privacy.html">${t('me.policy')} →</a>
     </details>
     <p class="note center">${t('app.name')} · ${t('me.version', { v: APP_VERSION })}</p>
   </div>`;

@@ -8,8 +8,13 @@ import { fastTimes } from './ramadan.js';
 import { toHijri } from './hijri.js';
 import { addDays, localParts, fmtHM, ymdKey } from './clock.js';
 import { t } from '../i18n/index.js';
+import { platform } from './api.js';
 
 export const NOTIFY_DAYS = 7;
+// 手机应用里实际排多远：安卓 14 天；苹果系统最多同时保留 64 条，按时间排满为止（约 9–10 天）。
+// 最后一条已排的提醒之后，再加一条"打开一下应用就能接着提醒"，免得很久没打开时提醒悄悄停掉。
+export const APP_DAYS = 14;
+export const CAP = { ios: 63, android: 150 };
 export const SAHUR_WARN_MIN = 30; // 斋月：停止吃喝前 30 分钟提醒一次
 export const DEFAULT_NOTIFY = {
   prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
@@ -21,7 +26,7 @@ export const DEFAULT_NOTIFY = {
 export const STREAK_HOUR = 21; // 当地晚上 9 点（宵礼还没到时，改到宵礼后 30 分钟）
 export const JUMUAH_WARN_MIN = 60;
 
-/** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，6 封斋饭，7 开斋，8 主麻，9 打卡），同一条提醒重排时编号不变 */
+/** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，5 续排，6 封斋饭，7 开斋，8 主麻，9 打卡），同一条提醒重排时编号不变 */
 export function notifId(ymd, idx) {
   return (ymd.y * 10000 + ymd.m * 100 + ymd.d) * 10 + idx;
 }
@@ -33,10 +38,12 @@ export function notifId(ymd, idx) {
 export function buildSchedule(city, now, settings) {
   const out = [];
   if (!settings.remind) return out;
+  const days = Number.isInteger(settings.days) && settings.days > 0 ? settings.days : NOTIFY_DAYS;
+  const cap = Number.isInteger(settings.cap) && settings.cap > 1 ? settings.cap : 60;
   const n = { ...DEFAULT_NOTIFY, ...(settings.notify || {}) };
   n.prayers = { ...DEFAULT_NOTIFY.prayers, ...(n.prayers || {}) };
   const today = localParts(now, city.utcOffset);
-  for (let i = 0; i < NOTIFY_DAYS; i++) {
+  for (let i = 0; i < days; i++) {
     const ymd = addDays(today, i);
     const times = timesFor(city, ymd, settings.offsets);
     PRAYERS.forEach((p, idx) => {
@@ -75,8 +82,14 @@ export function buildSchedule(city, now, settings) {
       if (f.iftar > now) out.push({ id: notifId(ymd, 7), at: f.iftar, title: t('notify.iftarTitle'), body: t('notify.iftarBody'), kind: 'iftar', route: '#/ramadan' });
     }
   }
-  // 苹果手机最多同时排 64 条
-  return out.sort((a, b) => a.at - b.at).slice(0, 60);
+  // 按时间排好，留一个位置给"续排"提醒（苹果手机最多同时排 64 条）
+  const list = out.sort((a, b) => a.at - b.at).slice(0, settings.renew ? cap - 1 : cap);
+  if (settings.renew && list.length) {
+    const last = list[list.length - 1];
+    const at = new Date(last.at.getTime() + 10 * 60000);
+    list.push({ id: notifId(localParts(at, city.utcOffset), 5), at, title: t('notify.renewTitle'), body: t('notify.renewBody'), kind: 'renew', route: '#/' });
+  }
+  return list;
 }
 
 /** 是否运行在手机应用里（Capacitor 会在页面加载前注入） */
@@ -153,7 +166,8 @@ export function syncNotifications(ctx) {
       const todayKey = ymdKey(localParts(ctx.now, ctx.city.utcOffset));
       const checkedToday = streakStatus(todayKey).today;
       const fastDays = fastPlan(todayKey); // 用户标了要封斋的日子（斋月以外）
-      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust, checkedToday, fastDays });
+      const ios = platform() === 'ios';
+      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust, checkedToday, fastDays, days: APP_DAYS, cap: ios ? CAP.ios : CAP.android, renew: true });
       if (list.length)
         await ln.schedule({
           notifications: list.map((x) => ({
