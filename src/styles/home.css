@@ -163,3 +163,11 @@ details.method summary { color: var(--green); }
 .city-caret { color: var(--muted); font-size: 0.85em; }
 .city-btn:active { transform: scale(0.98); }
 .high-lat { margin: 8px 0 0; }
+
+/* 后台发布的公告 */
+.notice-card { border-color: var(--gold); background: var(--gold-soft); }
+.notice-card.is-warn { border-color: var(--danger); }
+.notice-text { white-space: pre-line; margin-bottom: 8px; }
+.notice-card .btn-sm { margin-top: 4px; }
+.page.home .notice-slot { order: 3; }
+.notice-slot:empty { display: none; }

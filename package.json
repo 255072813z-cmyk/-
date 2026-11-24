@@ -20,7 +20,9 @@
     "verify": "node scripts/verify.mjs",
     "icons": "node scripts/build-icons.mjs",
     "app:sync": "vite build && cap sync",
-    "presence": "node server/dev-server.mjs 8787"
+    "presence": "node server/dev-server.mjs 8787",
+    "admin": "node scripts/build-admin.mjs",
+    "test:server": "node server/test-worker.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

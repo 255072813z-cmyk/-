@@ -13,8 +13,8 @@ const dur = (ms) => durHTML(ms, true);
 export { homeRamadanCard } from './card.js';
 
 function fastCard(ctx, st) {
-  const f = fastPhase(ctx.city, ctx.now, ctx.settings.offsets);
-  const show = st.active ? f : { phase: 'preview', times: fastTimes(ctx.city, st.start, ctx.settings.offsets) };
+  const f = fastPhase(ctx.city, ctx.now, ctx.offsets);
+  const show = st.active ? f : { phase: 'preview', times: fastTimes(ctx.city, st.start, ctx.offsets) };
   const tt = show.phase === 'after' ? show.tomorrow : show.times;
   const head = t('fast.head.' + show.phase, { date: dateShort(st.start) });
   const countLabel = show.phase === 'preview' ? '' : t('fast.count.' + show.phase);
@@ -56,13 +56,13 @@ function daysGrid(st, log) {
 }
 
 export function ramadanPage(ctx) {
-  const adj = ctx.settings.hijriAdjust;
+  const adj = ctx.hijriAdjust;
   const today = ctx.sched.today;
   const st = ramadanStatus(today, adj);
   const hol = holidays(today, adj);
   const logKey = 'fast:' + st.year;
   const log = load(logKey, {});
-  const f = fastPhase(ctx.city, ctx.now, ctx.settings.offsets);
+  const f = fastPhase(ctx.city, ctx.now, ctx.offsets);
   const iftarLit = st.active && f.phase === 'after';
   const todayYes = st.active && log[st.day] === 'yes';
   const city = cityName(ctx.city);
@@ -72,7 +72,7 @@ export function ramadanPage(ctx) {
     const rows = [];
     for (let d = 1; d <= st.length; d++) {
       const date = addDays(st.start, d - 1);
-      const tt = fastTimes(ctx.city, date, ctx.settings.offsets);
+      const tt = fastTimes(ctx.city, date, ctx.offsets);
       rows.push(
         `<tr class="${st.active && d === st.day ? 'is-today' : ''}"><td>${d}</td><td>${date.m}/${date.d}</td><td>${fmtHM(tt.sahurEnd)}</td><td>${fmtHM(tt.iftar)}</td></tr>`,
       );
@@ -178,7 +178,7 @@ export function ramadanPage(ctx) {
     tick(c) {
       const node = document.querySelector('[data-fast-count]');
       if (!node || !st.active) return;
-      const ff = fastPhase(c.city, c.now, c.settings.offsets);
+      const ff = fastPhase(c.city, c.now, c.offsets);
       if (ff.phase !== lastPhase) {
         lastPhase = ff.phase;
         c.rerender();

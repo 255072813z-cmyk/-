@@ -30,10 +30,14 @@ jobs:
         run: npm test
       - name: 礼拜时间全年天文核对
         run: npm run check:astro
+      - name: 后台服务测试（防火墙、签名配置、匿名统计、房间）
+        run: npm i --no-save miniflare@3.20250718.3 && npm run test:server
       - run: npm run build
         env:
           # 在线人数服务地址（仓库 Settings → Secrets and variables → Actions → Variables）；不设就不显示人数
           VITE_PRESENCE_URL: ${{ vars.VITE_PRESENCE_URL }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_CONFIG_PUBKEY: ${{ vars.VITE_CONFIG_PUBKEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

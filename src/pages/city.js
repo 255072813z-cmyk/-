@@ -4,11 +4,12 @@ import { setSettings } from '../core/settings.js';
 import { CITIES, CITY_GROUPS } from '../core/cities.js';
 import { fmtHM } from '../core/clock.js';
 import { locate } from '../core/location.js';
+import { markFeature } from '../core/stats.js';
+import { ymdKey } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t } from '../i18n/index.js';
-import { cityName } from '../i18n/format.js';
+import { cityName, esc } from '../i18n/format.js';
 
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[\s\-·.]/g, '');
 
 function backHref(ctx) {
@@ -90,6 +91,7 @@ export function cityPage(ctx) {
         msg.textContent = t('city.locating');
         locate()
           .then((loc) => {
+            markFeature('here', ymdKey(ctx.sched.today));
             setSettings({ city: 'here', loc });
             done();
           })

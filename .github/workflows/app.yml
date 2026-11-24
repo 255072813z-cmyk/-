@@ -37,6 +37,8 @@ jobs:
         run: npm run build
         env:
           VITE_PRESENCE_URL: ${{ vars.VITE_PRESENCE_URL }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_CONFIG_PUBKEY: ${{ vars.VITE_CONFIG_PUBKEY }}
       - run: npx cap sync android
       - uses: actions/setup-java@v4
         with:
@@ -62,6 +64,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_CONFIG_PUBKEY: ${{ vars.VITE_CONFIG_PUBKEY }}
       - run: npx cap sync ios
       - name: 编译苹果应用（模拟器，不签名）
         working-directory: ios/App

@@ -131,7 +131,7 @@ export function syncNotifications(ctx) {
       } catch (e) {
         /* 苹果没有频道 */
       }
-      const list = buildSchedule(ctx.city, ctx.now, ctx.settings);
+      const list = buildSchedule(ctx.city, ctx.now, { ...ctx.settings, offsets: ctx.offsets, hijriAdjust: ctx.hijriAdjust });
       if (list.length)
         await ln.schedule({
           notifications: list.map((x) => ({

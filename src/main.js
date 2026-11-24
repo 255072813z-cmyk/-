@@ -9,12 +9,15 @@ import './styles/spaces.css';
 
 import { getSettings, onSettings } from './core/settings.js';
 import { getCity } from './core/cities.js';
-import { now, setDisplayOffset } from './core/clock.js';
+import { now, setDisplayOffset, ymdKey } from './core/clock.js';
 import { schedule } from './core/prayer-times.js';
 import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
 import { isNativeApp, syncNotifications, listenNotificationTaps } from './core/notify.js';
-import { t, setLang } from './i18n/index.js';
+import { cachedRemote, refreshRemote, effectiveOffsets, effectiveHijri, flagOn } from './core/remote.js';
+import { setStatsGate, markUse, sendDaily, reportError } from './core/stats.js';
+import { setPresenceGate } from './core/presence.js';
+import { t, setLang, getLang } from './i18n/index.js';
 import { ICONS, star8 } from './ui/art.js';
 import { resolveRoute, prefetchPages } from './router.js';
 
@@ -40,13 +43,32 @@ export const ctx = {
   sched: null,
   weather: undefined, // undefined 还在查；null 查不到；对象为天气
   weatherKind: null,
+  remote: cachedRemote(), // 后台发布的配置（已验证签名）；没有时为默认
+  offsets: {}, // 官方校正 + 用户微调
+  official: null, // 官方校正的来源
+  hijriAdjust: 0,
+  hijriOfficial: null,
   rerender: () => render(),
 };
+
+// 由设置和远程配置算出实际使用的时间校正、伊斯兰历调整
+function derive() {
+  const o = effectiveOffsets(ctx.settings.offsets, ctx.remote, ctx.city);
+  ctx.offsets = o.offsets;
+  ctx.official = o.official;
+  const h = effectiveHijri(ctx.settings, ctx.remote, ctx.city);
+  ctx.hijriAdjust = h.adjust;
+  ctx.hijriOfficial = h.official;
+}
+derive();
+setStatsGate(() => ctx.settings.stats !== false && flagOn(ctx.remote, 'stats'));
+setPresenceGate(() => flagOn(ctx.remote, 'presence'));
+const todayKey = () => (ctx.sched ? ymdKey(ctx.sched.today) : '');
 
 function refreshSchedule() {
   setDisplayOffset(ctx.city.utcOffset);
   ctx.now = now();
-  ctx.sched = schedule(ctx.city, ctx.now, ctx.settings.offsets);
+  ctx.sched = schedule(ctx.city, ctx.now, ctx.offsets);
 }
 
 function applyPrefs() {
@@ -79,6 +101,7 @@ function render() {
   if (page.mount) page.mount(app);
   renderNav(path);
   if (changed) {
+    markUse(path, todayKey());
     lastPath = path;
     window.scrollTo(0, 0);
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
@@ -94,7 +117,7 @@ function tick() {
 async function loadWeather() {
   ctx.weather = undefined;
   const city = ctx.city;
-  const w = await getWeather(city);
+  const w = flagOn(ctx.remote, 'weather') ? await getWeather(city) : null;
   if (city !== ctx.city) return;
   ctx.weather = w;
   ctx.weatherKind = classify(w);
@@ -106,6 +129,7 @@ onSettings((s) => {
   const cityChanged = next.id !== ctx.city.id || next.lat !== ctx.city.lat || next.lon !== ctx.city.lon;
   ctx.settings = s;
   ctx.city = next;
+  derive();
   applyPrefs();
   render();
   if (cityChanged) loadWeather();
@@ -134,12 +158,31 @@ setTimeout(() => {
   tick();
   setInterval(tick, 1000);
 }, 1000 - (Date.now() % 1000));
+// 联系后台（设置了后台地址才会）：每天一次匿名统计；最多每 6 小时取一次远程配置
+function phoneHome() {
+  sendDaily(ctx.city, getLang(), todayKey());
+  refreshRemote().then((cfg) => {
+    if (!cfg) return;
+    const weatherWas = flagOn(ctx.remote, 'weather');
+    ctx.remote = cfg;
+    derive();
+    render();
+    resync();
+    if (weatherWas !== flagOn(cfg, 'weather')) loadWeather();
+  });
+}
+
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     tick();
     resync(); // 回到前台时续排，保证总有未来 7 天的提醒
+    phoneHome();
   }
 });
+
+// 匿名错误报告（只有错误信息和位置）
+window.addEventListener('error', (e) => reportError(e.message, `${e.filename || ''}:${e.lineno || 0}`, todayKey()));
+window.addEventListener('unhandledrejection', (e) => reportError(String((e.reason && e.reason.message) || e.reason), 'promise', todayKey()));
 if (isNativeApp()) {
   document.documentElement.classList.add('is-app');
   listenNotificationTaps();
@@ -147,7 +190,10 @@ if (isNativeApp()) {
 }
 
 // 首屏显示后，空闲时把其他页面也下载好（配合离线缓存，断网也能打开）
-window.addEventListener('load', prefetchPages);
+window.addEventListener('load', () => {
+  prefetchPages();
+  setTimeout(phoneHome, 1500);
+});
 
 // 离线缓存（微信 iOS 等不支持的环境会静默跳过）
 // 手机应用里网页文件本来就在手机上，不需要离线缓存（也避免更新应用后还显示旧版）

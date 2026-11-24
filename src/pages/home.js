@@ -1,7 +1,7 @@
 // 首页：今天的礼拜
 // 用户一打开就要看到三件事：下一番拜是什么、还有多久、今天在家礼拜行不行。
 import { t } from '../i18n/index.js';
-import { dateLine, hijriLine, durHTML, cityName } from '../i18n/format.js';
+import { dateLine, hijriLine, durHTML, cityName, remoteText, esc } from '../i18n/format.js';
 import { fmtHM, splitDuration, addDays } from '../core/clock.js';
 import { PRAYERS, skyPhase, highLatitudeDay } from '../core/prayer-times.js';
 import { toHijri } from '../core/hijri.js';
@@ -13,6 +13,9 @@ import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
 import { isNativeApp, askNotifyPermission } from '../core/notify.js';
 import { getSettings } from '../core/settings.js';
+import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
+import { platform } from '../core/api.js';
+import { ymdKey } from '../core/clock.js';
 
 function prayerName(p, sched) {
   if (p === 'dhuhr' && sched.today.wd === 5) return t('prayer.jumuah');
@@ -91,6 +94,34 @@ function bindNotifyCard(root) {
     });
 }
 
+/** 后台发布的公告（纯文字）和"请更新应用"提示 */
+function noticesHTML(ctx) {
+  const list = activeNotices(ctx.remote, ymdKey(ctx.sched.today));
+  const upd = updateLink(ctx.remote, platform());
+  return (
+    (upd
+      ? `<section class="card notice-card is-warn"><p>${t('home.updateText')}</p>
+        <a class="btn btn-primary btn-wide" href="${esc(upd)}" target="_blank" rel="noopener noreferrer">${t('home.updateBtn')}</a></section>`
+      : '') +
+    list
+      .map(
+        (n) => `<section class="card notice-card ${n.level === 'warn' ? 'is-warn' : ''}" role="${n.level === 'warn' ? 'alert' : 'status'}">
+        <p class="notice-text">${remoteText(n.text)}</p>
+        <button type="button" class="btn btn-ghost btn-sm" data-notice-ok="${n.id}">${t('home.noticeOk')}</button></section>`,
+      )
+      .join('')
+  );
+}
+
+function bindNotices(root) {
+  root.querySelectorAll('[data-notice-ok]').forEach((b) =>
+    b.addEventListener('click', () => {
+      dismissNotice(b.dataset.noticeOk);
+      b.closest('.notice-card').remove();
+    }),
+  );
+}
+
 function heroHTML(ctx) {
   const s = ctx.sched;
   const name = prayerName(s.next, s);
@@ -136,9 +167,9 @@ function listHTML(ctx) {
 
 function dateHTML(ctx) {
   const d = ctx.sched.today;
-  const h = toHijri(d, ctx.settings.hijriAdjust);
+  const h = toHijri(d, ctx.hijriAdjust);
   const afterSunset = ctx.now >= ctx.sched.times.sunset;
-  const hn = afterSunset ? toHijri(addDays(d, 1), ctx.settings.hijriAdjust) : null;
+  const hn = afterSunset ? toHijri(addDays(d, 1), ctx.hijriAdjust) : null;
   return `<span class="date-g">${dateLine(d)}${d.wd === 5 ? `<span class="jumuah">${t('home.jumuah')}</span>` : ''}</span>
     <span class="date-h">${hijriLine(h)}</span>
     ${hn ? `<span class="date-eve">${t('home.hijriEve', { d: hn.d })}</span>` : ''}`;
@@ -164,7 +195,13 @@ export function homePage(ctx) {
       <ul class="plist" data-list>${listHTML(ctx)}</ul>
       <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
       ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
-      <p class="local-note">${adjusted ? t('home.localNoteAdjusted') : t('home.localNote')}</p>
+      <p class="local-note">${
+        ctx.official
+          ? t(adjusted ? 'home.localNoteOfficialAdjusted' : 'home.localNoteOfficial', { src: remoteText(ctx.official) })
+          : adjusted
+            ? t('home.localNoteAdjusted')
+            : t('home.localNote')
+      }</p>
       <details class="method">
         <summary>${t('home.howCalc')}</summary>
         <p>${t(ru ? 'home.methodRu' : 'home.method')}</p>
@@ -183,7 +220,8 @@ export function homePage(ctx) {
         <span>${cityName(ctx.city)}</span><span class="city-caret" aria-hidden="true">▾</span></a>
       <span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>
     </div>
-    <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
+    <div class="notice-slot">${noticesHTML(ctx)}</div>
+    <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
     <div data-winter>${winterCard(ctx)}</div>
@@ -205,6 +243,7 @@ export function homePage(ctx) {
     html,
     mount(el) {
       bindNotifyCard(el);
+      bindNotices(el);
     },
     onNotify(r) {
       const box = document.querySelector('[data-notify-card]');

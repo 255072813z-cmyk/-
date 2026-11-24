@@ -6,7 +6,7 @@ import { ICONS, star8 } from '../../ui/art.js';
 import { t } from '../../i18n/index.js';
 
 export function quranPage(ctx) {
-  const st = ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust);
+  const st = ramadanStatus(ctx.sched.today, ctx.hijriAdjust);
   const key = 'quran:' + st.year;
   const todayJuz = st.active ? Math.min(30, st.day) : 0;
 

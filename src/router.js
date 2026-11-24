@@ -18,6 +18,8 @@
 import { homePage } from './pages/home.js';
 import { hubPage } from './pages/pray/hub.js';
 import { t } from './i18n/index.js';
+import { flagOn } from './core/remote.js';
+import { ICONS } from './ui/art.js';
 
 const LAZY = {
   wudu: () => import('./pages/pray/wudu.js').then((m) => m.wuduPage),
@@ -72,6 +74,7 @@ export function resolveRoute(path, ctx) {
     case 'city':
       return lazy('city', ctx, []);
     case 'masjid':
+      if (!flagOn(ctx.remote, 'masjid')) return closedPage();
       if (parts[1] === 'hall') return lazy('hall', ctx, []);
       if (parts[1] === 'courtyard') return lazy('courtyard', ctx, []);
       if (parts[1] === 'poetry') return lazy('poetry', ctx, []);
@@ -83,6 +86,14 @@ export function resolveRoute(path, ctx) {
     default:
       return homePage(ctx);
   }
+}
+
+/** 后台临时关闭了清真寺空间时显示 */
+function closedPage() {
+  return {
+    html: `<div class="page"><div class="page-head"><a class="back" href="#/" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('nav.masjid')}</h1></div>
+      <section class="card"><p>${t('spaces.closed')}</p><a class="btn btn-primary btn-wide" href="#/pray">${t('home.atHome')}</a></section></div>`,
+  };
 }
 
 /** 空闲时预先下载常用页面，之后断网也能打开 */

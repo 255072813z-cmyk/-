@@ -6,15 +6,18 @@ import { fmtHM } from '../core/clock.js';
 import { toHijri } from '../core/hijri.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t, LANGS } from '../i18n/index.js';
-import { hijriLine, cityName } from '../i18n/format.js';
+import { hijriLine, cityName, remoteText } from '../i18n/format.js';
+import { effectiveOffsets } from '../core/remote.js';
 import { isNativeApp, notifyStatus, askNotifyPermission, openExactSetting, testNotification } from '../core/notify.js';
 
 const signed = (v) => (v > 0 ? '+' : '') + v;
 
 export function settingsPage(ctx) {
   const s = getSettings();
-  const base = timesFor(ctx.city, ctx.sched.today);
-  const h = toHijri(ctx.sched.today, s.hijriAdjust);
+  // "计算"一栏：天文计算 + 官方校正（如果后台发布了）；用户的微调叠加在上面
+  const base = timesFor(ctx.city, ctx.sched.today, effectiveOffsets({}, ctx.remote, ctx.city).offsets);
+  const h = toHijri(ctx.sched.today, ctx.hijriAdjust);
+  const officialHijri = ctx.remote.hijri && ctx.remote.hijri[ctx.city.cc];
   const fs = ['settings.fs0', 'settings.fs1', 'settings.fs2'];
   const app = isNativeApp();
   const html = `
@@ -60,13 +63,14 @@ export function settingsPage(ctx) {
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('home.adjust')}</h2>
       <p class="note">${t('settings.adjustNote', { city: cityName(ctx.city) })}</p>
+      ${ctx.official ? `<p class="note">${t('settings.officialNote', { src: remoteText(ctx.official) })}</p>` : ''}
       <ul class="adj-list">
         ${PRAYERS.map((p) => {
           const v = Number(s.offsets[p]) || 0;
           const name = t('prayer.' + p);
           return `<li class="adj">
             <span class="adj-name">${name}</span>
-            <span class="adj-base">${t('settings.calc', { time: fmtHM(base[p]) })}</span>
+            <span class="adj-base">${t(ctx.official ? 'settings.official' : 'settings.calc', { time: fmtHM(base[p]) })}</span>
             <span class="adj-ctrl">
               <button type="button" class="btn-round" data-adj="${p}" data-d="-1" aria-label="${t('settings.earlier', { name })}">−</button>
               <output class="adj-val">${t('settings.minutes', { n: signed(v) })}</output>
@@ -84,8 +88,25 @@ export function settingsPage(ctx) {
       <p>${t('settings.today')} ${hijriLine(h)}</p>
       <p class="note">${t('settings.hijriNote', { method: t(h.source === 'umalqura' ? 'settings.umalqura' : 'settings.tabular') })}</p>
       <div class="segmented" role="group" aria-label="${t('settings.hijriTitle')}">
-        ${[-2, -1, 0, 1, 2].map((d) => `<button type="button" class="seg ${s.hijriAdjust === d ? 'is-on' : ''}" data-hj="${d}" aria-pressed="${s.hijriAdjust === d}">${t('settings.days', { n: signed(d) })}</button>`).join('')}
+        <button type="button" class="seg ${!s.hijriManual ? 'is-on' : ''}" data-hj-auto aria-pressed="${!s.hijriManual}">${t('settings.hijriAuto')}</button>
+        ${[-2, -1, 0, 1, 2].map((d) => {
+          const on = s.hijriManual && s.hijriAdjust === d;
+          return `<button type="button" class="seg ${on ? 'is-on' : ''}" data-hj="${d}" aria-pressed="${on}">${t('settings.days', { n: signed(d) })}</button>`;
+        }).join('')}
       </div>
+      <p class="note">${
+        s.hijriManual
+          ? t('settings.hijriManualNote')
+          : officialHijri
+            ? t('settings.hijriAutoOfficial', { src: remoteText(officialHijri.src), n: signed(officialHijri.adjust) })
+            : t('settings.hijriAutoNote')
+      }</p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">${star8(18)} ${t('settings.statsTitle')}</h2>
+      <label class="switch-row"><span><b>${t('settings.stats')}</b><small>${t('settings.statsSub')}</small></span>
+        <input type="checkbox" data-stats ${s.stats !== false ? 'checked' : ''}></label>
     </section>
 
     <section class="card">
@@ -151,7 +172,9 @@ export function settingsPage(ctx) {
       el.querySelector('[data-adj-reset]').addEventListener('click', () =>
         setSettings({ offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 } }),
       );
-      el.querySelectorAll('[data-hj]').forEach((b) => b.addEventListener('click', () => setSettings({ hijriAdjust: +b.dataset.hj })));
+      el.querySelectorAll('[data-hj]').forEach((b) => b.addEventListener('click', () => setSettings({ hijriAdjust: +b.dataset.hj, hijriManual: true })));
+      el.querySelector('[data-hj-auto]').addEventListener('click', () => setSettings({ hijriAdjust: 0, hijriManual: false }));
+      el.querySelector('[data-stats]').addEventListener('change', (e) => setSettings({ stats: e.target.checked }));
       el.querySelectorAll('[data-lang]:not([disabled])').forEach((b) => b.addEventListener('click', () => setSettings({ lang: b.dataset.lang })));
     },
   };

@@ -6,9 +6,9 @@ import { durText, dateShort } from '../../i18n/format.js';
 
 /** 首页上用的斋月卡片：斋月中显示封斋/开斋倒计时（放在首页最上面），斋月前显示还有几天 */
 export function homeRamadanCard(ctx) {
-  const st = ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust);
+  const st = ramadanStatus(ctx.sched.today, ctx.hijriAdjust);
   if (st.active) {
-    const f = fastPhase(ctx.city, ctx.now, ctx.settings.offsets);
+    const f = fastPhase(ctx.city, ctx.now, ctx.offsets);
     const left = t('card.left', { dur: durText(f.target - ctx.now) });
     const line =
       f.phase === 'fasting'

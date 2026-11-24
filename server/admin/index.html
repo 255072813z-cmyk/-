@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>清真寺后台</title>
+<link rel="stylesheet" href="/admin/app.css">
+</head>
+<body>
+<header class="top">
+  <h1>网上清真寺 · 后台</h1>
+  <nav class="tabs" role="tablist" hidden>
+    <button type="button" role="tab" data-tab="stats" aria-selected="true">数据</button>
+    <button type="button" role="tab" data-tab="config" aria-selected="false">远程配置</button>
+    <button type="button" role="tab" data-tab="keys" aria-selected="false">密钥</button>
+  </nav>
+  <button type="button" class="ghost" data-logout hidden>退出</button>
+</header>
+
+<main>
+  <section class="card" data-login>
+    <h2>登录</h2>
+    <p class="note">输入管理口令（部署时设置的 ADMIN_TOKEN）。口令只保存在这个浏览器标签页里，关掉就清除。连续输错 5 次会锁 1 小时。</p>
+    <form data-login-form>
+      <label>管理口令 <input type="password" autocomplete="current-password" data-token required minlength="24"></label>
+      <button type="submit">进入</button>
+    </form>
+    <p class="msg" data-login-msg role="status"></p>
+  </section>
+
+  <section data-panel="stats" hidden>
+    <p class="note">统计全部匿名：只有每天的总数，没有任何个人记录、设备编号或位置。同一台设备一天只算一次；关掉统计或清除数据的设备不在内，所以数字是大概值。</p>
+    <div class="row">
+      <label>范围 <select data-days><option value="7">最近 7 天</option><option value="30" selected>最近 30 天</option><option value="90">最近 90 天</option><option value="365">最近一年</option></select></label>
+      <button type="button" class="ghost" data-refresh>刷新</button>
+    </div>
+    <div class="tiles" data-tiles></div>
+    <div class="card"><h3>每天使用的设备数</h3><div class="chart" data-dau></div></div>
+    <div class="grid2">
+      <div class="card"><h3>平台</h3><div data-bars="p"></div></div>
+      <div class="card"><h3>界面语言</h3><div data-bars="l"></div></div>
+      <div class="card"><h3>城市</h3><div data-bars="c"></div></div>
+      <div class="card"><h3>功能使用率</h3><p class="note">用过该功能的设备占比（按前一天上报）。</p><div data-bars="f"></div></div>
+      <div class="card"><h3>应用版本</h3><div data-bars="v"></div></div>
+      <div class="card"><h3>错误报告</h3><div data-errors></div></div>
+    </div>
+  </section>
+
+  <section data-panel="config" hidden>
+    <div class="card">
+      <h2>当前配置</h2>
+      <p data-current class="note">读取中…</p>
+      <details><summary>最近发布过的版本</summary><ul class="history" data-history></ul></details>
+    </div>
+
+    <form data-config-form>
+      <div class="card">
+        <h2>公告</h2>
+        <p class="note">显示在每个人首页最上面。只能写纯文字（不会显示链接和格式）。三种语言都写上；某种语言没写时，按俄语 → 塔吉克语 → 中文的顺序找一个代替。</p>
+        <div data-notices></div>
+      </div>
+
+      <div class="card">
+        <h2>伊斯兰历（按当地宣布调整）</h2>
+        <p class="note">例如塔吉克斯坦宣布斋月比计算晚一天开始，就选 +1。用户自己在设置里调整过的，以用户的为准。必须写明依据。</p>
+        <div data-hijri></div>
+      </div>
+
+      <div class="card">
+        <h2>官方礼拜时间校正</h2>
+        <p class="note">某个城市的官方时间表和计算值不同时，按分钟统一加减（例如晌礼 +10）。用户自己的微调会再叠加上去。每一行都必须写明来源，例如"塔吉克斯坦乌莱玛委员会 2027 年日历"。</p>
+        <table class="offsets"><thead><tr><th>城市</th><th>晨礼</th><th>晌礼</th><th>晡礼</th><th>昏礼</th><th>宵礼</th><th>来源（中文 / 塔吉克语 / 俄语）</th><th></th></tr></thead><tbody data-offsets></tbody></table>
+        <button type="button" class="ghost" data-add-offset>添加城市</button>
+      </div>
+
+      <div class="card">
+        <h2>功能开关</h2>
+        <p class="note">出问题时可以临时关闭。关闭后手机上会显示"暂时关闭"，在家礼拜等核心功能不受影响。</p>
+        <div class="checks" data-flags></div>
+      </div>
+
+      <div class="card">
+        <h2>版本</h2>
+        <label>最低版本（低于它的应用会提示去商店更新）<input data-min-version placeholder="例如 1.0.0" pattern="\d{1,4}(\.\d{1,4}){0,2}"></label>
+        <label>安卓商店链接 <input data-store-android placeholder="https://play.google.com/store/apps/details?id=…"></label>
+        <label>苹果商店链接 <input data-store-ios placeholder="https://apps.apple.com/app/…"></label>
+      </div>
+
+      <div class="card publish">
+        <h2>签名并发布</h2>
+        <p class="note">选择你电脑上的私钥文件（只在这个浏览器里读取、签名，不会上传）。发布后约 5 分钟内所有手机生效。</p>
+        <details><summary>预览将要发布的内容</summary><pre data-preview></pre></details>
+        <p class="msg warn" data-check role="status"></p>
+        <label>私钥文件 <input type="file" accept=".jwk,.json,application/json" data-key-file></label>
+        <button type="submit">签名并发布</button>
+        <p class="msg" data-publish-msg role="status"></p>
+      </div>
+    </form>
+  </section>
+
+  <section data-panel="keys" hidden>
+    <div class="card">
+      <h2>签名密钥</h2>
+      <p>远程配置必须用私钥签名，手机才会接受。这样即使服务器或管理口令被人拿到，也改不了手机上显示的内容。</p>
+      <ol>
+        <li>点下面的按钮生成一对密钥。私钥文件会下载到你的电脑上——<b>请备份到安全的地方（例如加密 U 盘），不要发给任何人，不要放进代码仓库</b>。</li>
+        <li>把显示出来的公钥，填到两个地方：GitHub 仓库的变量 <code>VITE_CONFIG_PUBKEY</code>（打包应用用），Cloudflare 的机密 <code>CONFIG_PUBLIC_KEY</code>（服务端检查用）。</li>
+        <li>重新打包应用。之后每次发布配置都用这个私钥文件签名。</li>
+      </ol>
+      <p class="note">换密钥需要发布新版应用（旧应用只认旧公钥），所以平时不要换。私钥丢了的话，旧应用就收不到新配置了。</p>
+      <button type="button" data-gen-keys>生成新密钥</button>
+      <pre data-pubkey hidden></pre>
+    </div>
+  </section>
+</main>
+<script type="module" src="/admin/app.js"></script>
+</body>
+</html>

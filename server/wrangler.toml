@@ -1,17 +1,47 @@
-# 在线人数服务的 Cloudflare 配置。上线时：npx wrangler deploy
-name = "masjid-presence"
+# 后台服务的 Cloudflare 配置。部署步骤见 docs/后台与安全.md
+name = "masjid-api"
 main = "worker.js"
 compatibility_date = "2025-06-01"
 
+# 房间（大殿/庭院/诗歌夜）：每个房间一个实例，只在内存和连接上记状态，不写存储
 [[durable_objects.bindings]]
 name = "ROOMS"
 class_name = "Room"
 
-# 免费套餐需要 SQLite 版的 Durable Object（本服务并不写任何数据）
+# 中枢：远程配置、统计总数（只有每天的总数）
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+# 免费套餐需要 SQLite 版的 Durable Object
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
 
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Hub"]
+
+# 防火墙：按 IP 限流（Cloudflare 自带，计数不落盘）。period 只能是 10 或 60 秒。
+[[ratelimits]]
+name = "RL_PUBLIC"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 300
+  period = 60
+
+[[ratelimits]]
+name = "RL_ADMIN"
+namespace_id = "1002"
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
 [vars]
-# 只允许本站页面连接。上线时填网站地址，多个用英文逗号隔开；留空表示不限制
+# 只接受这些网站页面发来的请求（手机应用自带的 https://localhost、capacitor://localhost 总是允许）。
+# 上线时填网站地址，多个用英文逗号隔开，例如 "https://example.github.io"。留空表示不限制（只用于本机开发）。
 ALLOWED_ORIGINS = ""
+
+# 机密（不要写在这里，用命令设置）：
+#   npx wrangler secret put ADMIN_TOKEN         管理口令，至少 24 位随机字符
+#   npx wrangler secret put CONFIG_PUBLIC_KEY   签名公钥（管理后台"密钥"页生成）

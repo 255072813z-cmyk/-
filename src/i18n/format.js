@@ -1,5 +1,5 @@
 // 日期、时长的显示格式（按当前语言，格式写在语言文件里）
-import { t } from './index.js';
+import { t, getLang } from './index.js';
 import { HIJRI_MONTHS } from '../core/hijri.js';
 import { splitDuration } from '../core/clock.js';
 
@@ -37,4 +37,14 @@ export function cityName(city) {
   if (!city) return '';
   if (city.id === 'here') return city.nearKm > 150 ? t('city.here') : t('city.hereNear', { name: t('city.' + city.near) });
   return t('city.' + city.id);
+}
+
+/** 把文字当纯文字放进页面（防止里面的 < > 等被当成网页代码） */
+export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+/** 后台发来的多语言文字：当前语言 → 俄语 → 塔吉克语 → 中文，已转成纯文字 */
+export function remoteText(obj) {
+  if (!obj) return '';
+  const l = getLang();
+  return esc(obj[l] || obj.ru || obj.tg || obj.zh || '');
 }
