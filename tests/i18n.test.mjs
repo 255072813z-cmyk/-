@@ -65,7 +65,8 @@ test('拼出来的词条也都存在（步骤、小净、方位、日期等）',
   for (const p of ['before', 'fasting', 'after', 'preview']) need.push('fast.head.' + p);
   for (const p of ['before', 'fasting', 'after']) need.push('fast.count.' + p);
   for (const s of ['mine', 'taken', 'free']) need.push('hall.mat.' + s);
-  for (const k of ['heavy', 'snow', 'cold']) need.push('winter.' + k);
+  for (const k of ['heavy', 'snow', 'storm', 'rain', 'wind', 'cold', 'heat', 'uv', 'fog', 'clear']) need.push('wx.' + k, 'wx.' + k + 'Why');
+  need.push('wx.rainHeavy');
   for (const c of ['dushanbe', 'khujand']) need.push('city.' + c);
   const missing = [...new Set(need)].filter((k) => zh[k] == null);
   assert.deepEqual(missing, []);

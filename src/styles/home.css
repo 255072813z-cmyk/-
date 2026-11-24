@@ -77,14 +77,25 @@
 .count small { font-size: 0.95rem; margin-right: 4px; }
 
 /* 冬季提示 */
-.winter-card { background: linear-gradient(160deg, #23384a, #2f4c5e); color: #f4efe2; border: 0; position: relative; overflow: hidden; }
-.winter-card::after { content: ''; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 207, 107, 0.45), transparent 70%); }
+.weather-card { background: linear-gradient(160deg, #23384a, #2f4c5e); color: #f4efe2; border: 0; position: relative; overflow: hidden; }
+.weather-card.wx-rain { background: linear-gradient(160deg, #2c3f55, #3d5a70); }
+.weather-card.wx-wind { background: linear-gradient(160deg, #2f4a4c, #4b6a68); }
+.weather-card.wx-heat { background: linear-gradient(160deg, #7a3d1c, #b0662a); }
+.weather-card.wx-fog { background: linear-gradient(160deg, #4a5056, #6b7177); }
+.weather-card.wx-clear { background: linear-gradient(160deg, var(--card), var(--gold-soft)); color: var(--ink); border: 1px solid var(--line); }
+.weather-card.wx-clear .winter-why { color: var(--ink-2); }
+.weather-card.wx-clear .winter-msg { color: var(--green); }
+.wx-head { display: flex; align-items: flex-start; gap: 10px; position: relative; z-index: 1; }
+.wx-icon { width: 34px; height: 34px; flex: none; margin-top: 4px; fill: currentColor; stroke: currentColor; opacity: 0.9; }
+.weather-card.wx-clear .wx-icon { color: var(--gold); }
+.weather-card.wx-clear::after { display: none; }
+.weather-card::after { content: ''; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 207, 107, 0.45), transparent 70%); }
 .winter-msg { font-family: var(--font-zh-serif); font-size: 1.3rem; font-weight: 700; margin: 0 0 6px; position: relative; z-index: 1; }
 .winter-why { color: #d9e2e6; font-size: 0.95rem; position: relative; z-index: 1; }
 .winter-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; position: relative; z-index: 1; }
-.winter-card .btn-primary { background: #ffcf6b; color: #2a1f05; }
-.winter-card .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, 0.4); }
-.winter-card .note { color: #b8c6cc; }
+.weather-card .btn-primary { background: #ffcf6b; color: #2a1f05; }
+.weather-card .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, 0.4); }
+.weather-card .note { color: #b8c6cc; }
 
 /* 五番拜列表 */
 .plist { list-style: none; margin: 0; padding: 0; }

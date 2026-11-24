@@ -69,5 +69,13 @@ test('天气归类', async () => {
   assert.equal(classify({ code: 71, temp: -1, minTemp: -3, snowCm: 1 }), 'snow');
   assert.equal(classify({ code: 3, temp: -6, minTemp: -10, snowCm: 0 }), 'cold');
   assert.equal(classify({ code: 0, temp: 13.7, minTemp: 5, snowCm: 0 }), 'clear');
+  assert.equal(classify({ code: 63, temp: 9, minTemp: 5, snowCm: 0 }), 'rain');
+  assert.equal(classify({ code: 95, temp: 18, minTemp: 12, snowCm: 0 }), 'storm');
+  assert.equal(classify({ code: 3, temp: 8, minTemp: 3, snowCm: 0, gust: 68 }), 'wind');
+  assert.equal(classify({ code: 0, temp: 36, minTemp: 25, maxTemp: 41, snowCm: 0 }), 'heat');
+  assert.equal(classify({ code: 1, temp: 30, minTemp: 18, maxTemp: 32, snowCm: 0, uv: 9 }), 'uv');
+  assert.equal(classify({ code: 45, temp: 4, minTemp: 1, snowCm: 0 }), 'fog');
+  // 先看影响最大的：下雪又刮风，按下雪提示
+  assert.equal(classify({ code: 71, temp: -2, minTemp: -6, snowCm: 1, gust: 70 }), 'snow');
   assert.equal(classify(null), null);
 });

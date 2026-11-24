@@ -9,6 +9,7 @@ import { setSettings } from '../core/settings.js';
 import { CITIES } from '../core/cities.js';
 import { PRAYER_INFO } from '../content/prayers.js';
 import { mosqueScene, star8 } from '../ui/art.js';
+import { isHeavyRain } from '../core/weather.js';
 import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
 import { isNativeApp, askNotifyPermission } from '../core/notify.js';
@@ -21,28 +22,56 @@ function prayerName(p, sched) {
 
 const countdownText = (ms) => durHTML(ms, true);
 
-/** 冬季：天气说下雪/严寒，或者查不到天气时的 12～2 月 */
+/** 冬季画面（雪景）：下雪、严寒，或者查不到天气时的 12～2 月 */
 export function isWinter(ctx) {
-  if (ctx.weatherKind && ctx.weatherKind !== 'clear') return true;
+  if (['heavy', 'snow', 'cold'].includes(ctx.weatherKind)) return true;
   if (ctx.weather === null) return [12, 1, 2].includes(ctx.sched.today.m);
   return false;
 }
 
-function winterCard(ctx) {
+// 每种天气的小图标
+const WX_ICON = {
+  snow: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 4l3 2 3-2M9 20l3-2 3 2" fill="none" stroke-width="1.6" stroke-linecap="round"/>',
+  rain: '<path d="M6 14a4 4 0 0 1 .5-8 6 6 0 0 1 11 2.5A3.5 3.5 0 0 1 17 14Z" /><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" fill="none" stroke-width="1.6" stroke-linecap="round"/>',
+  storm: '<path d="M6 13a4 4 0 0 1 .5-8 6 6 0 0 1 11 2.5A3.5 3.5 0 0 1 17 13Z"/><path d="M12 13l-2 4h3l-2 5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8" fill="none" stroke-width="1.8" stroke-linecap="round"/>',
+  sun: '<circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" fill="none" stroke-width="1.6" stroke-linecap="round"/>',
+  fog: '<path d="M3 8h18M5 12h14M3 16h18M7 20h10" fill="none" stroke-width="1.8" stroke-linecap="round"/>',
+  cold: '<path d="M12 2v20M4 6l16 12M4 18L20 6" fill="none" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5"/>',
+};
+const WX_STYLE = {
+  heavy: ['wx-snow', 'snow'], snow: ['wx-snow', 'snow'], cold: ['wx-snow', 'cold'],
+  rain: ['wx-rain', 'rain'], storm: ['wx-rain', 'storm'], wind: ['wx-wind', 'wind'],
+  heat: ['wx-heat', 'sun'], uv: ['wx-heat', 'sun'], fog: ['wx-fog', 'fog'], clear: ['wx-clear', 'sun'],
+};
+
+/**
+ * 今天的天气提示：一句关心的话 + 一句教法上站得住的说明。
+ * 雨、雪、泥泞、严寒是哈乃斐学派认可的可以不去清真寺参加集体礼拜的理由；
+ * 大风只在夜里算；酷热时晌礼可以等凉快些再礼（圣训）；年老体弱、身体不适的人也属于可以不去的情况。
+ * 不为没有依据的情况编造"可以不去"的说法。
+ */
+function weatherCard(ctx) {
   const k = ctx.weatherKind;
-  if (!k || k === 'clear') return '';
-  const w = ctx.weather;
-  const msg = t('winter.' + k, { temp: w ? Math.round(w.temp) : '' });
-  return `<section class="card winter-card" aria-label="${t('winter.label')}">
-    <p class="winter-msg">${msg}</p>
-    <p class="winter-why">${t('winter.why')}</p>
-    <div class="winter-actions">
+  if (!k) return '';
+  const w = ctx.weather || {};
+  const r = (v) => (v == null ? '' : Math.round(v));
+  const msgKey = k === 'rain' && isHeavyRain(w) ? 'wx.rainHeavy' : 'wx.' + k;
+  const vars = { temp: r(w.temp), max: r(w.maxTemp), gust: r(w.gust || w.wind), uv: r(w.uv) };
+  const [cls, icon] = WX_STYLE[k] || WX_STYLE.clear;
+  const showActions = k !== 'clear';
+  return `<section class="card weather-card ${cls}" aria-label="${t('winter.label')}">
+    <div class="wx-head"><svg class="wx-icon" viewBox="0 0 24 24" aria-hidden="true">${WX_ICON[icon]}</svg>
+      <p class="winter-msg">${t(msgKey, vars)}</p></div>
+    <p class="winter-why">${t('wx.' + k + 'Why', vars)}</p>
+    ${showActions ? `<div class="winter-actions">
       <a class="btn btn-primary" href="#/pray">${t('winter.go')}</a>
       <a class="btn btn-ghost" href="#/pray/wudu">${t('winter.wudu')}</a>
-    </div>
-    ${w && w.demo ? `<p class="note">${t('winter.demo')}</p>` : ''}
+    </div>` : ''}
+    ${w.demo ? `<p class="note">${t('winter.demo')}</p>` : ''}
   </section>`;
 }
+const winterCard = weatherCard;
 
 /** 手机应用里还没允许通知时，在首页直接请用户开启（很多老人不会去翻设置） */
 function notifyCard(r) {
