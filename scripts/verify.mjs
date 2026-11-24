@@ -114,6 +114,11 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.reload();
   const fs = await page.evaluate(() => document.documentElement.dataset.fs);
   check('刷新后设置还在（字号）', fs === '2');
+  await page.goto(base + '?weather=clear&now=2027-02-20T12:00#/ramadan');
+  await page.click('[data-today]');
+  await page.reload();
+  const yes = await page.locator('.day.is-today.is-yes').count();
+  check('刷新后封斋记录还在（斋月第 13 天）', yes === 1);
   await ctx.close();
 }
 

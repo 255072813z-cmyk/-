@@ -22,7 +22,8 @@ const topnav = document.querySelector('.topnav');
 
 const TABS = [
   { href: '#/', key: 'nav.home', icon: 'home', match: (p) => p === '' },
-  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => p.startsWith('pray') },
+  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => p.startsWith('pray') && !p.startsWith('pray/guide/tarawih') },
+  { href: '#/ramadan', key: 'nav.ramadan', icon: 'ramadan', match: (p) => p.startsWith('ramadan') || p.startsWith('pray/guide/tarawih') },
   { href: '#/qibla', key: 'nav.qibla', icon: 'qibla', match: (p) => p.startsWith('qibla') },
   { href: '#/tasbih', key: 'nav.tasbih', icon: 'tasbih', match: (p) => p.startsWith('tasbih') },
 ];

@@ -11,6 +11,7 @@
 //   · 出拜后念词：穆斯林 591
 //   · 赞念 33 遍及第 100 遍：穆斯林 595、597
 //   · 小净后的作证与祈祷：穆斯林 234，提尔密济 55
+//   · 开斋时念：艾布·达乌德 2357（多位学者评为良好）
 // - 古努特（威特尔拜）：哈乃斐学派通行的念法，以"مُلْحِقٌ"结尾，不加"كله"
 //   （见《al-Bahr al-Ra'iq》；Askimam 教法答复 102830 引 al-Birjandi）
 // 译音为方便跟读的简化拼法；中文意思为意译。
@@ -133,6 +134,12 @@ export const R = {
     tr: 'Allahumma antas-salamu wa minkas-salam, tabarakta dhal-jalali wal-ikram',
     zh: '主啊，你是平安的主，平安来自于你；具有威严与尊荣的主啊，你多么吉庆！',
     src: '穆斯林 591',
+  },
+  iftarDua: {
+    ar: 'ذَهَبَ الظَّمَأُ وَابْتَلَّتِ الْعُرُوقُ وَثَبَتَ الْأَجْرُ إِنْ شَاءَ اللَّهُ',
+    tr: "Dhahabaz-zama'u wabtallatil-'uruqu wa thabatal-ajru in sha' Allah",
+    zh: '口渴消除了，血脉滋润了，若真主意欲，回赐已经确定。',
+    src: '艾布·达乌德 2357（良好）',
   },
   wuduDua: {
     ar:

@@ -74,13 +74,13 @@ button { font: inherit; }
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: var(--card);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 20px rgba(40, 30, 10, 0.06);
 }
-.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 60px; text-decoration: none; color: var(--muted); font-size: 0.8rem; }
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 60px; text-decoration: none; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
 .tab-icon svg { width: 26px; height: 26px; fill: currentColor; stroke: currentColor; }
 .tab.is-active { color: var(--green); font-weight: 700; }
 .tab.is-active .tab-icon { position: relative; }

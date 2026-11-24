@@ -1,6 +1,6 @@
 // 跟着做礼拜：先选哪一部分（逊奈/主命/威特尔），再一步一步跟做。
 // 画面上是一排人和你做同样的动作——在家礼拜，也像站在清真寺的班里。
-import { PRAYER_INFO, buildSteps, unitLabel, AFTER_PRAYER } from '../../content/prayers.js';
+import { PRAYER_INFO, buildSteps, unitLabel, AFTER_PRAYER, getPrayerInfo } from '../../content/prayers.js';
 import { prayerRow, ICONS, star8 } from '../../ui/art.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
@@ -8,7 +8,7 @@ import { t } from '../../i18n/index.js';
 const POSTURE_ZH = { stand: '站立', raise: '举手', ruku: '鞠躬', sujud: '叩头', sit: '坐' };
 
 function chooser(ctx, prayerKey) {
-  const info = PRAYER_INFO[prayerKey];
+  const info = getPrayerInfo(prayerKey);
   const isFri = prayerKey === 'dhuhr' && ctx.sched.today.wd === 5;
   const units = info.units
     .map((u) => {
@@ -34,15 +34,16 @@ function chooser(ctx, prayerKey) {
 }
 
 export function guidePage(ctx, prayerKey, unitId) {
-  if (!PRAYER_INFO[prayerKey]) prayerKey = ctx.sched.current || ctx.sched.next;
+  if (!getPrayerInfo(prayerKey)) prayerKey = ctx.sched.current || ctx.sched.next;
   if (!unitId) return { html: chooser(ctx, prayerKey) };
+  const isTarawih = prayerKey === 'tarawih';
 
   const { steps, label, info, unit } = buildSteps(prayerKey, unitId);
   let i = 0;
   const next = info.units[info.units.indexOf(unit) + 1];
   const html = `
   <div class="page guide">
-    <div class="page-head"><a class="back" href="#/pray/guide/${prayerKey}" aria-label="返回">${ICONS.back}</a>
+    <div class="page-head"><a class="back" href="${isTarawih ? '#/ramadan/tarawih' : '#/pray/guide/' + prayerKey}" aria-label="返回">${ICONS.back}</a>
       <h1>${info.zh} · ${label.name}</h1></div>
     <div data-stage></div>
   </div>`;
@@ -54,8 +55,9 @@ export function guidePage(ctx, prayerKey, unitId) {
       <p>出拜后，可以念：</p>
       ${AFTER_PRAYER.map(reciteCard).join('')}
       <div class="step-btns">
-        ${next ? `<a class="btn btn-primary" href="#/pray/guide/${prayerKey}/${next.id}">接着礼${unitLabel(next).name}</a>` : ''}
-        <a class="btn ${next ? 'btn-ghost' : 'btn-primary'}" href="#/tasbih">礼拜后赞念</a>
+        ${isTarawih ? '<a class="btn btn-primary" href="#/ramadan/tarawih">回到间歇拜，记下这一组</a>' : ''}
+        ${!isTarawih && next ? `<a class="btn btn-primary" href="#/pray/guide/${prayerKey}/${next.id}">接着礼${unitLabel(next).name}</a>` : ''}
+        ${!isTarawih ? `<a class="btn ${next ? 'btn-ghost' : 'btn-primary'}" href="#/tasbih">礼拜后赞念</a>` : ''}
       </div>
       <button class="btn btn-ghost btn-sm" type="button" data-restart>从头再看一遍</button>
     </section>`;

@@ -8,6 +8,8 @@ import { setSettings } from '../core/settings.js';
 import { CITIES } from '../core/cities.js';
 import { PRAYER_INFO } from '../content/prayers.js';
 import { mosqueScene, star8 } from '../ui/art.js';
+import { homeRamadanCard } from './ramadan/index.js';
+import { ramadanStatus } from '../core/ramadan.js';
 
 const WEEK = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -126,6 +128,7 @@ export function homePage(ctx) {
       <h2 class="card-title">${star8(18)} ${t('home.today')}</h2>
       <ul class="plist" data-list>${listHTML(ctx)}</ul>
       <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
+      <p class="local-note">${adjusted ? t('home.localNoteAdjusted') : t('home.localNote')}</p>
       <details class="method">
         <summary>时间是怎么算的？</summary>
         <p>${t('home.method')}</p>
@@ -141,6 +144,7 @@ export function homePage(ctx) {
       <div class="segmented" role="group" aria-label="${t('city.switch')}">${cityBtns}</div>
       <span class="city-note">当地时间 ${fmtHM(ctx.now)}</span>
     </div>
+    <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.settings.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
     <div data-winter>${winterCard(ctx)}</div>
     <a class="card card-link athome" href="#/pray">
@@ -180,6 +184,8 @@ export function homePage(ctx) {
         if (note) note.textContent = '当地时间 ' + fmtHM(c.now);
         const d = document.querySelector('[data-date]');
         if (d) d.innerHTML = dateHTML(c);
+        const r = document.querySelector('[data-ramadan]');
+        if (r) r.innerHTML = homeRamadanCard(c);
       }
     },
     onWeather(c) {

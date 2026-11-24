@@ -1,7 +1,7 @@
 /* 在家礼拜：入口、小净、跟做、朝向、赞念、设置 */
 
 /* 入口页：屋里的暖灯和茶 */
-.interior-wrap { border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 2 / 1; max-height: 280px; width: 100%; }
+.interior-wrap { border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 2 / 1; width: 100%; max-width: 640px; margin: 0 auto; }
 .interior { display: block; width: 100%; height: 100%; }
 .interior .wall { fill: #5b3a24; }
 .interior .lattice path { fill: #d9b65e; opacity: 0.35; }
@@ -193,3 +193,94 @@
 .adj-res { grid-area: res; font-size: 0.92rem; color: var(--ink-2); }
 .prayer-row .figs .cap-rim { fill: none; stroke: var(--gold); stroke-width: 0.9; opacity: 0.8; }
 .prayer-row .figs .edge { fill: none; stroke: var(--card); stroke-width: 1.3; stroke-linecap: round; opacity: 0.55; }
+
+/* 斋月 */
+.ramadan-wrap { border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 360 / 200; width: 100%; max-width: 640px; margin: 0 auto; position: relative; }
+.ramadan-scene { display: block; width: 100%; height: 100%; }
+.ramadan-scene .r-stars circle { fill: #fff6d6; animation: twinkle 3s ease-in-out infinite; }
+@keyframes twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.ramadan-scene .r-moon { fill: #f6e7b0; filter: drop-shadow(0 0 6px rgba(246, 231, 176, 0.6)); }
+.ramadan-scene .r-mtn { fill: #1c2440; }
+.ramadan-scene .r-mosque { fill: #121a30; }
+.ramadan-scene .r-finial { stroke: #d9b65e; stroke-width: 2; }
+.ramadan-scene .r-win path { fill: #d9a54a; opacity: 0.6; transition: opacity 0.6s, filter 0.6s; }
+.ramadan-scene.is-iftar .r-win path { fill: #ffcf6b; opacity: 1; filter: drop-shadow(0 0 5px #ffcf6b); }
+.ramadan-scene .r-ground { fill: #0e1426; }
+.ramadan-scene .walkers { fill: #070b16; }
+.ramadan-scene .walkers .cap { fill: #1b2340; }
+.ramadan-scene .walkers .stick { stroke: #070b16; stroke-width: 1.6; fill: none; }
+.ramadan-scene .walkers .cap-rim { display: none; }
+.ramadan-scene .l-string { stroke: #b8954a; stroke-width: 1; }
+.ramadan-scene .l-glow { fill: url(#lglow); opacity: 0.7; transition: opacity 0.6s; }
+.ramadan-scene.is-iftar .l-glow { opacity: 1; }
+.ramadan-scene .l-cap { fill: #b8954a; }
+.ramadan-scene .l-body { fill: #7a2e2a; }
+.ramadan-scene .l-light { fill: #ffcf6b; opacity: 0.75; }
+.ramadan-scene.is-iftar .l-light { opacity: 1; }
+.ramadan-scene .l-bar { stroke: #b8954a; stroke-width: 1.2; }
+.ramadan-scene .lantern { animation: sway 5s ease-in-out infinite; transform-box: view-box; }
+.ramadan-scene .lantern:nth-child(2) { animation-delay: -1.5s; }
+.ramadan-scene .lantern:nth-child(3) { animation-delay: -3s; }
+@keyframes sway { 0%, 100% { rotate: -1.5deg; } 50% { rotate: 1.5deg; } }
+
+.r-status { text-align: center; margin: 10px 0 2px; }
+.r-status h1 { font-size: 1.6rem; }
+.r-status p { color: var(--ink-2); }
+.fast-card { border: 1.5px solid var(--gold); background: linear-gradient(180deg, var(--card), var(--gold-soft)); text-align: center; }
+.fast-phase { font-weight: 700; color: var(--green); }
+.fast-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.fast-time { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; }
+.fast-time.is-next { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); }
+.fast-time .ft-label { color: var(--muted); font-size: 0.9rem; }
+.fast-time .ft-time { font-size: 2rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.3; }
+.fast-time .ft-sub { color: var(--muted); font-size: 0.82rem; }
+.fast-note { color: var(--ink-2); font-size: 0.9rem; text-align: left; }
+.checkin-btn { width: 100%; }
+.checkin-btn.is-done { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+.days { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 10px 0 4px; }
+.day { min-height: 48px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink-2); font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; font-size: 0.95rem; }
+.day small { font-size: 0.7rem; font-weight: 600; }
+.day.is-yes { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.day.is-no { background: var(--gold-soft); color: var(--gold-ink); border-color: var(--gold); border-style: dashed; }
+.day.is-today { outline: 2.5px solid var(--gold); outline-offset: 1px; }
+.day:disabled { opacity: 0.4; cursor: default; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 0.85rem; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin-right: 4px; }
+.legend .ly { background: var(--primary); }
+.legend .ln { background: var(--gold-soft); border: 1.5px dashed var(--gold); }
+.hol { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.hol:last-of-type { border-bottom: 0; }
+.hol b { font-family: var(--font-zh-serif); font-size: 1.1rem; }
+.hol .hol-days { color: var(--green); font-weight: 800; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.hol .hol-date { grid-column: 1 / -1; color: var(--muted); font-size: 0.9rem; }
+.ttable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+.ttable th, .ttable td { padding: 6px 4px; border-bottom: 1px dashed var(--line); text-align: center; }
+.ttable th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+.ttable tr.is-today td { background: var(--green-soft); font-weight: 700; }
+.ttable-wrap { overflow-x: auto; }
+.sets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+.set { aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-weight: 800; color: var(--muted); background: var(--bg); }
+.set.is-done { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.set.is-rest { box-shadow: 0 0 0 3px var(--gold-soft); }
+.juz-list { list-style: none; padding: 0; margin: 0; }
+.juz { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px dashed var(--line); }
+.juz.is-today { background: var(--green-soft); border-radius: 12px; }
+.juz-no { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg-2); font-weight: 800; color: var(--green); }
+.juz.is-done .juz-no { background: var(--primary); color: var(--on-primary); }
+.juz-main b { display: block; }
+.juz-main span { color: var(--muted); font-size: 0.88rem; }
+.juz input { width: 28px; height: 28px; accent-color: var(--green); }
+.r-link { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
+.r-link .r-link-t { font-family: var(--font-zh-serif); font-size: 1.2rem; font-weight: 700; }
+.r-link .r-link-s { color: var(--muted); font-size: 0.9rem; grid-column: 1; }
+.r-link .r-link-go { grid-row: 1 / 3; grid-column: 2; color: var(--green); font-weight: 800; }
+.home-ramadan { display: grid; grid-template-columns: 1fr auto; align-items: center; background: #1c2747; color: #f4efe2; border-color: transparent; }
+.home-ramadan:hover { border-color: #d9b65e; }
+.home-ramadan b { font-family: var(--font-zh-serif); font-size: 1.15rem; color: #f6e7b0; }
+.home-ramadan span { color: #cfd6e6; font-size: 0.92rem; }
+.home-ramadan .hr-go { color: #ffcf6b; font-weight: 800; grid-row: 1 / 3; grid-column: 2; }
+@media (min-width: 900px) {
+  .page.ramadan { max-width: 1040px; }
+  .r-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .r-grid .card { margin-top: 0; }
+}

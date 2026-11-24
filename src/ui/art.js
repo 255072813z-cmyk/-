@@ -226,8 +226,54 @@ export function kaaba(size = 28) {
 export const ICONS = {
   home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11Q4 6 12 3Q20 6 20 11V20H14V15Q14 13 12 13Q10 13 10 15V20Z"/></svg>',
   pray: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="5" r="2.2"/><path d="M6 9Q9 8 12 9L13 15L19 15Q21 15 21 17V20H4L5 15Z"/></svg>',
+  ramadan: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 1 0 7.5 14A7.2 7.2 0 1 1 13 3Z"/><path d="M18 5l.8 1.7 1.8.3-1.3 1.3.3 1.8-1.6-.9-1.6.9.3-1.8L15.4 7l1.8-.3Z"/></svg>',
   qibla: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke-width="2"/><path d="M12 5L15 13L12 11.5L9 13Z"/></svg>',
   tasbih: '<svg viewBox="0 0 24 24" aria-hidden="true">' + Array.from({ length: 9 }, (_, i) => { const a = (i / 9) * Math.PI * 2 - Math.PI / 2; return `<circle cx="${(12 + 7.5 * Math.cos(a)).toFixed(1)}" cy="${(11 + 7.5 * Math.sin(a)).toFixed(1)}" r="1.7"/>`; }).join('') + '<path d="M12 18.5V23" stroke-width="1.6"/></svg>',
   settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5ZM10.5 2H13.5L14 5L16.5 6.2L19 4.5L21 7L19 9.5L19.6 12L22 13V16L19.4 16.6L18.2 19L19.5 21.5L17 23L14.6 21L12 21.5L9.5 23L7 21.5L8 19L6.6 16.8L4 16V13L6.5 12L6.9 9.5L5 7L7 4.5L9.5 6.2L10 5Z" fill-rule="evenodd"/></svg>',
   back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4L7 12L15 20" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
+
+/** 灯笼（法努斯） */
+function lantern(x, len, s = 1) {
+  return `<g class="lantern" transform="translate(${x} 0)">
+    <path class="l-string" d="M0 0V${len}"/>
+    <g transform="translate(0 ${len}) scale(${s})">
+      <circle class="l-glow" cx="0" cy="16" r="20"/>
+      <path class="l-cap" d="M-7 4L0 -3L7 4Z"/>
+      <path class="l-body" d="M-8 4H8L10 12V22L8 28H-8L-10 22V12Z"/>
+      <path class="l-light" d="M-5 8H5L6.5 13V21L5 25H-5L-6.5 21V13Z"/>
+      <path class="l-bar" d="M0 4V28M-10 17H10"/>
+      <path class="l-cap" d="M-6 28H6L0 35Z"/>
+    </g></g>`;
+}
+
+/** 斋月场景：夜空、新月、星星、灯笼、亮灯的清真寺；iftar=true 时灯光更亮 */
+export function ramadanScene({ iftar = false } = {}) {
+  const stars = Array.from({ length: 26 }, (_, i) => {
+    const x = (i * 67) % 352 + 4;
+    const y = (i * 29) % 96 + 6;
+    return `<circle cx="${x}" cy="${y}" r="${i % 4 ? 0.8 : 1.4}" style="animation-delay:-${(i * 0.37) % 3}s"/>`;
+  }).join('');
+  return `<svg class="ramadan-scene ${iftar ? 'is-iftar' : ''}" viewBox="0 0 360 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="rsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1530"/><stop offset=".7" stop-color="#22305a"/><stop offset="1" stop-color="#3b3a5e"/></linearGradient>
+      <radialGradient id="lglow"><stop offset="0" stop-color="#ffcf6b" stop-opacity=".55"/><stop offset="1" stop-color="#ffcf6b" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="360" height="200" fill="url(#rsky)"/>
+    <g class="r-stars">${stars}</g>
+    <path class="r-moon" d="M286 22a20 20 0 1 0 15 34a16 16 0 1 1 -15 -34z"/>
+    <path class="r-mtn" d="M0 150L50 128L96 142L150 118L206 144L262 126L320 146L360 134V200H0Z"/>
+    <g class="r-mosque">
+      <rect x="120" y="140" width="120" height="44"/>
+      <path d="M152 140Q152 110 180 104Q208 110 208 140Z"/>
+      <rect x="106" y="108" width="11" height="76"/><rect x="243" y="108" width="11" height="76"/>
+      <path d="M104 110L111.5 94L119 110ZM241 110L248.5 94L256 110Z"/>
+      <path d="M180 104V96" class="r-finial"/>
+    </g>
+    <g class="r-win">${[132, 146, 206, 220].map((x) => `<path d="M${x} 176V164Q${x} 158 ${x + 4} 156Q${x + 8} 158 ${x + 8} 164V176Z"/>`).join('')}
+      <path d="M170 184V160Q170 150 180 146Q190 150 190 160V184Z"/></g>
+    <rect class="r-ground" y="184" width="360" height="16"/>
+    <g class="walkers">${walker(60, 0.9, 'elder')}${walker(80, 0.85)}${walker(282, 0.9)}${walker(300, 0.65)}</g>
+    <g class="lanterns">${lantern(34, 26)}${lantern(84, 44, 0.85)}${lantern(326, 34)}${lantern(276, 18, 0.8)}</g>
+  </svg>`;
+}

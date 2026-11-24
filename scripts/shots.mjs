@@ -42,6 +42,12 @@ const PAGES = [
   ['qibla', '#/qibla'],
   ['tasbih', '#/tasbih'],
   ['settings', '#/settings'],
+  ['ramadan-before', '#/ramadan'],
+  ['ramadan', '#/ramadan', 0, '?weather=clear&now=2027-02-20T17:50'],
+  ['ramadan-iftar', '#/ramadan', 0, '?weather=clear&now=2027-02-20T18:30'],
+  ['home-ramadan', '', 0, '?weather=clear&now=2027-02-20T05:20'],
+  ['tarawih', '#/ramadan/tarawih', 0, '?weather=clear&now=2027-02-20T20:30'],
+  ['quran', '#/ramadan/quran', 0, '?weather=clear&now=2027-02-20T12:00'],
 ];
 const query = process.env.SHOTS_QUERY ?? '?weather=heavy&now=2026-12-18T15:20';
 const only = process.env.SHOTS_ONLY;
@@ -56,8 +62,8 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  for (const [name, hash, clicks] of PAGES) {
-    await page.goto(base + 'index.html' + query + hash);
+  for (const [name, hash, clicks, q] of PAGES) {
+    await page.goto(base + 'index.html' + (q || query) + hash);
     await page.waitForLoadState('networkidle');
     for (let i = 0; i < (clicks || 0); i++) await page.click('[data-next]');
     await page.evaluate(() => document.fonts.ready);

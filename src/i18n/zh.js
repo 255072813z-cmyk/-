@@ -3,6 +3,7 @@ export default {
   'app.name': '网上清真寺',
   'nav.home': '今天',
   'nav.pray': '在家礼拜',
+  'nav.ramadan': '斋月',
   'nav.qibla': '朝向',
   'nav.tasbih': '赞念',
   'nav.settings': '设置',
@@ -28,6 +29,8 @@ export default {
   'home.method':
     '计算方法：晨礼、宵礼按太阳在地平线下 18°（卡拉奇伊斯兰科学大学法，哈乃斐地区常用）；晡礼按哈乃斐学派（影长为物高 2 倍）。各番开始时间按谨慎原则取整，宁晚勿早。',
   'home.methodLocal': '塔吉克斯坦乌莱玛委员会另有官方日历，部分时间（例如晌礼）可能和这里相差较多。请以当地清真寺公布为准；可以在设置里按你的清真寺微调。',
+  'home.localNote': '以上为天文计算时间，以当地清真寺公布为准。',
+  'home.localNoteAdjusted': '以上时间已按你的清真寺微调。',
   'home.adjust': '按我们清真寺的时间微调',
   'home.adjusted': '已按你的清真寺微调',
   'home.fajrEnd': '晨礼请在日出（{time}）前完成',

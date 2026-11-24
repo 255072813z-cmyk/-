@@ -101,6 +101,7 @@
 .prow-sun { grid-template-areas: 'name time badge'; padding-top: 6px; padding-bottom: 6px; }
 .prow-sun .prow-name, .prow-sun .prow-time { font-size: 0.95rem; color: var(--muted); font-weight: 500; }
 .sunline { color: var(--muted); font-size: 0.9rem; text-align: center; margin-top: 8px; }
+.local-note { text-align: center; font-weight: 700; color: var(--gold-ink); background: var(--gold-soft); border-radius: 10px; padding: 6px 10px; font-size: 0.95rem; }
 details.method { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 4px; font-size: 0.92rem; color: var(--ink-2); }
 details.method summary { color: var(--green); }
 .link-row { display: flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
@@ -121,6 +122,8 @@ details.method summary { color: var(--green); }
 .page.home .city-row { order: 3; margin-bottom: 6px; }
 .page.home .hero { order: 4; }
 .page.home [data-winter] { order: 5; }
+.page.home .ramadan-slot { order: 5; }
+.page.home .ramadan-slot.is-active { order: 4; }
 .page.home .list-card { order: 6; }
 .page.home .athome { order: 7; }
 .page.home .privacy { order: 8; }
@@ -128,7 +131,7 @@ details.method summary { color: var(--green); }
 /* 电脑、平板横屏：左边插图和时间表，右边日期、下一番、提示 */
 @media (min-width: 900px) {
   .page.home { max-width: 1100px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-items: start; }
-  .page.home > .col { display: block; }
+  .page.home > .col { display: flex; flex-direction: column; }
   .page.home .card { margin: 12px 0; }
   .page.home .scene-wrap { aspect-ratio: 360 / 200; max-height: none; margin-top: 12px; }
   .page.home .date { align-items: flex-start; text-align: left; margin-top: 12px; }

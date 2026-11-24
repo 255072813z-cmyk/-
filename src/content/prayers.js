@@ -65,6 +65,20 @@ export const PRAYER_INFO = {
   },
 };
 
+// 斋月的间歇拜（泰拉威）：哈乃斐学派为 20 拜，每 2 拜一出拜，是强调的圣行，在宵礼之后、威特尔之前礼。
+export const EXTRA_PRAYERS = {
+  tarawih: {
+    zh: '间歇拜',
+    ar: 'التَّرَاوِيح',
+    loud: true,
+    units: [{ id: 'set', kind: 'sunnah', rakats: 2, when: 'after', strong: true, loudOk: true }],
+  },
+};
+
+export function getPrayerInfo(key) {
+  return PRAYER_INFO[key] || EXTRA_PRAYERS[key] || null;
+}
+
 export function unitLabel(unit) {
   if (unit.kind === 'fard') return { name: `${unit.rakats} 拜主命`, tag: '必须', level: 'fard' };
   if (unit.kind === 'witr') return { name: `${unit.rakats} 拜威特尔`, tag: '必须（瓦直卜）', level: 'fard' };
@@ -82,13 +96,13 @@ export function unitLabel(unit) {
  * posture：stand 站立 / raise 举手 / ruku 鞠躬 / sujud 叩头 / sit 坐
  */
 export function buildSteps(prayerKey, unitId) {
-  const info = PRAYER_INFO[prayerKey];
+  const info = getPrayerInfo(prayerKey);
   const unit = info.units.find((u) => u.id === unitId) || info.units[0];
   const n = unit.rakats;
   const kindName = unit.kind === 'fard' ? '主命' : unit.kind === 'witr' ? '威特尔' : '逊奈';
   const steps = [];
   const quiet =
-    unit.kind === 'fard' && info.loud
+    (unit.kind === 'fard' || unit.loudOk) && info.loud
       ? '一个人礼拜时，前两拜可以出声念，也可以低声念。'
       : '低声念，自己能听见即可。';
 

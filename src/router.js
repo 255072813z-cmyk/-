@@ -6,7 +6,10 @@
 //   #/qibla                  朝向
 //   #/tasbih                 赞念
 //   #/settings               设置
-// 以后的斋月（ramadan）、三个空间（spaces）在这里加路由。
+//   #/ramadan                斋月：封斋/开斋、打卡、节日
+//   #/ramadan/tarawih        间歇拜
+//   #/ramadan/quran          古兰经 30 天读完
+// 以后的三个空间（spaces）在这里加路由。
 import { homePage } from './pages/home.js';
 import { hubPage } from './pages/pray/hub.js';
 import { wuduPage } from './pages/pray/wudu.js';
@@ -14,6 +17,9 @@ import { guidePage } from './pages/pray/guide.js';
 import { qiblaPage } from './pages/pray/qibla.js';
 import { tasbihPage } from './pages/pray/tasbih.js';
 import { settingsPage } from './pages/settings.js';
+import { ramadanPage } from './pages/ramadan/index.js';
+import { tarawihPage } from './pages/ramadan/tarawih.js';
+import { quranPage } from './pages/ramadan/quran.js';
 
 export function resolveRoute(path, ctx) {
   const parts = path.split('/').filter(Boolean);
@@ -30,6 +36,10 @@ export function resolveRoute(path, ctx) {
       return tasbihPage(ctx);
     case 'settings':
       return settingsPage(ctx);
+    case 'ramadan':
+      if (parts[1] === 'tarawih') return tarawihPage(ctx);
+      if (parts[1] === 'quran') return quranPage(ctx);
+      return ramadanPage(ctx);
     default:
       return homePage(ctx);
   }
