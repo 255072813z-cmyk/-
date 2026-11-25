@@ -158,3 +158,59 @@ test('古兰经：章目录搜索（编号、三种语言的章名、阿拉伯�
   assert.equal(searchSurahs('').length, 114);
   assert.equal(arNum(255), '٢٥٥');
 });
+
+test('古兰经读书记录：每章读到哪、每天读了几节（同一节一天只算一次）、最近读过、书签、坏数据', async () => {
+  const mem = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) } };
+  try {
+    const q = await import('../src/core/quran.js');
+    // 读第 112 章（4 节）：第 1 节读两次只算一次；读完第 4 节这一章就读完了
+    assert.deepEqual(q.markRead(112, 1, '2026-12-18'), { newly: true, surahDone: false });
+    assert.deepEqual(q.markRead(112, 1, '2026-12-18'), { newly: false, surahDone: false });
+    q.markRead(112, 2, '2026-12-18');
+    q.markRead(112, 3, '2026-12-18');
+    assert.equal(q.markRead(112, 4, '2026-12-18').surahDone, true);
+    assert.equal(q.readOn('2026-12-18'), 4);
+    assert.deepEqual(q.surahProgress(112), { max: 4, total: 4, done: true });
+    // 第二天再读同一节，算第二天的
+    assert.equal(q.markRead(112, 1, '2026-12-19').newly, true);
+    assert.equal(q.readOn('2026-12-19'), 1);
+    q.markRead(2, 255, '2026-12-19');
+    assert.deepEqual(q.allProgress(), { read: 4 + 255, total: 6236, done: 1 });
+    const week = q.readDays('2026-12-19', 7);
+    assert.equal(week.length, 7);
+    assert.deepEqual(week.slice(-2).map((d) => d.n), [4, 2]);
+    assert.equal(week[0].day, '2026-12-13');
+    // 不存在的章节不记
+    assert.equal(q.markRead(115, 1, '2026-12-19').newly, false);
+    assert.equal(q.markRead(112, 5, '2026-12-19').newly, false);
+    // 读到哪里、最近读过：每章一条，最新的在前
+    q.setLastRead(18, 40, 1000);
+    q.setLastRead(2, 255, 2000);
+    q.setLastRead(18, 60, 3000);
+    assert.deepEqual(q.lastRead(), { s: 18, a: 60, t: 3000 });
+    assert.deepEqual(q.recentRead().map((h) => `${h.s}:${h.a}`), ['18:60', '2:255']);
+    assert.equal(q.lastInSurah(2), 255);
+    assert.equal(q.lastInSurah(36), 0);
+    // 书签：加、再点去掉
+    assert.equal(q.toggleBookmark(2, 255, 10), true);
+    assert.equal(q.toggleBookmark(36, 58, 20), true);
+    assert.deepEqual(q.bookmarks().map((b) => `${b.s}:${b.a}`), ['36:58', '2:255'], '新加的在前');
+    assert.equal(q.isMarked(2, 255), true);
+    assert.equal(q.toggleBookmark(2, 255), false);
+    assert.equal(q.isMarked(2, 255), false);
+    assert.equal(q.toggleBookmark(2, 999), false, '不存在的节不能加');
+    // 坏数据：不报错，当作没有
+    mem.set('masjid:qprog', '"x"');
+    mem.set('masjid:qhist', JSON.stringify([{ s: 999, a: 1 }, { s: 1, a: 3, t: 5 }]));
+    mem.set('masjid:qmarks', '{}');
+    mem.set('masjid:qdays', JSON.stringify({ bad: 3, '2026-12-19': -1 }));
+    assert.deepEqual(q.allProgress(), { read: 0, total: 6236, done: 0 });
+    assert.deepEqual(q.recentRead().map((h) => h.s), [1]);
+    assert.deepEqual(q.bookmarks(), []);
+    assert.equal(q.readOn('2026-12-19'), 0);
+    assert.equal(q.daysAgo(0), null);
+  } finally {
+    delete globalThis.window;
+  }
+});

@@ -28,7 +28,7 @@ export function streakPage(ctx) {
   const groups = ['prayer', 'learn', 'ramadan', 'together'];
   const html = `
   <div class="page streak-page">
-    <div class="page-head"><a class="back" href="#/" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('streak.pageTitle')}</h1></div>
+    <div class="page-head"><a class="back" href="#/me" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('streak.pageTitle')}</h1></div>
     <section class="card streak-hero ${s.today ? 'is-lit' : ''}">
       <span class="streak-lamp hero-lamp ${s.today ? 'is-lit' : ''}">${LAMP}</span>
       <p class="streak-big" data-big>${n}</p>

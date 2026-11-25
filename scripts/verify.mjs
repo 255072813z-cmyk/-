@@ -265,7 +265,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.clock.install({ time: new Date(ft.iftar.getTime() - 10e3) });
   await page.goto(base + '?weather=clear#/ramadan');
   await page.waitForSelector('[data-fast-count]');
-  const title = (await page.textContent('.r-status h1')).trim();
+  const title = (await page.textContent('.ph h1')).trim();
   const head = (await page.textContent('.fast-phase')).trim();
   const times = (await page.locator('.ft-time').allTextContents()).map((x) => x.trim());
   check('斋月页（第 13 天）：显示"封斋中"、开斋倒计时、封斋饭截止和开斋时间', /第 13 天/.test(title) && head === '封斋中' && times[0] === hm(ft.sahurEnd) && times[1] === hm(ft.iftar), `${title}；${head}；${times.join(' / ')}`);
@@ -304,7 +304,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   // 斋月前：这一页变成全年可用的"封斋"页——没有点不动的斋月格子，有斋月倒计时和第一天的时间
   await page.clock.setSystemTime(new Date('2027-01-20T08:00:00Z'));
   await page.goto(base + '?weather=clear#/ramadan');
-  await page.waitForSelector('.r-status h1');
+  await page.waitForSelector('.ph h1');
   const pre = (await page.textContent('[data-vf-ramadan]')).replace(/\s+/g, ' ');
   check('斋月前：显示"斋月还有 N 天"和第一天的时间，没有点不动的斋月格子', /斋月还有 \d+ 天/.test(pre) && (await page.locator('.day').count()) === 0 && (await page.locator('[data-vf-fast]').count()) === 1, pre.slice(0, 40));
   check('斋月页以上操作没有页面错误', errs.length === 0, errs.join('; '));
@@ -483,6 +483,33 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('.ayah.is-target');
   const target = await page.getAttribute('.ayah.is-target', 'id');
   check('30 天通读：返回到古兰经；第 3 卷点"读"从 2:253 开始', back === '#/quran' && /#\/quran\/2\/253$/.test(page.url()) && target === 'a253', `${back}，${page.url().split('#')[1]}`);
+  // 读书记录：短章一屏读完 → 今天读了几节、这一章读完了；加书签；目录里打勾、书签、"接着上次"
+  await open('#/quran/112');
+  await page.waitForSelector('.ayah');
+  await page.waitForTimeout(1600); // 像真人一样先读一会儿开头（一晃而过的不算读过）
+  await page.mouse.wheel(0, 2000); // 翻到底
+  await page.waitForTimeout(3200);
+  const todayN = Number((await page.textContent('[data-q-today]')).trim());
+  const doneShown = await page.locator('[data-q-done]:visible').count();
+  await page.click('#a2 [data-mark]');
+  const pressed = await page.getAttribute('#a2 [data-mark]', 'aria-pressed');
+  check('读完第 112 章（4 节）：今天读了 4 节，出现"这一章读完了"；第 2 节加上书签', todayN >= 4 && doneShown === 1 && pressed === 'true', `今天 ${todayN} 节`);
+  await open('#/quran/2/100');
+  await page.waitForSelector('#a100.is-target');
+  await page.waitForTimeout(1500);
+  await open('#/quran/2');
+  await page.waitForSelector('.ayah');
+  const resume = ((await page.textContent('[data-q-resume]').catch(() => '')) || '').trim();
+  await open('#/quran');
+  await page.waitForSelector('.q-stats');
+  const marks = (await page.textContent('[data-q-marklist]')).replace(/\s+/g, ' ');
+  const done112 = await page.locator('.sura.is-done[href="#/quran/112"]').count();
+  const big = Number((await page.textContent('.q-today-big b')).trim());
+  check('目录页：今天读的节数、书签"112:2"、第 112 章打勾；再开第 2 章提示"接着上次：第 N 节"', big >= 4 && /112:2/.test(marks) && done112 === 1 && /接着上次：第 (9\d|10\d) 节/.test(resume), `${resume}；书签 ${marks.trim().slice(0, 20)}`);
+  // 去掉书签：原地删掉
+  await page.click('[data-unmark="112:2"]');
+  const left = await page.locator('[data-q-marks]:visible').count();
+  check('目录页删掉书签后，书签卡片收起', left === 0);
   check('古兰经以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }

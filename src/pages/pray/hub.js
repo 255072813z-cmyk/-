@@ -20,16 +20,17 @@ export function hubPage(ctx) {
   const html = `
   <div class="page hub">
     <section class="interior-wrap">${homeInterior({ winter: isWinter(ctx) })}</section>
-    <section class="hub-intro">
+    <header class="ph">
       <h1>${t('hub.title')}</h1>
-      <p>${t('hub.lead')}</p>
-      ${friday}
-    </section>
+      <p class="ph-sub">${t('hub.lead')}</p>
+    </header>
+    ${friday}
 
     <a class="card card-link step-link is-main hub-main" href="#/pray/guide/${target}">
       <span class="step-t">${t('home.follow', { name })}</span>
       <span class="step-s">${s.current ? t('hub.nowIs', { name }) : t('hub.nextAt', { time: fmtHM(s.nextTime) })} · ${t('hub.everyStep')}</span></a>
 
+    <h2 class="sec">${t('hub.secTools')}</h2>
     <div class="tools">
       ${tile('#/pray/wudu', ICONS.drop, t('hub.wudu'), t('hub.wuduSub'))}
       ${tile('#/qibla', ICONS.qibla, t('hub.qibla'), t('hub.qiblaSub'))}
@@ -50,6 +51,7 @@ export function hubPage(ctx) {
       </div>
     </section>
 
+    <h2 class="sec">${t('hub.secMore')}</h2>
     <details class="card fold excuse-card">
       <summary>${t('hub.sickTitle')}</summary>
       <p>${t('hub.sickText')}</p>

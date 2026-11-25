@@ -69,7 +69,7 @@
 .recite-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin-bottom: 2px; }
 .recite-name { font-weight: 700; color: var(--green); }
 .repeat { font-size: 0.85rem; font-weight: 700; color: var(--gold-ink); background: var(--gold-soft); padding: 1px 10px; border-radius: 999px; margin-left: auto; }
-.ayah { border-top: 1px dashed var(--line); padding-top: 6px; margin-top: 6px; }
+.ayah { border-top: var(--hairline); padding-top: 6px; margin-top: 6px; }
 .ayah:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
 .ayah-no { font-size: 0.8em; color: var(--gold-ink); }
 
@@ -179,13 +179,13 @@
 .tb-num small { color: var(--muted); }
 
 /* 设置 */
-.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; border-bottom: 1px dashed var(--line); cursor: pointer; }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; border-bottom: var(--hairline); cursor: pointer; }
 .switch-row:last-child { border-bottom: 0; }
 .switch-row span { display: flex; flex-direction: column; }
 .switch-row small { color: var(--muted); }
 .switch-row input { width: 26px; height: 26px; accent-color: var(--green); flex: none; }
 .adj-list { list-style: none; padding: 0; margin: 8px 0; }
-.adj { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'name ctrl' 'base ctrl' 'res res'; align-items: center; column-gap: 8px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.adj { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'name ctrl' 'base ctrl' 'res res'; align-items: center; column-gap: 8px; padding: 10px 0; border-bottom: var(--hairline); }
 .adj-name { grid-area: name; font-weight: 700; }
 .adj-base { grid-area: base; color: var(--muted); font-size: 0.9rem; }
 .adj-ctrl { grid-area: ctrl; display: flex; align-items: center; gap: 6px; }
@@ -248,13 +248,13 @@
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin-right: 4px; }
 .legend .ly { background: var(--primary); }
 .legend .ln { background: var(--gold-soft); border: 1.5px dashed var(--gold); }
-.hol { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.hol { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: baseline; padding: 8px 0; border-bottom: var(--hairline); }
 .hol:last-of-type { border-bottom: 0; }
 .hol b { font-family: var(--font-zh-serif); font-size: 1.1rem; }
 .hol .hol-days { color: var(--green); font-weight: 800; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
 .hol .hol-date { grid-column: 1 / -1; color: var(--muted); font-size: 0.9rem; }
 .ttable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
-.ttable th, .ttable td { padding: 6px 4px; border-bottom: 1px dashed var(--line); text-align: center; }
+.ttable th, .ttable td { padding: 6px 4px; border-bottom: var(--hairline); text-align: center; }
 .ttable th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
 .ttable tr.is-today td { background: var(--green-soft); font-weight: 700; }
 .ttable-wrap { overflow-x: auto; }
@@ -263,7 +263,7 @@
 .set.is-done { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .set.is-rest { box-shadow: 0 0 0 3px var(--gold-soft); }
 .juz-list { list-style: none; padding: 0; margin: 0; }
-.juz { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px dashed var(--line); }
+.juz { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: var(--hairline); }
 .juz.is-today { background: var(--green-soft); border-radius: 12px; }
 .juz-no { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg-2); font-weight: 800; color: var(--green); }
 .juz.is-done .juz-no { background: var(--primary); color: var(--on-primary); }
@@ -331,10 +331,11 @@
 .fold[open] > summary { margin-bottom: 8px; }
 
 /* ===== 古兰经 ===== */
-.q-continue { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'k go' 'b go' 's go'; padding: 16px; background: var(--green); color: #fff; border-color: transparent; }
+.q-continue { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'k go' 'b go' 's go' 'bar go'; row-gap: 2px; padding: var(--sp-4); background: var(--green); color: #fff; border-color: transparent; }
+.q-continue .q-bar { grid-area: bar; margin-top: var(--sp-2); }
 .q-continue .q-continue-k { grid-area: k; font-size: 0.85rem; color: #d6ebe0; }
 .q-continue b { grid-area: b; font-size: 1.2rem; }
-.q-continue > span:not(.q-continue-k):not(.r-link-go) { grid-area: s; color: #e2efe8; }
+.q-continue > span:not(.q-continue-k):not(.r-link-go):not(.q-bar) { grid-area: s; color: #e2efe8; }
 .q-continue .r-link-go { grid-area: go; align-self: center; color: #fff; }
 .q-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; font-weight: 600; }
@@ -346,7 +347,7 @@
 .q-bar i { display: block; height: 100%; background: var(--gold); }
 .q-search { width: 100%; margin: 4px 0 10px; min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
 .suras { list-style: none; margin: 0; padding: 0; }
-.sura { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 10px 2px; border-bottom: 1px dashed var(--line); color: var(--ink); text-decoration: none; }
+.sura { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 10px 2px; border-bottom: var(--hairline); color: var(--ink); text-decoration: none; }
 .sura-n { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; border: 1.5px solid var(--gold); background: var(--gold-soft); font-size: 0.85rem; font-weight: 700; color: var(--gold-ink); }
 .sura-n { font-variant-numeric: tabular-nums; }
 .sura-main { display: grid; }
@@ -371,7 +372,6 @@
 .q-nav .btn { flex: 1 1 140px; }
 
 /* ===== 我的 ===== */
-.me h1 { margin: 10px 0 6px; }
 .me-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 16px; }
 .me-hero .streak-lamp svg { width: 40px; height: 40px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .me-hero .streak-lamp .lamp-flame { fill: var(--line); stroke: none; }
@@ -380,10 +380,59 @@
 .me-hero-main { display: grid; gap: 4px; justify-items: start; }
 .me-hero-main b { font-size: 1.15rem; }
 .me-hero-main small { color: var(--muted); }
-.me-list { padding: 4px 16px; display: grid; }
-.me-row { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 't go' 's go'; padding: 12px 0; border-bottom: 1px dashed var(--line); color: var(--ink); text-decoration: none; }
+.me-list { padding: 0 var(--sp-4); display: grid; }
+.me-row { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: 'ico t go' 'ico s go'; column-gap: var(--sp-3); align-items: center; min-height: 64px; padding: var(--sp-2) 0; border-bottom: var(--hairline); color: var(--ink); text-decoration: none; }
+.me-row .li-ico { grid-area: ico; }
 .me-row:last-child { border-bottom: 0; }
-.me-t { grid-area: t; font-weight: 700; }
-.me-s { grid-area: s; color: var(--muted); font-size: 0.88rem; }
+.me-t { grid-area: t; font-weight: 700; font-size: var(--fs-md); }
+.me-s { grid-area: s; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
 .me-go { align-self: center; color: var(--muted); font-size: 1.4rem; }
 .me-row .me-go { grid-area: go; }
+
+/* ===== 古兰经：读书记录 ===== */
+.q-bar.thin { height: 4px; margin-top: 4px; max-width: 160px; }
+.q-bar.light { background: rgba(255, 255, 255, 0.22); }
+.q-bar.light i { background: var(--lamp); }
+.q-stats { display: grid; gap: var(--sp-2); }
+.q-today-big { display: flex; align-items: baseline; gap: var(--sp-2); }
+.q-today-big b { font-family: var(--font-zh-serif); font-size: var(--fs-3xl); line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
+.q-today-big span { color: var(--ink-2); }
+.q-week { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.q-week li { display: grid; justify-items: center; gap: 4px; }
+.q-col { display: flex; align-items: flex-end; width: 100%; max-width: 28px; height: 64px; border-radius: 8px; background: var(--bg-2); overflow: hidden; }
+.q-col i { display: block; width: 100%; border-radius: 8px; background: var(--line-deep, #d6c7a4); transform-origin: bottom; animation: grow-y 0.8s var(--ease-out, ease-out) backwards; }
+.q-week li.has .q-col i { background: var(--gold); }
+.q-week li.is-today .q-col { box-shadow: inset 0 0 0 2px var(--green); }
+.q-week li.is-today.has .q-col i { background: var(--green); }
+.q-week small { font-size: var(--fs-xs); color: var(--muted); }
+.q-week li.is-today small { color: var(--green); font-weight: 700; }
+@keyframes grow-y { from { transform: scaleY(0); } }
+.q-all { margin: var(--sp-2) 0 0; font-weight: 600; }
+.q-list { list-style: none; margin: 0; padding: 0; }
+.q-li { display: flex; align-items: center; gap: var(--sp-2); border-bottom: var(--hairline); }
+.q-li:last-child { border-bottom: 0; }
+.q-li a { flex: 1; display: grid; padding: var(--sp-3) 0; color: var(--ink); text-decoration: none; }
+.q-li a b { color: var(--green); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.q-li-t { font-weight: 600; }
+.q-li small { color: var(--muted); font-size: var(--fs-sm); }
+.q-x { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.4rem; cursor: pointer; }
+.q-x:active { background: var(--bg-2); }
+.sura { position: relative; }
+.sura-done { position: absolute; top: 8px; left: 26px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: #fff; font-size: 11px; font-weight: 700; box-shadow: 0 0 0 2px var(--card); }
+.sura.is-done .sura-n { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+
+/* 阅读页：今天读了几节、接着上次、书签、读完一章 */
+.q-today { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--gold-soft); color: var(--gold-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.q-today svg { width: 18px; height: 18px; fill: var(--gold); }
+.q-today b { display: inline-block; }
+.q-today b.bump { animation: bump 0.3s var(--ease-spring, ease-out); }
+.q-resume { display: flex; justify-content: center; margin: var(--sp-2) 0; padding: var(--sp-3); border-radius: var(--r-md); background: var(--green-soft); color: var(--green); font-weight: 700; text-decoration: none; animation: page-in 0.4s var(--ease-out, ease-out) backwards; }
+.ayah-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.ayah-key { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; padding: 2px 8px; border-radius: var(--r-pill); background: var(--bg-2); }
+.ayah-mark { width: 40px; height: 40px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; border-radius: 50%; color: var(--muted); -webkit-tap-highlight-color: transparent; }
+.ayah-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.ayah-mark.is-on { color: var(--gold); }
+.ayah-mark.is-on svg { fill: var(--gold); }
+.ayah-mark.is-pop { animation: bump 0.35s var(--ease-spring, ease-out); }
+.q-done { text-align: center; margin: var(--sp-4) 0 0; padding: var(--sp-3); border-radius: var(--r-md); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.q-done.is-pop { animation: pop-in 0.5s var(--ease-spring, ease-out); }

@@ -38,9 +38,9 @@ button { font: inherit; }
 .ar-sm { font-family: var(--font-ar); font-size: 1.15em; color: var(--gold-ink); font-weight: 400; }
 .tr { font-style: italic; color: var(--ink-2); font-size: 0.95rem; line-height: 1.6; margin: 0.15em 0; }
 .zh { color: var(--ink); font-size: 1rem; }
-.note { color: var(--muted); font-size: 0.9rem; }
+.note { color: var(--muted); font-size: var(--fs-sm); line-height: 1.6; }
 .note.center { text-align: center; }
-.src { color: var(--muted); font-size: 0.8rem; margin-top: 0.5em; }
+.src { color: var(--muted); font-size: var(--fs-xs); margin-top: 0.5em; }
 
 /* 顶栏 */
 .topbar {
@@ -89,14 +89,26 @@ button { font: inherit; }
 /* 页面 */
 main { display: block; }
 main:focus { outline: none; }
-.page { max-width: 720px; margin: 0 auto; padding: 12px 16px calc(96px + env(safe-area-inset-bottom)); }
+.page { max-width: 720px; margin: 0 auto; padding: var(--sp-3) var(--sp-4) calc(96px + env(safe-area-inset-bottom)); }
 .page-head { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; }
-.page-head h1 { font-size: 1.35rem; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.page-head h1 { font-size: var(--fs-xl); display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .back { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--ink); flex: none; margin-left: -10px; }
 .back svg { width: 24px; height: 24px; stroke: currentColor; }
 
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 12px 0; box-shadow: var(--shadow); }
-.card-title { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin-bottom: 8px; color: var(--ink); }
+/* 标签页的大标题：左对齐，下面一行说明（所有底部标签的首页都用它） */
+.ph { margin: var(--sp-3) 2px var(--sp-2); }
+.ph h1 { font-size: var(--fs-2xl); display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.ph-sub { margin: 2px 0 0; color: var(--ink-2); font-size: var(--fs-md); }
+.ph .local-note { margin-top: var(--sp-2); }
+/* 分组的小标题：把一页里的内容分成几块 */
+.sec { margin: var(--sp-6) 4px var(--sp-2); font-size: var(--fs-sm); font-weight: 700; color: var(--muted); letter-spacing: 0.04em; }
+.sec:first-child { margin-top: var(--sp-2); }
+/* 列表行前面的小图标 */
+.li-ico { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--r-sm); background: var(--green-soft); color: var(--green); flex: none; }
+.li-ico svg { width: 22px; height: 22px; fill: currentColor; stroke: currentColor; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--sp-4); margin: var(--sp-3) 0; box-shadow: var(--shadow); }
+.card-title { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-lg); margin-bottom: var(--sp-2); color: var(--ink); }
 .card-link { display: block; text-decoration: none; color: var(--ink); transition: transform 0.15s ease, border-color 0.15s; }
 .card-link:active { transform: scale(0.99); }
 .card-link:hover { border-color: var(--gold); }

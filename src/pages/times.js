@@ -40,7 +40,7 @@ export function timesPage(ctx, offset = 0) {
   const off = Number(offset) || 0;
   const html = `
   <div class="page times-page">
-    <div class="page-head"><a class="back" href="#/" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('times.title')}</h1></div>
+    <div class="page-head"><a class="back" href="#/me" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('times.title')}</h1></div>
     <p class="times-sub">${cityName(ctx.city)} · ${t('times.month', { y, month: t('monthName.' + m) })}</p>
     <div class="times-nav no-print">
       <a class="btn btn-ghost btn-sm" href="#/times/${off - 1}">← ${t('times.prev')}</a>

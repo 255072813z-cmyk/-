@@ -99,7 +99,7 @@
 
 /* 五番拜列表 */
 .plist { list-style: none; margin: 0; padding: 0; }
-.prow { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: 'name time badge' 'ar time badge'; align-items: center; column-gap: 10px; padding: 10px 12px; border-radius: 12px; border-bottom: 1px dashed var(--line); }
+.prow { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: 'name time badge' 'ar time badge'; align-items: center; column-gap: 10px; padding: 10px 12px; border-radius: 12px; border-bottom: var(--hairline); }
 .prow:last-child { border-bottom: 0; }
 .prow-name { grid-area: name; font-weight: 700; font-size: 1.1rem; }
 .prow-ar { grid-area: ar; font-size: 1rem; color: var(--gold-ink); text-align: left; line-height: 1.4; }

@@ -22,7 +22,7 @@ export function settingsPage(ctx) {
   const app = isNativeApp();
   const html = `
   <div class="page settings">
-    <div class="page-head"><a class="back" href="#/" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('nav.settings')}</h1></div>
+    <div class="page-head"><a class="back" href="#/me" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('nav.settings')}</h1></div>
 
     <a class="card card-link city-set" href="#/city">
       <span class="athome-t">${t('settings.cityIs', { name: cityName(ctx.city) })}</span>

@@ -22,6 +22,29 @@
   --cap: #3f5148;
   --shadow: 0 1px 2px rgba(60, 45, 10, 0.06), 0 8px 24px rgba(60, 45, 10, 0.07);
   --radius: 18px;
+  /* 设计规范（见 docs/设计规范.md）：字号、间距、圆角、阴影只用这几档 */
+  --fs-xs: 0.78rem;   /* 角标、标签说明 */
+  --fs-sm: 0.875rem;  /* 注释、次要信息 */
+  --fs-md: 1rem;      /* 正文 */
+  --fs-lg: 1.125rem;  /* 卡片标题、列表主文字 */
+  --fs-xl: 1.375rem;  /* 子页面标题 */
+  --fs-2xl: 1.75rem;  /* 标签页大标题 */
+  --fs-3xl: 2.25rem;  /* 大数字 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --r-sm: 10px;       /* 小块、输入框里的元素 */
+  --r-md: 14px;       /* 按钮、列表里的小卡片 */
+  --r-lg: 18px;       /* 卡片 */
+  --r-pill: 999px;    /* 标签、胶囊按钮 */
+  --shadow-1: 0 1px 2px rgba(60, 45, 10, 0.06), 0 4px 12px rgba(60, 45, 10, 0.05);
+  --shadow-2: var(--shadow);
+  --shadow-3: 0 16px 48px rgba(20, 15, 5, 0.22);
+  --hairline: 1px solid var(--line);
   /* Noto Sans / Noto Serif 只含西里尔字母（塔吉克语、俄语），中文、拉丁字母仍用后面的字体 */
   --font-zh: 'Noto Sans', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
   --font-zh-serif: 'Noto Serif', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', var(--font-zh);

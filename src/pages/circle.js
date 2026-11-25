@@ -80,7 +80,7 @@ export function circlePage(ctx) {
   const today = ymdKey(ctx.sched.today);
   const y = ctx.sched.today;
   const yesterday = new Date(Date.UTC(y.y, y.m - 1, y.d) - 864e5).toISOString().slice(0, 10);
-  const head = `<div class="page-head"><a class="back" href="#/streak" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('circle.title')}</h1></div>`;
+  const head = `<div class="page-head"><a class="back" href="#/me" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('circle.title')}</h1></div>`;
   if (!circleAvailable()) return { html: `<div class="page circle-page">${head}<section class="card"><p>${t('circle.lead')}</p><p class="note">${t('circle.offline')}</p></section></div>` };
   const mine = myCircle();
   const cached = mine && mine.code ? cachedState() : null;

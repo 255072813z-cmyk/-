@@ -237,6 +237,9 @@ export const ICONS = {
   quran: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.2C9.8 4.6 6.6 4.1 3.5 4.6v11.6c3.1-.4 6.3.1 8.5 1.7 2.2-1.6 5.4-2.1 8.5-1.7V4.6c-3.1-.5-6.3 0-8.5 1.6Z"/><path d="M4 20.5l8-3.2 8 3.2" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   // 我的：简单的人形图标（不画五官）
   me: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.8 21c.6-4.6 3.9-7.2 8.2-7.2s7.6 2.6 8.2 7.2Z"/></svg>',
+  rings: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-width="2"><circle cx="8.5" cy="10" r="4.5"/><circle cx="15.5" cy="10" r="4.5"/><circle cx="12" cy="15.5" r="4.5"/></g></svg>',
+  calendar: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></g><circle cx="8" cy="14.5" r="1.3"/><circle cx="12" cy="14.5" r="1.3"/><circle cx="16" cy="14.5" r="1.3"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z" fill="none" stroke-width="2"/><circle cx="12" cy="10" r="2.6"/></svg>',
   drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c4 5.2 6.5 8.8 6.5 12a6.5 6.5 0 0 1-13 0c0-3.2 2.5-6.8 6.5-12Z"/></svg>',
   qada: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4.5V8h3.5"/><path d="M12 8v4.5l3 2"/></g></svg>',
 };

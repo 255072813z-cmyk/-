@@ -96,9 +96,9 @@ export function ramadanPage(ctx) {
   const html = `
   <div class="page ramadan">
     <section class="ramadan-wrap">${ramadanScene({ iftar: iftarLit })}</section>
-    <div class="r-status">
+    <div class="ph">
       <h1>${st.active ? t('fast.dayN', { n: st.day }) : t('fast.daysLeft', { n: st.start ? st.start.inDays : '—' })} <span class="ar-sm" lang="ar" dir="rtl">رَمَضَان</span></h1>
-      <p>${st.active ? t('fast.hijriToday', { y: st.year, d: st.day, city }) : t('fast.startsOn', { date: st.start ? dateShort(st.start) : '', y: st.year })}</p>
+      <p class="ph-sub">${st.active ? t('fast.hijriToday', { y: st.year, d: st.day, city }) : t('fast.startsOn', { date: st.start ? dateShort(st.start) : '', y: st.year })}</p>
       <p class="local-note">${t('fast.datesNote')}</p>
     </div>
 

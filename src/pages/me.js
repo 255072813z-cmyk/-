@@ -8,6 +8,8 @@ import { APP_VERSION } from '../core/api.js';
 import { ymdKey } from '../core/clock.js';
 import { LAMP, titleName, topTitle } from '../ui/streak-ui.js';
 import { earn } from '../ui/cheer.js';
+import { ICONS } from '../ui/art.js';
+import { allProgress, readOn } from '../core/quran.js';
 import { cityName } from '../i18n/format.js';
 import { t } from '../i18n/index.js';
 
@@ -16,10 +18,15 @@ export function mePage(ctx) {
   const s = streakStatus(today);
   const n = s.alive ? s.cur : 0;
   const top = topTitle(s);
-  const row = (href, title, sub) => `<a class="me-row" href="${href}"><span class="me-t">${title}</span><span class="me-s">${sub}</span><span class="me-go" aria-hidden="true">›</span></a>`;
+  const all = allProgress();
+  const row = (href, icon, title, sub) =>
+    `<a class="me-row" href="${href}"><span class="li-ico">${icon}</span><span class="me-t">${title}</span><span class="me-s">${sub}</span><span class="me-go" aria-hidden="true">›</span></a>`;
   const html = `
   <div class="page me">
-    <h1>${t('me.title')}</h1>
+    <header class="ph">
+      <h1>${t('me.title')}</h1>
+      <p class="ph-sub">${t('me.sub')}</p>
+    </header>
     <a class="card card-link me-hero" href="#/streak">
       <span class="streak-lamp ${s.today ? 'is-lit' : ''}">${LAMP}</span>
       <span class="me-hero-main"><b>${n ? t('streak.days', { n }) : t('streak.zero')}</b>
@@ -27,12 +34,18 @@ export function mePage(ctx) {
         <small>${t('me.badges', { a: badgeCount(), b: BADGES.length, c: s.titles.length, d: MILESTONES.length })}</small></span>
       <span class="me-go" aria-hidden="true">›</span>
     </a>
-    <nav class="card me-list" aria-label="${t('me.title')}">
-      ${row('#/circle', t('circle.title'), myCircle() ? t('me.circleIn') : t('circle.linkSub'))}
-      ${row('#/times', t('me.times'), t('me.timesSub', { city: cityName(ctx.city) }))}
-      ${row('#/city', t('me.city'), cityName(ctx.city))}
-      ${row('#/settings', t('me.settings'), t('me.settingsSub'))}
+    <h2 class="sec">${t('me.secRecord')}</h2>
+    <nav class="card me-list" aria-label="${t('me.secRecord')}">
+      ${row('#/quran', ICONS.quran, t('me.quran'), t('me.quranSub', { n: readOn(today), all: all.read }))}
+      ${row('#/circle', ICONS.rings, t('circle.title'), myCircle() ? t('me.circleIn') : t('circle.linkSub'))}
     </nav>
+    <h2 class="sec">${t('me.secTools')}</h2>
+    <nav class="card me-list" aria-label="${t('me.secTools')}">
+      ${row('#/times', ICONS.calendar, t('me.times'), t('me.timesSub', { city: cityName(ctx.city) }))}
+      ${row('#/city', ICONS.pin, t('me.city'), cityName(ctx.city))}
+      ${row('#/settings', ICONS.settings, t('me.settings'), t('me.settingsSub'))}
+    </nav>
+    <h2 class="sec">${t('me.secMore')}</h2>
     <section class="card share-card">
       <p class="athome-t">${t('share.title')}</p>
       <p class="athome-s">${t('share.sub')}</p>

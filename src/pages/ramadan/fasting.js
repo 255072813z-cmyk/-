@@ -148,9 +148,9 @@ export function fastingPage(ctx, st) {
   const html = `
   <div class="page ramadan fasting">
     <section class="ramadan-wrap">${ramadanScene({ iftar: false })}</section>
-    <div class="r-status">
+    <div class="ph">
       <h1>${t('vf.title')} <span class="ar-sm" lang="ar" dir="rtl">الصِّيَام</span></h1>
-      <p>${hijriLine(h)}</p>
+      <p class="ph-sub">${hijriLine(h)}</p>
       <p class="local-note">${t('fast.datesNote')}</p>
     </div>
     <div class="r-grid">
