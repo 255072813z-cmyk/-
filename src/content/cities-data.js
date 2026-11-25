@@ -1,6 +1,6 @@
 // 自动生成：npm run cities（scripts/build-cities.mjs）。请勿手改。
 // 坐标与时区：Open-Meteo 地名库（数据来自 GeoNames，geonameId 可查）；磁偏角：WMM-2025（2026 年 12 月）。
-// 塔吉克斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
+// 塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
 export const CITY_DATA = [
  {
   "id": "dushanbe",
@@ -133,6 +133,259 @@ export const CITY_DATA = [
   "declination": 4.1,
   "method": "karachi",
   "geonameId": 1221328
+ },
+ {
+  "id": "tashkent",
+  "cc": "UZ",
+  "lat": 41.26465,
+  "lon": 69.21627,
+  "tz": "Asia/Tashkent",
+  "utcOffset": 5,
+  "declination": 5.7,
+  "method": "karachi",
+  "geonameId": 1512569
+ },
+ {
+  "id": "samarkand",
+  "cc": "UZ",
+  "lat": 39.65456,
+  "lon": 66.96445,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 5.3,
+  "method": "karachi",
+  "geonameId": 1216265
+ },
+ {
+  "id": "bukhara",
+  "cc": "UZ",
+  "lat": 39.77026,
+  "lon": 64.43069,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 5.6,
+  "method": "karachi",
+  "geonameId": 1217662
+ },
+ {
+  "id": "namangan",
+  "cc": "UZ",
+  "lat": 40.9983,
+  "lon": 71.67257,
+  "tz": "Asia/Tashkent",
+  "utcOffset": 5,
+  "declination": 5.3,
+  "method": "karachi",
+  "geonameId": 1513157
+ },
+ {
+  "id": "andijan",
+  "cc": "UZ",
+  "lat": 40.78338,
+  "lon": 72.35067,
+  "tz": "Asia/Tashkent",
+  "utcOffset": 5,
+  "declination": 5.1,
+  "method": "karachi",
+  "geonameId": 1514588
+ },
+ {
+  "id": "fergana",
+  "cc": "UZ",
+  "lat": 40.38421,
+  "lon": 71.78432,
+  "tz": "Asia/Tashkent",
+  "utcOffset": 5,
+  "declination": 5,
+  "method": "karachi",
+  "geonameId": 1514019
+ },
+ {
+  "id": "kokand",
+  "cc": "UZ",
+  "lat": 40.52861,
+  "lon": 70.9425,
+  "tz": "Asia/Tashkent",
+  "utcOffset": 5,
+  "declination": 5.2,
+  "method": "karachi",
+  "geonameId": 1512979
+ },
+ {
+  "id": "qarshi",
+  "cc": "UZ",
+  "lat": 38.86056,
+  "lon": 65.78905,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 5.1,
+  "method": "karachi",
+  "geonameId": 1216311
+ },
+ {
+  "id": "termez",
+  "cc": "UZ",
+  "lat": 37.22417,
+  "lon": 67.27833,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 4.4,
+  "method": "karachi",
+  "geonameId": 1215957
+ },
+ {
+  "id": "jizzakh",
+  "cc": "UZ",
+  "lat": 40.13351,
+  "lon": 67.82956,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 5.4,
+  "method": "karachi",
+  "geonameId": 1513886
+ },
+ {
+  "id": "navoiy",
+  "cc": "UZ",
+  "lat": 40.08444,
+  "lon": 65.37917,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 5.6,
+  "method": "karachi",
+  "geonameId": 1513131
+ },
+ {
+  "id": "urgench",
+  "cc": "UZ",
+  "lat": 41.55177,
+  "lon": 60.63143,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 6.6,
+  "method": "karachi",
+  "geonameId": 1512473
+ },
+ {
+  "id": "nukus",
+  "cc": "UZ",
+  "lat": 42.45861,
+  "lon": 59.60576,
+  "tz": "Asia/Samarkand",
+  "utcOffset": 5,
+  "declination": 7,
+  "method": "karachi",
+  "geonameId": 601294
+ },
+ {
+  "id": "bishkek",
+  "cc": "KG",
+  "lat": 42.87,
+  "lon": 74.59,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5.5,
+  "method": "karachi",
+  "geonameId": 1528675
+ },
+ {
+  "id": "osh",
+  "cc": "KG",
+  "lat": 40.52828,
+  "lon": 72.7985,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 4.9,
+  "method": "karachi",
+  "geonameId": 1527534
+ },
+ {
+  "id": "jalalabad",
+  "cc": "KG",
+  "lat": 40.94498,
+  "lon": 72.99313,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5.1,
+  "method": "karachi",
+  "geonameId": 1528249
+ },
+ {
+  "id": "karakol",
+  "cc": "KG",
+  "lat": 42.49047,
+  "lon": 78.39197,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 4.6,
+  "method": "karachi",
+  "geonameId": 1528121
+ },
+ {
+  "id": "tokmok",
+  "cc": "KG",
+  "lat": 42.84194,
+  "lon": 75.30149,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5.4,
+  "method": "karachi",
+  "geonameId": 1527199
+ },
+ {
+  "id": "karabalta",
+  "cc": "KG",
+  "lat": 42.81423,
+  "lon": 73.84813,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5.6,
+  "method": "karachi",
+  "geonameId": 1528182
+ },
+ {
+  "id": "uzgen",
+  "cc": "KG",
+  "lat": 40.76994,
+  "lon": 73.30068,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5,
+  "method": "karachi",
+  "geonameId": 1527513
+ },
+ {
+  "id": "naryn",
+  "cc": "KG",
+  "lat": 41.4283,
+  "lon": 75.9957,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 4.7,
+  "method": "karachi",
+  "geonameId": 1527592
+ },
+ {
+  "id": "talas",
+  "cc": "KG",
+  "lat": 42.52256,
+  "lon": 72.2417,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5.8,
+  "method": "karachi",
+  "geonameId": 1527299
+ },
+ {
+  "id": "batken",
+  "cc": "KG",
+  "lat": 40.0604,
+  "lon": 70.81929,
+  "tz": "Asia/Bishkek",
+  "utcOffset": 6,
+  "declination": 5,
+  "method": "karachi",
+  "geonameId": 1528735
  },
  {
   "id": "moscow",

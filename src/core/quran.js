@@ -3,7 +3,7 @@
 import { load, save } from './storage.js';
 import { SURAHS } from '../content/quran/meta.js';
 
-const TR_LANG = { tg: 'tg', ru: 'ru', zh: 'zh' };
+const TR_LANG = { tg: 'tg', ru: 'ru', zh: 'zh', uz: 'uz', ky: 'ky' };
 
 export { SURAHS };
 export const surah = (n) => SURAHS[n - 1] || null;
@@ -147,13 +147,13 @@ export function setReadPrefs(next) {
   save('qprefs', { ...readPrefs(), ...next });
 }
 
-/** 章目录搜索：编号、三种语言的章名、阿拉伯文章名（不看符号） */
-const bare = (s) => String(s).replace(/[ؐ-ًؚ-ٰٟۖ-ۭـٱ]/g, (c) => (c === 'ٱ' ? 'ا' : '')).toLowerCase();
+/** 章目录搜索：编号、各语言的章名、阿拉伯文章名（不看符号；乌兹别克语的 ʻ ʼ ' 也不看：Mo'minun = Moʻminun = Mominun） */
+const bare = (s) => String(s).replace(/[ؐ-ًؚ-ٰٟۖ-ۭـٱ]/g, (c) => (c === 'ٱ' ? 'ا' : '')).replace(/[ʻʼ\u0027‘’\u0060]/g, '').toLowerCase();
 export function searchSurahs(q) {
   const k = bare(q.trim());
   if (!k) return SURAHS;
   if (/^\d+$/.test(k)) return SURAHS.filter((s) => String(s.n).startsWith(k));
-  return SURAHS.filter((s) => [s.zh, s.ru, s.tg, s.ar].some((x) => bare(x).includes(k)));
+  return SURAHS.filter((s) => [s.zh, s.ru, s.tg, s.uz, s.ky, s.ar].some((x) => bare(x).includes(k)));
 }
 
 /** 常念的章节（快捷入口）：开端章、宝座经、雅辛、国权，以及礼拜里常念的几章短章 */

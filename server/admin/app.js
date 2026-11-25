@@ -2,7 +2,7 @@
 // - 口令只放在 sessionStorage（关掉标签页就没了）
 // - 私钥文件只在本地读取、签名，绝不上传
 // - 所有显示的数据都按纯文字处理（esc），防止注入
-import { sanitizeConfig, signBody, generateKeys, PRAYERS, FLAGS } from './remote-config.js';
+import { sanitizeConfig, signBody, generateKeys, PRAYERS, FLAGS, LANGS } from './remote-config.js';
 import { CITY_NAMES } from './city-names.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -17,7 +17,7 @@ const LABELS = {
   pk: { 0: '0 番', 1: '1 番', 2: '2 番', 3: '3 番', 4: '4 番', 5: '5 番' },
   ad: { 1: '1 天', 2: '2 天', 3: '3 天', 4: '4 天', 5: '5 天', 6: '6 天', 7: '7 天（每天）' },
   fs: { 0: '标准', 1: '大', 2: '特大' },
-  l: { zh: '中文', tg: '塔吉克语', ru: '俄语' },
+  l: { zh: '中文', tg: '塔吉克语', ru: '俄语', uz: '乌兹别克语', ky: '吉尔吉斯语' },
   f: { home: '首页', pray: '在家礼拜', wudu: '小净', guide: '跟着做礼拜', qibla: '朝向', tasbih: '赞念', ramadan: '斋月', tarawih: '间歇拜', quran: '古兰经 30 天', masjid: '清真寺入口', hall: '礼拜大殿', courtyard: '庭院', poetry: '诗歌夜', settings: '设置', city: '选择城市', here: '用我的位置' },
   flags: { masjid: '清真寺三个空间', presence: '在线人数', weather: '天气提示', stats: '匿名统计' },
 };
@@ -254,11 +254,11 @@ function niceStep(max) {
 }
 
 // ---- 远程配置 ----
-const LANG_NAMES = { zh: '中文', tg: '塔吉克语', ru: '俄语' };
+const LANG_NAMES = { zh: '中文', tg: '塔吉克语', ru: '俄语', uz: '乌兹别克语（拉丁字母）', ky: '吉尔吉斯语' };
 let current = null; // 当前线上配置（清洗后）
 
 function textInputs(prefix, val = {}, area = true) {
-  return ['zh', 'tg', 'ru']
+  return LANGS
     .map((l) => `<label>${LANG_NAMES[l]}${area ? `<textarea data-${prefix}-${l} maxlength="400">${esc(val[l] || '')}</textarea>` : `<input class="src" data-${prefix}-${l} maxlength="400" value="${esc(val[l] || '')}">`}</label>`)
     .join('');
 }
@@ -281,6 +281,8 @@ function fillForm(cfg) {
     .join('');
   $('[data-hijri]').innerHTML = [
     ['TJ', '塔吉克斯坦'],
+    ['UZ', '乌兹别克斯坦'],
+    ['KG', '吉尔吉斯斯坦'],
     ['RU', '俄罗斯'],
   ]
     .map(([cc, name]) => {
@@ -304,7 +306,7 @@ function addOffsetRow(id = '', o = {}) {
   const tr = document.createElement('tr');
   tr.innerHTML = `<td><select data-o-city>${CITY_NAMES.map((c) => `<option value="${esc(c.id)}" ${c.id === id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></td>
     ${PRAYERS.map((p) => `<td><input type="number" min="-30" max="30" step="1" data-o-${p} value="${Number(o[p]) || 0}"></td>`).join('')}
-    <td>${['zh', 'tg', 'ru'].map((l) => `<input class="src" data-o-src-${l} placeholder="${LANG_NAMES[l]}" maxlength="400" value="${esc((o.src && o.src[l]) || '')}">`).join('')}</td>
+    <td>${LANGS.map((l) => `<input class="src" data-o-src-${l} placeholder="${LANG_NAMES[l]}" maxlength="400" value="${esc((o.src && o.src[l]) || '')}">`).join('')}</td>
     <td><button type="button" class="ghost" data-o-del>删除</button></td>`;
   $('[data-o-del]', tr).addEventListener('click', () => {
     tr.remove();
@@ -318,7 +320,7 @@ $('[data-add-offset]').addEventListener('click', () => {
 });
 
 const val = (el, s) => ($(s, el) ? $(s, el).value.trim() : '');
-const texts = (el, prefix) => Object.fromEntries(['zh', 'tg', 'ru'].map((l) => [l, val(el, `[data-${prefix}-${l}]`)]).filter(([, v]) => v));
+const texts = (el, prefix) => Object.fromEntries(LANGS.map((l) => [l, val(el, `[data-${prefix}-${l}]`)]).filter(([, v]) => v));
 
 function readForm() {
   const raw = { v: 1, issued: new Date().toISOString(), notices: [], hijri: {}, cityOffsets: {}, flags: {}, store: {} };

@@ -11,7 +11,7 @@ import { ymdKey } from '../../core/clock.js';
 import { star8 } from '../../ui/art.js';
 import { t, getLang } from '../../i18n/index.js';
 
-/** 当前语言的章名（中文开发版、塔吉克语、俄语） */
+/** 当前语言的章名（中文开发版、塔吉克语、俄语、乌兹别克语、吉尔吉斯语） */
 export const surahName = (s) => s[getLang()] || s.ru;
 
 const ago = (tm) => {

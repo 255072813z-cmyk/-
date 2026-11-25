@@ -2,7 +2,9 @@
 // 波斯文原文：Ganjoor 古典诗歌库（ganjoor.net），逐字照录，出处见每首的 src。
 // 塔吉克文（cyr）：按塔吉克西里尔字母正字法转写（本站），塔吉克语界面直接读它。
 // 中文、俄语：本站意译（俄语为初稿，待审定）。塔吉克语界面直接读 cyr，不另加译文。
-// 诗人名、说明、出处、译文都按语言分字段：{ zh, tg, ru }。
+// 诗人名、说明、出处、译文都按语言分字段：{ zh, tg, ru, uz, ky }（乌兹别克语、吉尔吉斯语在 uz-ky.js，文件末尾合并）。
+import { POEMS_T } from './uz-ky.js';
+
 export const POEMS = [
   {
     poet: { zh: '鲁达基', tg: 'Рӯдакӣ', ru: 'Рудаки', cyr: 'Рӯдакӣ', fa: 'رودکی' },
@@ -68,3 +70,9 @@ export const POEMS = [
     src: { zh: 'Ganjoor：萨迪《蔷薇园》第一章第 10 则', tg: 'Ganjoor: Саъдӣ, «Гулистон», боби 1, ҳикояти 10', ru: 'Ganjoor: Саади, «Гулистан», глава 1, рассказ 10' },
   },
 ];
+
+POEMS.forEach((p, i) => {
+  const v = POEMS_T[i];
+  Object.assign(p, { uz: v.uz, ky: v.ky });
+  for (const f of ['poet', 'note', 'src']) p[f] = { ...p[f], ...v[f] };
+});

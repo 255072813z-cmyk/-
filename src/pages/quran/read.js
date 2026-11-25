@@ -13,6 +13,33 @@ import { surahName } from './index.js';
 import { esc } from '../../i18n/format.js';
 
 const SIZES = ['q-s0', 'q-s1', 'q-s2', 'q-s3'];
+
+/**
+ * 译文显示：长的括号（80 字以上）是译者的解说（乌兹别克语译本里很多），另起一行用小字；
+ * 短括号是译者补足语气的词，照常显示。只改显示，不改译文。返回 { html, note: 有没有解说 }
+ */
+export function trHTML(text) {
+  const s = String(text);
+  let html = '';
+  let last = 0;
+  let depth = 0;
+  let start = -1;
+  let note = false;
+  const cut = (a, b) => {
+    html += esc(s.slice(last, a).trimEnd()) + `<span class="ayah-note">${esc(s.slice(a, b))}</span>`;
+    last = b;
+    note = true;
+  };
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '(') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (s[i] === ')' && depth > 0 && --depth === 0 && i - start > 80) cut(start, i + 1);
+  }
+  // 解说一直写到这一节末尾、没有右括号的
+  if (depth > 0 && s.length - start > 80) cut(start, s.length);
+  return { html: html + esc(s.slice(last)), note };
+}
 const RIBBON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"/></svg>';
 const BOOK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.2C9.8 4.6 6.6 4.1 3.5 4.6v11.6c3.1-.4 6.3.1 8.5 1.7 2.2-1.6 5.4-2.1 8.5-1.7V4.6c-3.1-.5-6.3 0-8.5 1.6Z"/></svg>';
 
@@ -45,7 +72,7 @@ export function quranRead(ctx, n, startAyah) {
       ${prev ? `<a class="btn btn-ghost" href="#/quran/${prev.n}">← ${prev.n}. ${surahName(prev)}</a>` : '<span></span>'}
       ${next ? `<a class="btn btn-primary" href="#/quran/${next.n}">${next.n}. ${surahName(next)} →</a>` : ''}
     </nav>
-    <p class="note center">${t('qr.trNote', { who: t('qr.translator') })}</p>
+    <p class="note center">${t('qr.trNote', { who: t('qr.translator') })} <span data-q-notehint hidden>${t('qr.noteHint')}</span></p>
     <p class="src center">${t('qr.src')}</p>
   </div>`;
 
@@ -96,6 +123,9 @@ export function quranRead(ctx, n, startAyah) {
 
       loadSurah(s.n, getLang())
         .then(({ ar, tr }) => {
+          const trs = tr.map(trHTML);
+          const hint = el.querySelector('[data-q-notehint]');
+          if (hint) hint.hidden = !trs.some((x) => x.note);
           box.innerHTML = ar
             .map((a, i) => {
               const k = i + 1;
@@ -104,7 +134,7 @@ export function quranRead(ctx, n, startAyah) {
                 <div class="ayah-head"><span class="ayah-key">${s.n}:${k}</span>
                   <button type="button" class="ayah-mark ${on ? 'is-on' : ''}" data-mark="${k}" aria-pressed="${on}" aria-label="${t(on ? 'qr.unmark' : 'qr.mark', { n: `${s.n}:${k}` })}">${RIBBON}</button></div>
                 <p class="ayah-ar" lang="ar" dir="rtl">${esc(a)} <span class="ayah-no">﴿${arNum(k)}﴾</span></p>
-                <p class="ayah-tr">${esc(tr[i])}</p></article>`;
+                <p class="ayah-tr">${trs[i].html}</p></article>`;
             })
             .join('');
           box.querySelectorAll('[data-mark]').forEach((b) =>

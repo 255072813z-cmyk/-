@@ -115,11 +115,11 @@ export function settingsPage(ctx) {
 
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('settings.langTitle')}</h2>
-      <div class="segmented big" role="group" aria-label="${t('settings.langTitle')}">
+      <div class="segmented big lang-grid" role="group" aria-label="${t('settings.langTitle')}">
         ${Object.entries(LANGS)
           .map(
             ([code, l]) =>
-              `<button type="button" class="seg ${s.lang === code ? 'is-on' : ''}" data-lang="${code}" aria-pressed="${s.lang === code}" ${l.ready ? '' : 'disabled'}>${l.name}${l.ready ? '' : `<small class="seg-sub">${t('settings.langSoon')}</small>`}</button>`,
+              `<button type="button" class="seg ${s.lang === code ? 'is-on' : ''}" data-lang="${code}" lang="${l.locale}" aria-pressed="${s.lang === code}" ${l.ready ? '' : 'disabled'}>${l.name}${l.ready ? '' : `<small class="seg-sub">${t('settings.langSoon')}</small>`}</button>`,
           )
           .join('')}
       </div>

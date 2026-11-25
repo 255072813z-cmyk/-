@@ -365,6 +365,8 @@
 .ayah-tr { margin: 0; color: var(--ink-2); line-height: 1.6; }
 .ayah-tr b { color: var(--muted); font-weight: 600; font-size: 0.8rem; margin-right: 4px; font-variant-numeric: tabular-nums; }
 .no-tr .ayah-tr { display: none; }
+/* 译者的解说（长括号）：另起一行，小字、淡色，和译文本身分开 */
+.ayah-note { display: block; margin-top: var(--sp-2); padding-left: var(--sp-3); border-left: 2px solid var(--line); color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; }
 .q-s0 .ayah-ar { font-size: 1.4rem; }
 .q-s2 .ayah-ar { font-size: 2.05rem; }
 .q-s3 .ayah-ar { font-size: 2.5rem; line-height: 2.3; }

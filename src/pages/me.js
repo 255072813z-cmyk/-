@@ -11,7 +11,7 @@ import { earn } from '../ui/cheer.js';
 import { ICONS } from '../ui/art.js';
 import { allProgress, readOn } from '../core/quran.js';
 import { cityName } from '../i18n/format.js';
-import { t } from '../i18n/index.js';
+import { t, getLang } from '../i18n/index.js';
 
 export function mePage(ctx) {
   const today = ymdKey(ctx.sched.today);
@@ -55,7 +55,7 @@ export function mePage(ctx) {
     <details class="card fold">
       <summary>${t('me.privacy')}</summary>
       <p class="privacy">${t('privacy')}</p>
-      <a class="link-row" href="./privacy.html">${t('me.policy')} →</a>
+      <a class="link-row" href="./privacy.html#${getLang()}">${t('me.policy')} →</a>
     </details>
     <p class="note center">${t('app.name')} · ${t('me.version', { v: APP_VERSION })}</p>
   </div>`;

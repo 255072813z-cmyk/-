@@ -15,9 +15,10 @@
 // - 古努特（威特尔拜）：哈乃斐学派通行的念法，以"مُلْحِقٌ"结尾，不加"كله"
 //   （见《al-Bahr al-Ra'iq》；Askimam 教法答复 102830 引 al-Birjandi）
 // 译音为方便跟读的简化拼法（拉丁字母）；以后给塔吉克语、俄语用户加西里尔字母译音 trCyrl。
-// 每条的意思和出处按语言分字段：{ zh, tg, ru }，界面用 L() 取当前语言。
+// 每条的意思和出处按语言分字段：{ zh, tg, ru, uz, ky }，界面用 L() 取当前语言。
 import { SURAHS, RABBANA_201 } from './quran.js';
 import { RT, TASBIH_T, TASBIH_100_T, SURAH_NAME_T, SURAH_TRC, QURAN_MEANING, QURAN_NOTE } from './recitations-tr.js';
+import { RT_T, TASBIH_TT, TASBIH_100_TT, SURAH_NAME_TT, SURAH_TRC_UZ, QURAN_MEANING_T, QURAN_NOTE_T } from './uz-ky.js';
 
 export const R = {
   takbir: {
@@ -203,16 +204,24 @@ export function surah(n) {
   const s = SURAHS[n];
   return {
     number: n,
-    name: { ...SURAH_NAME[n], ...SURAH_NAME_T[n] },
+    name: { ...SURAH_NAME[n], ...SURAH_NAME_T[n], ...SURAH_NAME_TT[n] },
     nameAr: s.nameAr,
     ayahs: s.ayahs.map((a, i) => ({
       ...a,
       tg: QURAN_MEANING.tg[n][i],
       ru: QURAN_MEANING.ru[n][i],
+      uz: QURAN_MEANING_T.uz[n][i],
+      ky: QURAN_MEANING_T.ky[n][i],
       tr: SURAH_TR[n][i],
-      trc: { tg: SURAH_TRC.tg[n][i], ru: SURAH_TRC.ru[n][i] },
+      trc: { tg: SURAH_TRC.tg[n][i], ru: SURAH_TRC.ru[n][i], uz: SURAH_TRC_UZ[n][i] },
     })),
-    src: { zh: `《古兰经》第 ${n} 章，马坚译`, tg: `Қуръон, сураи ${n}; ${QURAN_NOTE.tg}`, ru: `Коран, сура ${n}; ${QURAN_NOTE.ru}` },
+    src: {
+      zh: `《古兰经》第 ${n} 章，马坚译`,
+      tg: `Қуръон, сураи ${n}; ${QURAN_NOTE.tg}`,
+      ru: `Коран, сура ${n}; ${QURAN_NOTE.ru}`,
+      uz: `Qurʼon, ${n}-sura; ${QURAN_NOTE_T.uz}`,
+      ky: `Куран, ${n}-сүрө; ${QURAN_NOTE_T.ky}`,
+    },
   };
 }
 
@@ -231,5 +240,23 @@ R.rabbana.src = { ...R.rabbana.src, tg: `${RT.rabbana.src.tg}; ${QURAN_NOTE.tg}`
 for (const x of TASBIH) Object.assign(x, TASBIH_T[x.key]);
 Object.assign(TASBIH_100, { tg: TASBIH_100_T.tg, ru: TASBIH_100_T.ru, trc: TASBIH_100_T.trc });
 TASBIH_100.src = { ...TASBIH_100.src, ...TASBIH_100_T.src };
+
+// 合并乌兹别克语、吉尔吉斯语（意思、出处、乌兹别克语拉丁字母译音），见 uz-ky.js
+for (const [k, v] of Object.entries(RT_T)) {
+  const r = R[k];
+  if (v.uz) Object.assign(r, { uz: v.uz, ky: v.ky });
+  r.src = { ...r.src, ...v.src };
+  r.trc = { ...r.trc, ...v.trc };
+}
+// 古兰经里的两条：意思用出版译本，出处注明译者
+Object.assign(R.basmala, { uz: QURAN_MEANING_T.uz[1][0], ky: QURAN_MEANING_T.ky[1][0] });
+Object.assign(R.rabbana, { uz: QURAN_MEANING_T.uz.rabbana, ky: QURAN_MEANING_T.ky.rabbana });
+for (const k of ['basmala', 'rabbana']) R[k].src = { ...R[k].src, uz: `${RT_T[k].src.uz}; ${QURAN_NOTE_T.uz}`, ky: `${RT_T[k].src.ky}; ${QURAN_NOTE_T.ky}` };
+for (const x of TASBIH) {
+  const v = TASBIH_TT[x.key];
+  Object.assign(x, { uz: v.uz, ky: v.ky, trc: { ...x.trc, ...v.trc } });
+}
+Object.assign(TASBIH_100, { uz: TASBIH_100_TT.uz, ky: TASBIH_100_TT.ky, trc: { ...TASBIH_100.trc, ...TASBIH_100_TT.trc } });
+TASBIH_100.src = { ...TASBIH_100.src, ...TASBIH_100_TT.src };
 
 export { SHORT_SURAHS } from './prayers.js';

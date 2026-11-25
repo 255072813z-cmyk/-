@@ -5,7 +5,9 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const geomagnetism = require('geomagnetism');
 
-// method：karachi = 晨礼、宵礼 18°（塔吉克斯坦）；dumrf = 晨礼 16°、宵礼 15°（俄罗斯穆斯林宗教管理局常用）
+// method：karachi = 晨礼、宵礼 18°（塔吉克斯坦；乌兹别克斯坦、吉尔吉斯斯坦也先用它——哈乃斐地区通行、宵礼偏稳妥，
+//           两国宗教局公布的算法没能核实，上线前请对照当地清真寺时间表，有差别就在管理后台发"官方时间校正"）；
+//         dumrf = 晨礼 16°、宵礼 15°（俄罗斯穆斯林宗教管理局常用）
 const LIST = [
   ['dushanbe', 'Dushanbe', 'TJ', 'karachi'],
   ['khujand', 'Khujand', 'TJ', 'karachi'],
@@ -19,6 +21,29 @@ const LIST = [
   ['konibodom', 'Konibodom', 'TJ', 'karachi'],
   ['panjakent', 'Panjakent', 'TJ', 'karachi'],
   ['khorog', 'Khorugh', 'TJ', 'karachi'],
+  ['tashkent', 'Tashkent', 'UZ', 'karachi'],
+  ['samarkand', 'Samarkand', 'UZ', 'karachi'],
+  ['bukhara', 'Bukhara', 'UZ', 'karachi'],
+  ['namangan', 'Namangan', 'UZ', 'karachi'],
+  ['andijan', 'Andijan', 'UZ', 'karachi'],
+  ['fergana', 'Fergana', 'UZ', 'karachi'],
+  ['kokand', 'Kokand', 'UZ', 'karachi'],
+  ['qarshi', 'Qarshi', 'UZ', 'karachi'],
+  ['termez', 'Termez', 'UZ', 'karachi'],
+  ['jizzakh', 'Jizzakh', 'UZ', 'karachi'],
+  ['navoiy', 'Navoiy', 'UZ', 'karachi'],
+  ['urgench', 'Urgench', 'UZ', 'karachi'],
+  ['nukus', 'Nukus', 'UZ', 'karachi'],
+  ['bishkek', 'Bishkek', 'KG', 'karachi'],
+  ['osh', 'Osh', 'KG', 'karachi'],
+  ['jalalabad', 'Dzhalal-Abad', 'KG', 'karachi'], // 地名库里英文名记成 Manas（州首府，坐标就是贾拉拉巴德市）
+  ['karakol', 'Karakol', 'KG', 'karachi'],
+  ['tokmok', 'Tokmok', 'KG', 'karachi'],
+  ['karabalta', 'Kara-Balta', 'KG', 'karachi'],
+  ['uzgen', 'Uzgen', 'KG', 'karachi'],
+  ['naryn', 'Naryn', 'KG', 'karachi'],
+  ['talas', 'Talas', 'KG', 'karachi'],
+  ['batken', 'Batken', 'KG', 'karachi'],
   ['moscow', 'Moscow', 'RU', 'dumrf'],
   ['spb', 'Saint Petersburg', 'RU', 'dumrf'],
   ['kazan', 'Kazan', 'RU', 'dumrf'],
@@ -89,7 +114,7 @@ writeFileSync(
   new URL('../src/content/cities-data.js', import.meta.url),
   `// 自动生成：npm run cities（scripts/build-cities.mjs）。请勿手改。
 // 坐标与时区：Open-Meteo 地名库（数据来自 GeoNames，geonameId 可查）；磁偏角：WMM-2025（2026 年 12 月）。
-// 塔吉克斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
+// 塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
 export const CITY_DATA = ${JSON.stringify(out, null, 1)};
 `,
 );

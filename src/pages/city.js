@@ -7,10 +7,11 @@ import { locate } from '../core/location.js';
 import { markFeature } from '../core/usage.js';
 import { ymdKey } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
-import { t } from '../i18n/index.js';
+import { t, getLang } from '../i18n/index.js';
 import { cityName, esc } from '../i18n/format.js';
 
-const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[\s\-·.]/g, '');
+// 搜索时不看大小写、空格、连字符和乌兹别克语的 ʻ ʼ '（Qoʻqon = Qo'qon = Qoqon）
+const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[\s\-·.ʻʼ\u0027‘’\u0060]/g, '');
 
 function backHref(ctx) {
   const p = ctx.prevPath;
@@ -25,6 +26,13 @@ function row(ctx, id, showTime) {
     ${showTime ? `<span class="city-item-time" data-tz="${c.utcOffset}">${t('city.nowTime', { time: fmtHM(ctx.now, c.utcOffset) })}</span>` : ''}
     ${on ? `<span class="prow-badge">${t('city.current')}</span>` : ''}
   </button></li>`;
+}
+
+// 分组顺序：当前城市所在的国家排第一；乌兹别克语、吉尔吉斯语界面再把本国排在前面
+const HOME_CC = { uz: 'UZ', ky: 'KG', tg: 'TJ' };
+function orderedGroups(ctx) {
+  const rank = (g) => (g.cc === ctx.city.cc ? 0 : g.cc === HOME_CC[getLang()] ? 1 : 2);
+  return [...CITY_GROUPS].sort((a, b) => rank(a) - rank(b));
 }
 
 export function cityPage(ctx) {
@@ -44,7 +52,7 @@ export function cityPage(ctx) {
       <input type="search" data-search placeholder="${t('city.search')}" autocomplete="off" enterkeyhint="search">
     </label>
 
-    ${CITY_GROUPS.map((g) => {
+    ${orderedGroups(ctx).map((g) => {
       const tz = new Set(g.ids.map((id) => CITIES[id].utcOffset));
       const one = tz.size === 1 ? [...tz][0] : null;
       return `<section class="card city-group" data-group>

@@ -114,25 +114,28 @@ test('红线：没有支付、登录、统计、Cookie', () => {
   }
 });
 
-test('古兰经全文：114 章 6236 节，三种译文节数一致、没有空的、没有乱码和网页标记', async () => {
+test('古兰经全文：114 章 6236 节，各语言译文节数一致、没有空的、没有乱码和网页标记', async () => {
   const { SURAHS, PARTS } = await import('../src/content/quran/meta.js');
   assert.equal(SURAHS.length, 114);
   assert.equal(SURAHS.reduce((s, x) => s + x.ayahs, 0), 6236);
   const bare = (s) => s.replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, '').replace(/ٱ/g, 'ا');
   const data = {};
-  for (const l of ['ar', 'tg', 'ru', 'zh']) {
+  for (const l of ['ar', 'tg', 'ru', 'zh', 'uz', 'ky']) {
     data[l] = {};
     for (let p = 0; p < PARTS; p++) Object.assign(data[l], (await import(`../src/content/quran/${l}-${p}.js`)).default);
   }
   for (const s of SURAHS) {
-    assert.ok(s.zh && s.ru && s.tg && s.ar, `第 ${s.n} 章缺章名`);
+    assert.ok(s.zh && s.ru && s.tg && s.uz && s.ky && s.ar, `第 ${s.n} 章缺章名`);
     for (const l of Object.keys(data)) {
       const a = data[l][s.n];
       assert.equal(a.length, s.ayahs, `${l} 第 ${s.n} 章节数`);
       for (const [i, x] of a.entries()) {
         assert.ok(typeof x === 'string' && x.trim(), `${l} ${s.n}:${i + 1} 是空的`);
         assert.ok(!/[<>&]/.test(x), `${l} ${s.n}:${i + 1} 有网页标记`);
-        if (l === 'tg' || l === 'ru') assert.ok(!/[А-яӣӯқғҳҷЁё]\d|\d[А-яӣӯқғҳҷЁё]|[\^*\]]/.test(x), `${l} ${s.n}:${i + 1} 有扫描错误：${x.slice(0, 40)}`);
+        if (l === 'tg' || l === 'ru' || l === 'ky') assert.ok(!/[А-яӣӯқғҳҷЁёңөү]\d|\d[А-яӣӯқғҳҷЁёңөү]|[\^*\[\]°©<>=\\]/.test(x), `${l} ${s.n}:${i + 1} 有扫描错误：${x.slice(0, 40)}`);
+        // 吉尔吉斯语：不能混进拉丁字母、阿拉伯字母；乌兹别克语（拉丁字母）：不能剩下西里尔字母
+        if (l === 'ky') assert.ok(!/[A-Za-z\u0600-\u06ff]/.test(x), `ky ${s.n}:${i + 1} 混进了其他字母：${x.slice(0, 40)}`);
+        if (l === 'uz') assert.ok(!/[\u0400-\u04ff¬]/.test(x), `uz ${s.n}:${i + 1} 还有西里尔字母：${x.slice(0, 40)}`);
       }
     }
   }

@@ -147,6 +147,8 @@ main:focus { outline: none; }
 .seg.is-on { background: var(--card); color: var(--green); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
 .segmented.big { display: flex; }
 .segmented.big .seg { flex: 1; }
+/* 语言选择：五种语言，窄屏自动排成两行（每个按钮至少 92 像素宽，名字不截断） */
+.segmented.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
 
 details.fold summary, details.method summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
 details.fold summary { font-family: var(--font-zh-serif); font-size: 1.1rem; }

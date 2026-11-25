@@ -1,0 +1,3 @@
+/* Ilova nomi va ruxsatlar izohi (qoralama, tekshiriladi) */
+"CFBundleDisplayName" = "Joynamoz";
+"NSLocationWhenInUseUsageDescription" = "Faqat «Mening joylashuvim»ni bosganingizda ishlatiladi — namoz vaqti va qiblani turgan joyingiz uchun hisoblash uchun. Joylashuv telefonda qoladi va hech qayerga yuborilmaydi.";

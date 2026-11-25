@@ -87,9 +87,9 @@ test('词条的占位符写法正确（{名字} 成对出现）', () => {
   }
 });
 
-test('塔吉克语、俄语：词条和中文一一对应，占位符一致，单复数写全', async () => {
+test('塔吉克语、俄语、乌兹别克语、吉尔吉斯语：词条和中文一一对应，占位符一致，单复数写全', async () => {
   const ph = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
-  for (const l of ['tg', 'ru']) {
+  for (const l of ['tg', 'ru', 'uz', 'ky']) {
     const d = (await import(`../src/i18n/${l}.js`)).default;
     const missing = Object.keys(zh).filter((k) => d[k] == null);
     const extra = Object.keys(d).filter((k) => zh[k] == null);
@@ -104,12 +104,14 @@ test('塔吉克语、俄语：词条和中文一一对应，占位符一致，�
       if (typeof v === 'object') for (const f of ['one', 'few', 'many', 'other']) if (l === 'ru' && v[f] == null) bad.push(`${k} 缺 ${f}`);
       for (const f of forms) if (norm(ph(f)) !== want) bad.push(`${k}: ${f}`);
       if (/[一-鿿]/.test(forms.join(''))) bad.push(`${k} 里还有中文`);
+      // 乌兹别克语用拉丁字母：不应混进西里尔字母
+      if (l === 'uz' && /[А-Яа-яЁё]/.test(forms.join(''))) bad.push(`${k} 里有西里尔字母`);
     }
     assert.deepEqual(bad, [], `${l} 的问题`);
   }
 });
 
-test('内容：念词、经文、诗歌都有塔吉克语和俄语（意思、出处、西里尔字母译音）', async () => {
+test('内容：念词、经文、圣训、诗歌都有各语言的意思、出处、译音', async () => {
   const { R, TASBIH, TASBIH_100, surah } = await import('../src/content/recitations.js');
   const { SHORT_SURAHS } = await import('../src/content/prayers.js');
   const miss = [];
@@ -134,11 +136,34 @@ test('内容：念词、经文、诗歌都有塔吉克语和俄语（意思、�
       need(a.trc, `surah${n}.${i + 1}.trc`);
     });
   }
+  // 乌兹别克语、吉尔吉斯语：意思和出处；乌兹别克语还有本地拉丁字母译音
+  const UK = ['uz', 'ky'];
+  for (const [k, r] of Object.entries(R)) {
+    need(r, k, UK);
+    need(r.src, k + '.src', UK);
+    need(r.trc, k + '.trc', ['uz']);
+  }
+  for (const x of TASBIH) need(x, x.key, UK);
+  need(TASBIH_100, 'tasbih100', UK);
+  for (const n of [1, ...SHORT_SURAHS.map((x) => x.surah || x)]) {
+    const s = surah(n);
+    need(s.name, `surah${n}.name`, UK);
+    need(s.src, `surah${n}.src`, UK);
+    s.ayahs.forEach((a, i) => need(a, `surah${n}.${i + 1}`, UK));
+  }
+  const { HADITH } = await import('../src/content/hadith.js');
+  for (const [k, h] of Object.entries(HADITH)) {
+    need(h, k, ['tg', 'ru', 'uz', 'ky']);
+    need(h.src, k + '.src', ['tg', 'ru', 'uz', 'ky']);
+  }
   for (const [i, p] of POEMS.entries()) {
     need(p.poet, `poem${i}.poet`);
     need(p.note, `poem${i}.note`);
     need(p.src, `poem${i}.src`);
-    if (!Array.isArray(p.ru) || p.ru.length !== p.zh.length) miss.push(`poem${i}.ru 行数`);
+    for (const l of ['ru', 'uz', 'ky']) if (!Array.isArray(p[l]) || p[l].length !== p.zh.length) miss.push(`poem${i}.${l} 行数`);
+    need(p.poet, `poem${i}.poet`, UK);
+    need(p.note, `poem${i}.note`, UK);
+    need(p.src, `poem${i}.src`, UK);
   }
   assert.deepEqual(miss, []);
 });

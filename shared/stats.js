@@ -10,7 +10,7 @@
 
 export const PLATFORMS = ['web', 'android', 'ios'];
 export const SOURCES = ['share', 'direct', 'app'];
-export const STAT_LANGS = ['zh', 'tg', 'ru'];
+export const STAT_LANGS = ['zh', 'tg', 'ru', 'uz', 'ky'];
 export const FEATURES = ['home', 'pray', 'wudu', 'guide', 'qibla', 'tasbih', 'ramadan', 'tarawih', 'quran', 'masjid', 'hall', 'courtyard', 'poetry', 'settings', 'city', 'here'];
 export const MAX_ERR_KINDS = 200; // 每天最多记多少种不同的错误
 

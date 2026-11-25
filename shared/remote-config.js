@@ -6,9 +6,11 @@
 //
 // 本文件不能 import 任何东西（管理后台会原样加载它）。
 
-export const LANGS = ['zh', 'tg', 'ru'];
+export const LANGS = ['zh', 'tg', 'ru', 'uz', 'ky'];
 export const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 export const FLAGS = ['masjid', 'presence', 'weather', 'stats'];
+// 伊斯兰历按国家校正（各国宗教局公布的日期可能不同）
+export const COUNTRIES = ['TJ', 'UZ', 'KG', 'RU'];
 export const LIMITS = { offsetMin: 30, hijri: 2, text: 400, notices: 3, body: 65536 };
 // 应用商店链接只允许这些网址
 export const STORE_HOSTS = { android: ['play.google.com', 'galaxystore.samsung.com', 'apps.samsung.com'], ios: ['apps.apple.com'] };
@@ -18,7 +20,7 @@ const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 export const isVersion = (s) => typeof s === 'string' && /^\d{1,4}(\.\d{1,4}){0,2}$/.test(s);
 const int = (v, lim) => (Number.isInteger(v) && Math.abs(v) <= lim ? v : null);
 
-/** 多语言文字 {zh, tg, ru}：去掉空白和控制字符，限制长度 */
+/** 多语言文字 {zh, tg, ru, uz, ky}：去掉空白和控制字符，限制长度 */
 function text(o) {
   if (!isObj(o)) return null;
   const out = {};
@@ -78,7 +80,7 @@ export function sanitizeConfig(raw, cityIds = []) {
   }
 
   // 伊斯兰历：按当地宣布整体调整 ±2 天（塔吉克斯坦、俄罗斯分别设置），必须写明来源
-  for (const cc of ['TJ', 'RU']) {
+  for (const cc of COUNTRIES) {
     const h = isObj(raw.hijri) ? raw.hijri[cc] : null;
     if (!isObj(h)) continue;
     const a = int(h.adjust, LIMITS.hijri);

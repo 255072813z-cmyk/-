@@ -10,13 +10,16 @@ import { addDays, fmtHM, setDisplayOffset } from '../src/core/clock.js';
 
 const ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-test('28 个城市：塔吉克斯坦 12 个、俄罗斯 16 个，编号不重复', () => {
-  assert.equal(CITY_DATA.length, 28);
-  assert.equal(new Set(CITY_DATA.map((c) => c.id)).size, 28);
-  assert.equal(CITY_DATA.filter((c) => c.cc === 'TJ').length, 12);
+test('51 个城市：塔吉克斯坦 12 个、乌兹别克斯坦 13 个、吉尔吉斯斯坦 10 个、俄罗斯 16 个，编号不重复', () => {
+  assert.equal(CITY_DATA.length, 51);
+  assert.equal(new Set(CITY_DATA.map((c) => c.id)).size, 51);
+  const n = (cc) => CITY_DATA.filter((c) => c.cc === cc).length;
+  assert.deepEqual([n('TJ'), n('UZ'), n('KG'), n('RU')], [12, 13, 10, 16]);
   for (const c of CITY_DATA) {
     assert.ok(Number.isFinite(c.lat) && Number.isFinite(c.lon) && Number.isFinite(c.utcOffset) && Number.isFinite(c.declination), c.id);
-    if (c.cc === 'TJ') assert.equal(c.utcOffset, 5, c.id);
+    // 塔吉克斯坦、乌兹别克斯坦 UTC+5，吉尔吉斯斯坦 UTC+6（都没有夏令时）
+    if (c.cc === 'TJ' || c.cc === 'UZ') assert.equal(c.utcOffset, 5, c.id);
+    if (c.cc === 'KG') assert.equal(c.utcOffset, 6, c.id);
   }
 });
 

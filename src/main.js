@@ -83,6 +83,7 @@ function applyPrefs() {
   const s = ctx.settings;
   document.documentElement.dataset.fs = String(s.fontScale || 0);
   // 塔吉克语、俄语：加载西里尔字母字体（中文界面不下载，首屏更快）
+  // 西里尔字体：按字符范围下载，页面上真有西里尔字母才下载（乌兹别克语界面是拉丁字母，但诗歌夜的塔吉克文要用）
   if (s.lang !== 'zh') import('./styles/cyrillic.js').catch(() => {});
   setLang(s.lang);
   if (getLang() !== s.lang) {

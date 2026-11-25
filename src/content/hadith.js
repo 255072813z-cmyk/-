@@ -2,7 +2,11 @@
 // 意思为本站意译（中文、塔吉克语、俄语）；塔吉克语、俄语为初稿，待审定。
 // 编号：布哈里按通行编号（Fath al-Bari），提尔密济按通行编号。不收穆斯林圣训集（数据源编号体系不同，避免引错）。
 //
+// 乌兹别克语、吉尔吉斯语的意思和出处在 uz-ky.js（HADITH_T），文件末尾合并进来。
+//
 // HOME_PRAYER：雨夜、寒夜"在住处礼拜"的依据（天气卡片用）；DAILY：首页"今日圣训"按日期轮换。
+import { HADITH_T } from './uz-ky.js';
+
 export const HADITH = {
   b1: {
     ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
@@ -181,6 +185,11 @@ export const HADITH = {
     }
   }
 };
+
+for (const [k, v] of Object.entries(HADITH_T)) {
+  Object.assign(HADITH[k], { uz: v.uz, ky: v.ky });
+  HADITH[k].src = { ...HADITH[k].src, ...v.src };
+}
 
 export const DAILY = ["b1", "b10", "b13", "b39", "b69", "b528", "b2996", "b5027", "b6011", "b6114", "b6407", "b6464", "b7405", "t1956"];
 

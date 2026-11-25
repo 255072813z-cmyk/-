@@ -92,12 +92,14 @@
           var list = navigator.languages || [navigator.language || ''];
           for (var i = 0; i < list.length && !lang; i++) {
             var p = String(list[i] || '').toLowerCase().slice(0, 2);
-            if (p === 'tg' || p === 'ru' || p === 'zh') lang = p;
+            if (p === 'tg' || p === 'ru' || p === 'uz' || p === 'ky' || p === 'zh') lang = p;
           }
         }
         var T = {
           tg: ['Ҷойнамоз', 'Вақти намоз · Намоз дар хона', 'Бепул · бе бақайдгирӣ · бе интернет ҳам кор мекунад'],
           ru: ['Джойнамоз', 'Время намаза · Намаз дома', 'Бесплатно · без регистрации · работает без интернета'],
+          uz: ['Joynamoz', 'Namoz vaqti · Uyda namoz', 'Bepul · roʻyxatdan oʻtishsiz · internetsiz ham ishlaydi'],
+          ky: ['Жайнамаз', 'Намаз убактысы · Үйдө намаз', 'Акысыз · катталбай · интернетсиз да иштейт'],
           zh: ['拜毯', '礼拜时间 · 在家礼拜', '免费 · 不用注册 · 没网也能用']
         };
         var x = T[lang] || T['__DEFAULT_LANG__'] || T.tg;

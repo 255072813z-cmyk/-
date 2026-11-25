@@ -58,7 +58,7 @@ export function normalizeSettings(saved) {
   out.hijriAdjust = int(Number(s.hijriAdjust), -2, 2, 0);
   // 老版本里调过伊斯兰历的用户，视为手动调整
   out.hijriManual = typeof s.hijriManual === 'boolean' ? s.hijriManual : out.hijriAdjust !== 0;
-  out.lang = ['zh', 'tg', 'ru'].includes(s.lang) ? s.lang : guessLang(); // 第一次打开：按手机语言
+  out.lang = ['zh', 'tg', 'ru', 'uz', 'ky'].includes(s.lang) ? s.lang : guessLang(); // 第一次打开：按手机语言
   return out;
 }
 
