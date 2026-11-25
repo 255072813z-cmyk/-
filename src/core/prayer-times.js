@@ -14,9 +14,10 @@ import { localParts, addDays } from './clock.js';
 export const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 
-// 算法：karachi（塔吉克斯坦）晨礼、宵礼 18°；dumrf（俄罗斯）晨礼 16°、宵礼 15°。
+// 算法：karachi（塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦）晨礼、宵礼 18°；dumrf（俄罗斯）晨礼 16°、宵礼 15°。
+// 用户也可以在设置里自己选（mwl 穆斯林世界联盟 18°/17°、isna 15°/15°），选和自己清真寺最接近的。
 // 纬度 48° 以上的夏天，太阳整夜到不了这个角度，按"夜晚七分之一"规则估算（adhan 推荐做法），页面会提示以当地清真寺为准。
-export const METHODS = { karachi: { fajr: 18, isha: 18 }, dumrf: { fajr: 16, isha: 15 } };
+export const METHODS = { karachi: { fajr: 18, isha: 18 }, mwl: { fajr: 18, isha: 17 }, dumrf: { fajr: 16, isha: 15 }, isna: { fajr: 15, isha: 15 } };
 
 /** 太阳赤纬（度，近似公式，误差约 0.5°，只用来判断"太阳整夜到不到规定角度"） */
 function solarDeclination(ymd) {
@@ -37,7 +38,7 @@ export function highLatitudeDay(city, ymd) {
 
 function params(city, ymd) {
   const m = METHODS[city.method] || METHODS.karachi;
-  const p = city.method === 'dumrf' ? CalculationMethod.Other() : CalculationMethod.Karachi();
+  const p = city.method === 'karachi' || !METHODS[city.method] ? CalculationMethod.Karachi() : CalculationMethod.Other();
   p.fajrAngle = m.fajr;
   p.ishaAngle = m.isha;
   p.methodAdjustments = { ...p.methodAdjustments, dhuhr: 1 }; // 晌礼在太阳过中天后 +1 分钟

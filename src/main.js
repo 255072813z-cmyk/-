@@ -9,7 +9,7 @@ import './styles/spaces.css';
 import './styles/motion.css';
 
 import { getSettings, onSettings } from './core/settings.js';
-import { getCity } from './core/cities.js';
+import { getCity, withMethod } from './core/cities.js';
 import { now, setDisplayOffset, ymdKey } from './core/clock.js';
 import { schedule } from './core/prayer-times.js';
 import { toHijri } from './core/hijri.js';
@@ -46,7 +46,7 @@ export const ctx = {
   notifyState: null, // 手机应用里提醒的状态（权限、排了几条）
   resync: () => resync(),
   settings: getSettings(),
-  city: getCity(getSettings().city, getSettings().loc),
+  city: withMethod(getCity(getSettings().city, getSettings().loc), getSettings().method),
   now: now(),
   sched: null,
   weather: undefined, // undefined 还在查；null 查不到；对象为天气
@@ -118,6 +118,17 @@ function updateShell() {
   set('.topbar-settings', 'aria-label', t('nav.settings'));
 }
 
+// 已经在某个标签的首页时再点一次这个标签：平滑回到顶部（和常见应用一样）
+function onTabTap(e) {
+  const a = e.target.closest('a.tab');
+  if (!a || a.getAttribute('href') !== (location.hash || '#/')) return;
+  e.preventDefault();
+  const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' });
+}
+tabbar.addEventListener('click', onTabTap);
+topnav.addEventListener('click', onTabTap);
+
 function renderNav(path, fresh = false) {
   const html = TABS.map(
     (tab) =>
@@ -131,11 +142,41 @@ function renderNav(path, fresh = false) {
 let page = null;
 let lastPath = null;
 
+// 返回时回到原来的位置：每一步浏览记录（history.state.i）记住离开时滚到哪里；
+// 按返回（浏览器、手机的返回键）回到它时恢复，点链接进的新页面从顶上开始。
+const scrollMemo = new Map();
+let navCount = 0;
+let curEntry = 0;
+let pendingY = 0; // 按需下载的页面要等真内容出来再恢复
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+function entryOf() {
+  const st = history.state;
+  if (st && Number.isInteger(st.i)) {
+    navCount = Math.max(navCount, st.i);
+    return { i: st.i, back: true };
+  }
+  navCount++;
+  try {
+    history.replaceState({ i: navCount }, '');
+  } catch (e) {
+    /* 极少数环境不允许 */
+  }
+  return { i: navCount, back: false };
+}
+
 let lastDir = 'up';
 function render(opts) {
   const path = (location.hash || '#/').replace(/^#\/?/, '');
   const changed = path !== lastPath;
-  if (changed) ctx.prevPath = lastPath;
+  let entry = null;
+  if (changed) {
+    ctx.prevPath = lastPath;
+    if (lastPath != null) scrollMemo.set(curEntry, window.scrollY);
+    entry = entryOf();
+    curEntry = entry.i;
+    // 新打开的页面先回到顶上，页面自己要滚到某处（如时间表的今天）时不会被盖掉
+    if (!entry.back) window.scrollTo(0, 0);
+  }
   if (page && page.unmount) page.unmount();
   refreshSchedule();
   page = resolveRoute(path, ctx);
@@ -148,12 +189,20 @@ function render(opts) {
     markUse(path, todayKey());
     const from = lastPath;
     lastPath = path;
-    window.scrollTo(0, 0);
+    // 返回到看过的页面：回到离开时的位置（按需下载的页面等真内容出来再滚）
+    pendingY = entry.back ? scrollMemo.get(entry.i) || 0 : 0;
+    if (entry.back) window.scrollTo(0, pendingY);
+    if (pendingY && Math.abs(window.scrollY - pendingY) < 2) pendingY = 0;
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
     // 换页动效：换标签按标签的方向；同一个标签里往里走从右边、返回从左边
     const depth = (p) => (p ? p.split('/').filter(Boolean).length : 0);
     const dir = from == null ? 'up' : prevTab !== tab ? (tab > prevTab ? 'right' : 'left') : depth(path) > depth(from) ? 'right' : depth(path) < depth(from) ? 'left' : 'up';
     lastDir = dir;
+  }
+  // 按需下载的页面：真内容出来后再回到原来的位置
+  if (!changed && pendingY && opts && opts.enter) {
+    window.scrollTo(0, pendingY);
+    pendingY = 0;
   }
   if (changed || (opts && opts.enter)) {
     const sp = document.getElementById('splash');
@@ -178,7 +227,7 @@ async function loadWeather() {
 }
 
 onSettings((s) => {
-  const next = getCity(s.city, s.loc);
+  const next = withMethod(getCity(s.city, s.loc), s.method);
   const cityChanged = next.id !== ctx.city.id || next.lat !== ctx.city.lat || next.lon !== ctx.city.lon;
   ctx.settings = s;
   ctx.city = next;
@@ -197,6 +246,8 @@ function resync() {
     ctx.notifyState = r;
     if (page && page.onNotify) page.onNotify(r);
   });
+  // 安卓桌面小组件：交给它未来 7 天的时间（见 core/widget.js）
+  import('./core/widget.js').then((m) => m.updateWidget(ctx)).catch(() => {});
 }
 
 document.querySelector('.brand-mark').innerHTML = star8(26);

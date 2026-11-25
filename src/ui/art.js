@@ -225,6 +225,8 @@ export function kaaba(size = 28) {
 
 /** 底部导航用的小图标 */
 export const ICONS = {
+  // 分享（向上的箭头出盒子）
+  share: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></svg>',
   home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11Q4 6 12 3Q20 6 20 11V20H14V15Q14 13 12 13Q10 13 10 15V20Z"/></svg>',
   pray: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="5" r="2.2"/><path d="M6 9Q9 8 12 9L13 15L19 15Q21 15 21 17V20H4L5 15Z"/></svg>',
   masjid: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21V13Q7 8 12 6Q17 8 17 13V21H14V17Q14 15 12 15Q10 15 10 17V21Z"/><rect x="2.5" y="9" width="2.6" height="12"/><rect x="18.9" y="9" width="2.6" height="12"/><path d="M12 6V3M2.5 9L3.8 6L5.1 9ZM18.9 9L20.2 6L21.5 9Z" stroke-width="1.2"/></svg>',

@@ -3,11 +3,11 @@
 import { t } from '../i18n/index.js';
 import { dateLine, hijriLine, durHTML, cityName, remoteText, esc } from '../i18n/format.js';
 import { fmtHM, splitDuration, addDays } from '../core/clock.js';
-import { PRAYERS, skyPhase, highLatitudeDay } from '../core/prayer-times.js';
+import { PRAYERS, skyPhase, highLatitudeDay, METHODS } from '../core/prayer-times.js';
 import { toHijri } from '../core/hijri.js';
 import { setSettings } from '../core/settings.js';
 import { PRAYER_INFO } from '../content/prayers.js';
-import { mosqueScene, star8 } from '../ui/art.js';
+import { mosqueScene, star8, ICONS } from '../ui/art.js';
 import { isHeavyRain } from '../core/weather.js';
 import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
@@ -20,7 +20,7 @@ import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
 import { streakCard } from '../ui/streak-ui.js';
 import { softToast } from '../core/reminder.js';
 import { setCount } from '../ui/motion.js';
-import { shareText, shareLink } from '../core/share.js';
+import { shareText, shareImage, shareLink } from '../core/share.js';
 import { L } from '../i18n/index.js';
 
 function prayerName(p, sched) {
@@ -120,22 +120,37 @@ function fillHadith(root, ctx) {
 function bindShare(root, ctx) {
   const say = (btn, r) => {
     const m = btn.parentElement.querySelector('[data-share-msg]');
-    if (m) m.textContent = r === 'copied' ? t('times.copied') : r === 'failed' ? t('times.shareFailed') : '';
+    if (m) m.textContent = r === 'copied' ? t('times.copied') : r === 'saved' ? t('times.saved') : r === 'failed' ? t('times.shareFailed') : '';
   };
   const link = () => shareLink(ctx.remote);
+  const day = ymdKey(ctx.sched.today);
+  // 今天的礼拜时间做成图片分享（群里最常转发的就是这个）
+  const img = root.querySelector('[data-share-img]');
+  if (img)
+    img.addEventListener('click', async () => {
+      img.disabled = true;
+      try {
+        const { drawTimesCard } = await import('../ui/share-card.js');
+        const cv = await drawTimesCard(ctx);
+        say(img, await shareImage(cv, `namaz-${day}.png`, `${t('app.name')}${link() ? ' ' + link() : ''}`, day));
+      } catch (e) {
+        say(img, 'failed');
+      }
+      img.disabled = false;
+    });
   const h = root.querySelector('[data-share-hadith]');
   if (h)
     h.addEventListener('click', async () => {
       const d = (await loadHadith()).dailyHadith(ctx.sched.today);
       const text = `${L(d)}\n(${L(d.src)})\n\n${t('share.from', { app: t('app.name') })}${link() ? ' ' + link() : ''}`;
-      say(h, await shareText(text));
+      say(h, await shareText(text, day));
     });
   const a = root.querySelector('[data-share-app]');
   if (a)
     a.addEventListener('click', async () => {
-      const r = await shareText(t('share.msg', { app: t('app.name'), link: link() }).trim());
+      const r = await shareText(t('share.msg', { app: t('app.name'), link: link() }).trim(), day);
       say(a, r);
-      if (r === 'shared' || r === 'copied') import('../ui/cheer.js').then((m) => m.earn('share', ymdKey(ctx.sched.today))).catch(() => {});
+      if (r === 'shared' || r === 'copied') import('../ui/cheer.js').then((m) => m.earn('share', day)).catch(() => {});
     });
 }
 
@@ -259,7 +274,8 @@ function dateHTML(ctx) {
 export function homePage(ctx) {
   const s = ctx.sched;
   const phase = skyPhase(s.times, ctx.now);
-  const ru = ctx.city.method === 'dumrf';
+  const ru = ctx.city.cc === 'RU';
+  const mine = ctx.settings.method !== 'auto' && METHODS[ctx.settings.method]; // 用户自己选了算法
   const highLat = highLatitudeDay(ctx.city, s.today);
   const adjusted = Object.values(ctx.settings.offsets).some((v) => Number(v));
   const html = `
@@ -286,13 +302,14 @@ export function homePage(ctx) {
       }</p>
       <details class="method">
         <summary>${t('home.howCalc')}</summary>
-        <p>${t(ru ? 'home.methodRu' : 'home.method')}</p>
+        <p>${mine ? t('home.methodAngles', mine) : t(ru ? 'home.methodRu' : 'home.method')}</p>
         <p>${t(ru ? 'home.methodLocalRu' : 'home.methodLocal')}</p>
         ${Math.abs(ctx.city.lat) >= 45 ? `<p>${t('home.methodHighLat')}</p>` : ''}
         <p>${t('home.offline')}</p>
       </details>
       <a class="link-row" href="#/settings">${adjusted ? t('home.adjusted') : t('home.adjust')} →</a>
       <a class="link-row" href="#/times">${t('home.monthTable')} →</a>
+      <div class="share-img-row"><button type="button" class="btn btn-ghost btn-sm" data-share-img>${ICONS.share}${t('times.shareImage')}</button><p class="note" data-share-msg aria-live="polite"></p></div>
     </section>
     </div>
     <div class="col col-b">

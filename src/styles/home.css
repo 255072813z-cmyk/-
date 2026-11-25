@@ -297,3 +297,9 @@ details.method summary { color: var(--green); }
   .prow-check.is-pop::after { display: none; }
   .confetti { display: none; }
 }
+
+/* 把今天的时间做成图片分享 */
+.share-img-row { margin-top: var(--sp-2); }
+.share-img-row .btn { gap: var(--sp-2); }
+.share-img-row .btn svg, .step-btns .btn svg { width: 18px; height: 18px; flex: none; }
+.share-img-row .note:empty { display: none; }

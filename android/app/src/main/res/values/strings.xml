@@ -4,4 +4,7 @@
     <string name="title_activity_main">Ҷойнамоз</string>
     <string name="package_name">com.onlinemasjid.app</string>
     <string name="custom_url_scheme">com.onlinemasjid.app</string>
+    <string name="widget_label">Вақти намоз</string>
+    <string name="widget_empty">Барномаро як бор кушоед — дар ин ҷо вақти намоз пайдо мешавад</string>
+    <string name="widget_desc">Намози навбатӣ ва вақтҳои панҷ намози имрӯз</string>
 </resources>

@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">拜毯</string>
     <string name="title_activity_main">拜毯</string>
+    <string name="widget_label">礼拜时间</string>
+    <string name="widget_empty">打开一次应用，这里就会显示礼拜时间</string>
+    <string name="widget_desc">下一番礼拜和今天五番的时间</string>
 </resources>

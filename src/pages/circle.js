@@ -151,7 +151,7 @@ export function circlePage(ctx) {
         const st = cachedState();
         const link = shareLink(ctx.remote);
         const withCode = link ? link + (link.includes('?') ? '&' : '?') + 'circle=' + st.code : '';
-        const r = await shareText(t('circle.inviteMsg', { app: t('app.name'), code: st.code, link: withCode }).trim());
+        const r = await shareText(t('circle.inviteMsg', { app: t('app.name'), code: st.code, link: withCode }).trim(), ymdKey(ctx.sched.today));
         if (r === 'copied') msg(t('times.copied'));
         if (r === 'shared' || r === 'copied') earn('share', ymdKey(ctx.sched.today));
       });

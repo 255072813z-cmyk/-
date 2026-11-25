@@ -151,8 +151,8 @@ const hit = (body, origin = SITE, ip = '10.1.0.1') =>
   get('/hit', asIp(ip, { method: 'POST', headers: { 'content-type': 'text/plain', Origin: origin }, body: typeof body === 'string' ? body : JSON.stringify(body) }));
 const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
 const yesterday = new Date(Date.now() + 5 * 3600e3 - 864e5).toISOString().slice(0, 10);
-ok('合法上报 204', (await hit({ v: '1.0.0', p: 'android', l: 'tg', c: 'moscow', f: ['qibla', 'tasbih', 'evil'], fd: yesterday })).status === 204);
-ok('手机应用来源也接受', (await hit({ v: '1.0.0', p: 'ios', l: 'ru', c: 'dushanbe' }, 'capacitor://localhost')).status === 204);
+ok('合法上报 204', (await hit({ v: '1.0.0', p: 'android', l: 'tg', c: 'moscow', f: ['qibla', 'tasbih', 'quran', 'qada', 'share', 'evil'], fd: yesterday })).status === 204);
+ok('手机应用来源也接受（吉尔吉斯语、比什凯克）', (await hit({ v: '1.0.0', p: 'ios', l: 'ky', c: 'bishkek' }, 'capacitor://localhost')).status === 204);
 ok('别的网站来源 403', (await hit({ v: '1.0.0' }, 'https://evil.example')).status === 403);
 ok('乱码 400', (await hit('not json')).status === 400);
 ok('超过 1KB 400', (await hit({ v: '1.0.0', pad: 'x'.repeat(2000) })).status === 400);
@@ -162,8 +162,8 @@ const stats = await (await get('/admin/api/stats?days=7', { headers: adminH() })
 const d0 = stats.days[today] || {};
 const d1 = stats.days[yesterday] || {};
 ok('今天 2 台设备', d0.n === 2, JSON.stringify(d0));
-ok('平台、语言、城市分开计数', d0.p.android === 1 && d0.p.ios === 1 && d0.l.tg === 1 && d0.c.moscow === 1);
-ok('功能记在前一天，不认识的功能丢掉', d1.fn === 1 && d1.f.qibla === 1 && d1.f.evil === undefined, JSON.stringify(d1));
+ok('平台、语言、城市分开计数（新语言、新城市也认）', d0.p.android === 1 && d0.p.ios === 1 && d0.l.tg === 1 && d0.l.ky === 1 && d0.c.moscow === 1 && d0.c.bishkek === 1, JSON.stringify([d0.l, d0.c]));
+ok('功能记在前一天（读古兰经、补礼、分享这些新功能也记），不认识的功能丢掉', d1.fn === 1 && d1.f.qibla === 1 && d1.f.quran === 1 && d1.f.qada === 1 && d1.f.share === 1 && d1.f.evil === undefined, JSON.stringify(d1));
 ok('错误信息去掉控制字符', Object.keys(d0.e || {}).some((k) => k.endsWith('TypeError: x is undefined')));
 ok('统计里没有 IP 等个人信息', !JSON.stringify(stats).includes('10.1.0'));
 ok('统计附带此刻在线人数', stats.rooms && stats.rooms.hall.online === 41);

@@ -510,6 +510,24 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.click('[data-unmark="112:2"]');
   const left = await page.locator('[data-q-marks]:visible').count();
   check('目录页删掉书签后，书签卡片收起', left === 0);
+  // 丝滑：目录往下翻到第 60 章、点进去、按返回，回到原来的位置；再点一次"古兰经"标签，平滑回到顶部
+  await open('#/quran');
+  await page.waitForSelector('.sura');
+  await page.locator('.sura[href="#/quran/60"]').scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 1);
+  await page.waitForTimeout(300);
+  const yBefore = await page.evaluate(() => window.scrollY);
+  await page.click('.sura[href="#/quran/60"]');
+  await page.waitForSelector('.ayah');
+  const yIn = await page.evaluate(() => window.scrollY);
+  await page.goBack();
+  await page.waitForSelector('.sura[href="#/quran/60"]');
+  await page.waitForTimeout(400);
+  const yBack = await page.evaluate(() => window.scrollY);
+  await page.click('.tabbar a[href="#/quran"]');
+  await page.waitForFunction(() => window.scrollY < 2, null, { timeout: 4000 }).catch(() => {});
+  const yTop = await page.evaluate(() => window.scrollY);
+  check('返回目录时回到原来翻到的位置；新打开的一章从顶上开始；再点当前标签回到顶部', yBefore > 1500 && yIn < 50 && Math.abs(yBack - yBefore) < 60 && yTop < 5 && page.url().endsWith('#/quran'), `离开 ${Math.round(yBefore)}，进去 ${Math.round(yIn)}，返回 ${Math.round(yBack)}，点标签 ${Math.round(yTop)}`);
   check('古兰经以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }
@@ -782,6 +800,61 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const n = (await page.textContent('[data-cele-n]').catch(() => '')) || '';
   const badges = (await page.locator('.cele-badges li').allTextContents()).join('、');
   check('减少动态效果时：解锁"半个月"仍有庆祝卡片，但没有彩屑，数字直接显示 15；同时得到的徽章列在下面', cele === 1 && confetti === 0 && n === '15' && /第一步/.test(badges), `彩屑 ${confetti}，数字 ${n}，徽章：${badges}`);
+  await ctx.close();
+}
+
+// 12. 设置：选计算方法（宵礼时间跟着变）；备份导出、换"新手机"导入、恢复后记录都在
+{
+  const ctx = await browser.newContext({ ...phone, acceptDownloads: true });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  const q = '?weather=clear&now=2026-12-18T09:20';
+  await page.goto(base + q);
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('masjid:settings', JSON.stringify({ city: 'tashkent', cityConfirmed: true, lang: 'zh' }));
+    localStorage.setItem('masjid:qada', JSON.stringify({ fajr: 4, dhuhr: 0, asr: 0, maghrib: 0, isha: 1, witr: 0 }));
+    localStorage.setItem('masjid:qprog', JSON.stringify({ 1: 7 }));
+  });
+  await page.goto(base + q + '&r=1#/');
+  await page.waitForSelector('.prow');
+  const isha = async () => (await page.locator('.prow').filter({ hasText: '宵礼' }).locator('.prow-time').textContent()).trim();
+  const before = await isha();
+  await page.goto(base + q + '&r=2#/settings');
+  await page.waitForSelector('[data-method]');
+  await page.click('[data-method="mwl"]');
+  await page.goto(base + q + '&r=3#/');
+  await page.waitForSelector('.prow');
+  const after = await isha();
+  await page.click('details.method summary');
+  const how = await page.textContent('details.method');
+  check('设置里选"穆斯林世界联盟 18°/17°"：宵礼提前几分钟，"怎么算的"写明 18° 和 17°', after < before && /18°/.test(how) && /17°/.test(how), `宵礼 ${before} → ${after}`);
+  // 导出备份
+  await page.goto(base + q + '&r=4#/settings');
+  await page.waitForSelector('[data-backup-out]');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-backup-out]')]);
+  const file = await dl.path();
+  // "新手机"：清空后导入
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(base + q + '&r=5#/settings');
+  await page.waitForSelector('[data-backup-in]', { state: 'attached' });
+  await page.setInputFiles('[data-backup-in]', file);
+  await page.waitForSelector('[data-backup-confirm]:not([hidden])');
+  const sum = await page.textContent('[data-backup-sum]');
+  await page.click('[data-backup-yes]');
+  await page.waitForTimeout(1500);
+  await page.waitForSelector('.page');
+  const restored = await page.evaluate(() => [JSON.parse(localStorage.getItem('masjid:qada') || '{}').fajr, JSON.parse(localStorage.getItem('masjid:settings') || '{}').method]);
+  check('备份：导出文件，清空后导入，先说明备份里有什么，确认后补礼次数和设置都恢复', /补礼还剩 5 番/.test(sum) && /读过 7 节/.test(sum) && restored[0] === 4 && restored[1] === 'mwl', `${sum.trim()}；恢复后 ${restored.join(' ')}`);
+  // 不是备份的文件
+  await page.goto(base + q + '&r=6#/settings');
+  await page.waitForSelector('[data-backup-in]', { state: 'attached' });
+  await page.setInputFiles('[data-backup-in]', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}') });
+  await page.waitForTimeout(300);
+  const bad = await page.textContent('[data-backup-msg]');
+  check('选错文件时说明"不是本应用的备份"，什么也不改', /不是本应用的备份/.test(bad), bad);
+  check('设置、备份以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }
 

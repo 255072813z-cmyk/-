@@ -11,15 +11,23 @@
 export const PLATFORMS = ['web', 'android', 'ios'];
 export const SOURCES = ['share', 'direct', 'app'];
 export const STAT_LANGS = ['zh', 'tg', 'ru', 'uz', 'ky'];
-export const FEATURES = ['home', 'pray', 'wudu', 'guide', 'qibla', 'tasbih', 'ramadan', 'tarawih', 'quran', 'masjid', 'hall', 'courtyard', 'poetry', 'settings', 'city', 'here'];
+// 功能名（只记"那天用没用"）：每个页面都要有一个，tests/remote.test.mjs 会逐个页面检查；管理后台 server/admin/app.js 里要有中文名
+//   quran = 读古兰经（目录、读一章）；qplan = 30 天通读计划；share = 分享了应用、圣训或时间表；here = 用了"我的位置"
+export const FEATURES = [
+  'home', 'pray', 'wudu', 'guide', 'qibla', 'tasbih', 'qada',
+  'ramadan', 'tarawih', 'quran', 'qplan',
+  'masjid', 'hall', 'courtyard', 'poetry',
+  'me', 'streak', 'circle', 'times', 'settings', 'city', 'here', 'share',
+];
 export const MAX_ERR_KINDS = 200; // 每天最多记多少种不同的错误
 
 /** 地址（# 后面）→ 功能名 */
 export function featureOf(path) {
   const p = String(path || '').replace(/^#?\/?/, '').split('/');
   if (!p[0]) return 'home';
-  if (p[0] === 'pray') return p[1] === 'wudu' ? 'wudu' : p[1] === 'guide' ? (p[2] === 'tarawih' ? 'tarawih' : 'guide') : 'pray';
-  if (p[0] === 'ramadan') return p[1] === 'tarawih' ? 'tarawih' : p[1] === 'quran' ? 'quran' : 'ramadan';
+  if (p[0] === 'pray') return p[1] === 'wudu' ? 'wudu' : p[1] === 'qada' ? 'qada' : p[1] === 'guide' ? (p[2] === 'tarawih' ? 'tarawih' : 'guide') : 'pray';
+  if (p[0] === 'ramadan') return p[1] === 'tarawih' ? 'tarawih' : p[1] === 'quran' ? 'qplan' : 'ramadan';
+  if (p[0] === 'quran') return p[1] === 'plan' ? 'qplan' : 'quran';
   if (p[0] === 'masjid') return ['hall', 'courtyard', 'poetry'].includes(p[1]) ? p[1] : 'masjid';
   return FEATURES.includes(p[0]) ? p[0] : null;
 }

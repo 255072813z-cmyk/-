@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">Joynamoz</string>
     <string name="title_activity_main">Joynamoz</string>
+    <string name="widget_label">Namoz vaqti</string>
+    <string name="widget_empty">Ilovani bir marta oching — bu yerda namoz vaqtlari chiqadi</string>
+    <string name="widget_desc">Keyingi namoz va bugungi besh vaqt</string>
 </resources>

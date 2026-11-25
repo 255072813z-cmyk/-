@@ -135,7 +135,10 @@ test('统计：地址对应功能名', () => {
   assert.equal(featureOf(''), 'home');
   assert.equal(featureOf('pray/guide/fajr/fard'), 'guide');
   assert.equal(featureOf('pray/guide/tarawih'), 'tarawih');
-  assert.equal(featureOf('ramadan/quran'), 'quran');
+  assert.equal(featureOf('ramadan/quran'), 'qplan');
+  assert.equal(featureOf('quran/plan'), 'qplan');
+  assert.equal(featureOf('quran/36/12'), 'quran');
+  assert.equal(featureOf('pray/qada'), 'qada');
   assert.equal(featureOf('masjid/hall'), 'hall');
   assert.equal(featureOf('qibla'), 'qibla');
   assert.equal(featureOf('nonsense'), null);
@@ -249,4 +252,18 @@ test('安全：网页有内容安全策略，只运行自己的脚本，不连�
 test('安全：发布时间统一格式，旧配置判断可靠', () => {
   const a = sanitizeConfig({ v: 1, issued: '2026-11-24' }, IDS);
   assert.equal(a.issued, '2026-11-24T00:00:00.000Z');
+});
+
+test('每个页面都有统计用的功能名，管理后台都有中文名', async () => {
+  const { readFileSync } = await import('node:fs');
+  // 路由表里的每一种地址（src/router.js 开头的注释列出了全部页面）
+  const router = readFileSync(new URL('../src/router.js', import.meta.url), 'utf8');
+  const paths = [...router.matchAll(/^\/\/\s+#\/(\S*)/gm)].map((m) => m[1].replace(/\[.*$/, '').replace(/\/章.*$/, '/1'));
+  assert.ok(paths.length >= 20, '路由注释 ' + paths.length);
+  const missing = paths.filter((p) => !featureOf(p));
+  assert.deepEqual(missing, [], '这些页面没有功能名');
+  const admin = readFileSync(new URL('../server/admin/app.js', import.meta.url), 'utf8');
+  const block = admin.slice(admin.indexOf('  f: {'), admin.indexOf('},', admin.indexOf('  f: {')));
+  const noLabel = FEATURES.filter((f) => !new RegExp('\\b' + f + ':').test(block));
+  assert.deepEqual(noLabel, [], '管理后台缺中文名');
 });

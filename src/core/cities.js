@@ -45,6 +45,11 @@ export function getCity(id, loc) {
   return CITIES[id] || CITIES[DEFAULT_CITY];
 }
 
+/** 用户在设置里自己选了算法（不是"自动"）时，用选的算法代替城市默认的 */
+export function withMethod(city, method) {
+  return method && method !== 'auto' && method !== city.method ? { ...city, method } : city;
+}
+
 // 第一次打开时按手机的时区猜城市（不读位置）：在莫斯科打工的人一打开就是莫斯科的时间。
 const TZ_CITY = {
   'Asia/Dushanbe': 'dushanbe',

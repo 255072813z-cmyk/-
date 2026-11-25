@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">Жайнамаз</string>
     <string name="title_activity_main">Жайнамаз</string>
+    <string name="widget_label">Намаз убактысы</string>
+    <string name="widget_empty">Тиркемени бир жолу ачыңыз — бул жерде намаз убактысы чыгат</string>
+    <string name="widget_desc">Кийинки намаз жана бүгүнкү беш убак</string>
 </resources>

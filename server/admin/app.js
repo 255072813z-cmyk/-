@@ -18,7 +18,12 @@ const LABELS = {
   ad: { 1: '1 天', 2: '2 天', 3: '3 天', 4: '4 天', 5: '5 天', 6: '6 天', 7: '7 天（每天）' },
   fs: { 0: '标准', 1: '大', 2: '特大' },
   l: { zh: '中文', tg: '塔吉克语', ru: '俄语', uz: '乌兹别克语', ky: '吉尔吉斯语' },
-  f: { home: '首页', pray: '在家礼拜', wudu: '小净', guide: '跟着做礼拜', qibla: '朝向', tasbih: '赞念', ramadan: '斋月', tarawih: '间歇拜', quran: '古兰经 30 天', masjid: '清真寺入口', hall: '礼拜大殿', courtyard: '庭院', poetry: '诗歌夜', settings: '设置', city: '选择城市', here: '用我的位置' },
+  f: {
+    home: '首页', pray: '礼拜标签', wudu: '小净', guide: '跟着做礼拜', qibla: '朝向', tasbih: '赞念', qada: '补礼记录',
+    ramadan: '封斋/斋月', tarawih: '间歇拜', quran: '读古兰经', qplan: '古兰经 30 天计划',
+    masjid: '清真寺入口', hall: '礼拜大殿', courtyard: '庭院', poetry: '诗歌夜',
+    me: '我的', streak: '坚持与徽章', circle: '亲友圈', times: '月时间表', settings: '设置', city: '选择城市', here: '用我的位置', share: '分享',
+  },
   flags: { masjid: '清真寺三个空间', presence: '在线人数', weather: '天气提示', stats: '匿名统计' },
 };
 const label = (k, v) => (k === 'c' ? CITY[v] || (v === 'other' ? '其他/未知' : v) : (LABELS[k] && LABELS[k][v]) || v);

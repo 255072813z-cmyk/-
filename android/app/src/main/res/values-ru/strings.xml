@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">Джойнамоз</string>
     <string name="title_activity_main">Джойнамоз</string>
+    <string name="widget_label">Время намаза</string>
+    <string name="widget_empty">Откройте приложение один раз — здесь появится время намаза</string>
+    <string name="widget_desc">Следующий намаз и время пяти намазов на сегодня</string>
 </resources>

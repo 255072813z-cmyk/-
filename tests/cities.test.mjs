@@ -110,3 +110,38 @@ test('天气：正常查询能返回数据；"我的位置"只发最近城市的
     globalThis.fetch = orig;
   }
 });
+
+test('设置里选算法：角度越小晨礼越晚、宵礼越早；"自动"用城市默认的', async () => {
+  const { withMethod, getCity } = await import('../src/core/cities.js');
+  const { timesFor } = await import('../src/core/prayer-times.js');
+  const day = { y: 2026, m: 12, d: 18, wd: 5 };
+  const base = getCity('tashkent');
+  assert.equal(withMethod(base, 'auto'), base);
+  const T = (m) => timesFor(withMethod(base, m), day);
+  const k = T('karachi');
+  const mwl = T('mwl');
+  const isna = T('isna');
+  assert.equal(+mwl.fajr, +k.fajr); // 都是 18°
+  assert.ok(mwl.isha < k.isha); // 17° 比 18° 早
+  assert.ok(isna.fajr > k.fajr && isna.isha < mwl.isha);
+  assert.equal(+isna.dhuhr, +k.dhuhr); // 晌礼、晡礼、昏礼不受影响
+  assert.equal(+isna.asr, +k.asr);
+});
+
+test('桌面小组件的数据：7 天、每天五番按时间先后、星期五标出来、提示文字是安卓的格式写法', async () => {
+  const { widgetData } = await import('../src/core/widget.js');
+  const { schedule } = await import('../src/core/prayer-times.js');
+  const city = getCity('bishkek');
+  const now = new Date('2026-12-18T10:00:00Z');
+  const ctx = { city, offsets: {}, sched: schedule(city, now, {}), now };
+  const w = widgetData(ctx);
+  assert.equal(w.days.length, 7);
+  assert.equal(w.off, 360); // 比什凯克 UTC+6
+  assert.equal(w.days[0].fri, true); // 2026-12-18 是星期五
+  for (const d of w.days) {
+    const ts = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) => d.t[p]);
+    assert.deepEqual([...ts].sort((a, b) => a - b), ts);
+  }
+  assert.match(w.labels.leftHM, /%1\$d.*%2\$d/);
+  assert.match(w.labels.leftM, /%1\$d/);
+});

@@ -64,7 +64,7 @@ export function mePage(ctx) {
     mount(el) {
       const a = el.querySelector('[data-share-app]');
       a.addEventListener('click', async () => {
-        const r = await shareText(t('share.msg', { app: t('app.name'), link: shareLink(ctx.remote) }).trim());
+        const r = await shareText(t('share.msg', { app: t('app.name'), link: shareLink(ctx.remote) }).trim(), today);
         const m = el.querySelector('[data-share-msg]');
         if (m) m.textContent = r === 'copied' ? t('times.copied') : r === 'failed' ? t('times.shareFailed') : '';
         if (r === 'shared' || r === 'copied') earn('share', today);

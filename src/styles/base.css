@@ -287,3 +287,17 @@ ul.dots li::marker { color: var(--gold); }
 .btn-xs { min-height: 34px; padding: 4px 10px; font-size: 0.82rem; border-radius: 999px; }
 .cm-remove { color: var(--danger); }
 .circle-inbox { border-color: var(--green); background: var(--green-soft); }
+
+/* 设置：计算方法（单选列表） */
+.method-list { display: grid; gap: var(--sp-2); }
+.method-opt { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 52px; padding: var(--sp-2) var(--sp-4); border: var(--hairline); border-radius: var(--r-md); background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out); }
+.method-opt b { font-weight: 600; font-size: var(--fs-md); }
+.method-opt small { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.method-opt.is-on { border-color: var(--green); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--green); }
+.method-opt.is-on small { color: var(--green); font-weight: 700; }
+
+/* 设置：备份与恢复 */
+.file-btn { cursor: pointer; }
+.backup-confirm { margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md); background: var(--bg-2); }
+.backup-confirm p { margin: 0 0 var(--sp-2); }
+.backup-card .note:empty { display: none; }

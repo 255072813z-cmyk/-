@@ -5,7 +5,7 @@ import { fmtHM, addDays, ymdKey } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t } from '../i18n/index.js';
 import { cityName } from '../i18n/format.js';
-import { shareText } from '../core/share.js';
+import { shareText, shareImage, shareLink } from '../core/share.js';
 
 const daysIn = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
 
@@ -57,7 +57,8 @@ export function timesPage(ctx, offset = 0) {
       <p class="note">${ctx.official ? t('times.noteOfficial') : t('times.note')}</p>
     </section>
     <div class="step-btns no-print">
-      <button type="button" class="btn btn-primary" data-share-today>${t('times.shareToday')}</button>
+      <button type="button" class="btn btn-primary" data-share-img>${ICONS.share}${t('times.shareImage')}</button>
+      <button type="button" class="btn btn-ghost" data-share-today>${t('times.shareToday')}</button>
       <button type="button" class="btn btn-ghost" data-print>${t('times.print')}</button>
     </div>
     <p class="note center" data-share-msg aria-live="polite"></p>
@@ -66,9 +67,20 @@ export function timesPage(ctx, offset = 0) {
     html,
     mount(el) {
       const msg = el.querySelector('[data-share-msg]');
-      el.querySelector('[data-share-today]').addEventListener('click', async () => {
-        const r = await shareText(dayText(ctx, today));
-        msg.textContent = r === 'copied' ? t('times.copied') : r === 'failed' ? t('times.shareFailed') : '';
+      const say = (r) => (msg.textContent = r === 'copied' ? t('times.copied') : r === 'saved' ? t('times.saved') : r === 'failed' ? t('times.shareFailed') : '');
+      const day = ymdKey(today);
+      el.querySelector('[data-share-today]').addEventListener('click', async () => say(await shareText(dayText(ctx, today), day)));
+      const img = el.querySelector('[data-share-img]');
+      img.addEventListener('click', async () => {
+        img.disabled = true;
+        try {
+          const { drawTimesCard } = await import('../ui/share-card.js');
+          const link = shareLink(ctx.remote);
+          say(await shareImage(await drawTimesCard(ctx), `namaz-${day}.png`, `${t('app.name')}${link ? ' ' + link : ''}`, day));
+        } catch (e) {
+          say('failed');
+        }
+        img.disabled = false;
       });
       el.querySelector('[data-print]').addEventListener('click', () => window.print());
       const cur = el.querySelector('.is-today');

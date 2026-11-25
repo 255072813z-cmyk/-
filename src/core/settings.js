@@ -55,6 +55,8 @@ export function normalizeSettings(saved) {
     jumuah: bool(n.jumuah, true),
     streak: bool(n.streak, true),
   };
+  // 计算方法：auto = 按城市所在国家；也可以自己选（见 prayer-times.js 的 METHODS）
+  out.method = ['auto', 'karachi', 'mwl', 'dumrf', 'isna'].includes(s.method) ? s.method : 'auto';
   out.hijriAdjust = int(Number(s.hijriAdjust), -2, 2, 0);
   // 老版本里调过伊斯兰历的用户，视为手动调整
   out.hijriManual = typeof s.hijriManual === 'boolean' ? s.hijriManual : out.hijriAdjust !== 0;

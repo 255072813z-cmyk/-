@@ -1,17 +1,21 @@
 // 设置：字号、提醒、按清真寺微调时间、伊斯兰历调整、语言。全部只存在本机。
 import { getSettings, setSettings } from '../core/settings.js';
 import { unlockAudio, playChime } from '../core/chime.js';
-import { timesFor, PRAYERS } from '../core/prayer-times.js';
+import { timesFor, PRAYERS, METHODS } from '../core/prayer-times.js';
 import { fmtHM } from '../core/clock.js';
 import { toHijri } from '../core/hijri.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t, LANGS } from '../i18n/index.js';
 import { hijriLine, cityName, remoteText } from '../i18n/format.js';
 import { effectiveOffsets } from '../core/remote.js';
+import { getCity } from '../core/cities.js';
+import { shareFile } from '../core/share.js';
+import { ymdKey } from '../core/clock.js';
 import { isNativeApp, notifyStatus, askNotifyPermission, openExactSetting, testNotification } from '../core/notify.js';
 
 const signed = (v) => (v > 0 ? '+' : '') + v;
 
+// 计算方法："自动"那一行显示这个城市默认算法的角度
 export function settingsPage(ctx) {
   const s = getSettings();
   // "计算"一栏：天文计算 + 官方校正（如果后台发布了）；用户的微调叠加在上面
@@ -88,6 +92,21 @@ export function settingsPage(ctx) {
     </section>
 
     <section class="card">
+      <h2 class="card-title">${star8(18)} ${t('settings.methodTitle')}</h2>
+      <div class="method-list" role="radiogroup" aria-label="${t('settings.methodTitle')}">
+        ${['auto', ...Object.keys(METHODS)]
+          .map((m) => {
+            const on = (s.method || 'auto') === m;
+            const a = m === 'auto' ? METHODS[getCity(s.city, s.loc).method] || METHODS.karachi : METHODS[m];
+            const sub = `${a.fajr}° / ${a.isha}°`;
+            return `<button type="button" class="method-opt ${on ? 'is-on' : ''}" role="radio" aria-checked="${on}" data-method="${m}"><b>${t('settings.method.' + m)}</b><small>${sub}</small></button>`;
+          })
+          .join('')}
+      </div>
+      <p class="note">${t('settings.methodNote')}</p>
+    </section>
+
+    <section class="card">
       <h2 class="card-title">${star8(18)} ${t('settings.hijriTitle')}</h2>
       <p>${t('settings.today')} ${hijriLine(h)}</p>
       <p class="note">${t('settings.hijriNote', { method: t(h.source === 'umalqura' ? 'settings.umalqura' : 'settings.tabular') })}</p>
@@ -111,6 +130,21 @@ export function settingsPage(ctx) {
       <h2 class="card-title">${star8(18)} ${t('settings.statsTitle')}</h2>
       <label class="switch-row"><span><b>${t('settings.stats')}</b><small>${t('settings.statsSub')}</small></span>
         <input type="checkbox" data-stats ${s.stats !== false ? 'checked' : ''}></label>
+    </section>
+
+    <section class="card backup-card">
+      <h2 class="card-title">${star8(18)} ${t('settings.backupTitle')}</h2>
+      <p class="note">${t('settings.backupText')}</p>
+      <div class="step-btns">
+        <button type="button" class="btn btn-ghost btn-sm" data-backup-out>${t('settings.backupExport')}</button>
+        <label class="btn btn-ghost btn-sm file-btn">${t('settings.backupImport')}<input type="file" accept="application/json,.json" data-backup-in hidden></label>
+      </div>
+      <div class="backup-confirm" data-backup-confirm hidden>
+        <p data-backup-sum></p>
+        <div class="step-btns"><button type="button" class="btn btn-primary btn-sm" data-backup-yes>${t('settings.backupConfirm')}</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-backup-no>${t('settings.backupCancel')}</button></div>
+      </div>
+      <p class="note" data-backup-msg aria-live="polite"></p>
     </section>
 
     <section class="card">
@@ -180,9 +214,11 @@ export function settingsPage(ctx) {
       el.querySelector('[data-adj-reset]').addEventListener('click', () =>
         setSettings({ offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 } }),
       );
+      el.querySelectorAll('[data-method]').forEach((b) => b.addEventListener('click', () => setSettings({ method: b.dataset.method })));
       el.querySelectorAll('[data-hj]').forEach((b) => b.addEventListener('click', () => setSettings({ hijriAdjust: +b.dataset.hj, hijriManual: true })));
       el.querySelector('[data-hj-auto]').addEventListener('click', () => setSettings({ hijriAdjust: 0, hijriManual: false }));
       el.querySelector('[data-stats]').addEventListener('change', (e) => setSettings({ stats: e.target.checked }));
+      bindBackup(el, ctx);
       el.querySelectorAll('[data-lang]:not([disabled])').forEach((b) => b.addEventListener('click', () => setSettings({ lang: b.dataset.lang })));
     },
   };
@@ -217,4 +253,45 @@ async function drawStatus(el, r) {
       await openExactSetting();
       setSettings({});
     });
+}
+
+// 备份与恢复（见 core/backup.js）：导出一个文件；导入时先说清楚备份里有什么，确认后再替换
+function bindBackup(el, ctx) {
+  const msg = el.querySelector('[data-backup-msg]');
+  const box = el.querySelector('[data-backup-confirm]');
+  const say = (k, v) => (msg.textContent = k ? t(k, v) : '');
+  el.querySelector('[data-backup-out]').addEventListener('click', async () => {
+    const { makeBackup } = await import('../core/backup.js');
+    const day = ymdKey(ctx.sched.today);
+    const r = await shareFile(JSON.stringify(makeBackup()), `joynamoz-backup-${day}.json`);
+    say(r === 'shared' || r === 'saved' ? 'settings.backupSaved' : r === 'failed' ? 'times.shareFailed' : '');
+  });
+  let pending = null;
+  const input = el.querySelector('[data-backup-in]');
+  input.addEventListener('change', async () => {
+    const f = input.files && input.files[0];
+    input.value = '';
+    box.hidden = true;
+    pending = null;
+    if (!f) return;
+    const { parseBackup } = await import('../core/backup.js');
+    const r = parseBackup(await f.text().catch(() => ''));
+    if (r.error) return say(r.error === 'newer' ? 'settings.backupNewer' : 'settings.backupErr');
+    pending = r.data;
+    say('');
+    el.querySelector('[data-backup-sum]').textContent = t('settings.backupFound', { date: r.created || '—', ...r.summary });
+    box.hidden = false;
+  });
+  el.querySelector('[data-backup-no]').addEventListener('click', () => {
+    box.hidden = true;
+    pending = null;
+  });
+  el.querySelector('[data-backup-yes]').addEventListener('click', async () => {
+    if (!pending) return;
+    const { applyBackup } = await import('../core/backup.js');
+    applyBackup(pending);
+    say('settings.backupDone');
+    // 所有模块重新读一遍记录（提醒也会按恢复的设置重新排）
+    setTimeout(() => location.reload(), 600);
+  });
 }
