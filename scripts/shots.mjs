@@ -132,7 +132,7 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
       problems++;
       console.log(`横向溢出 ${vname}/${name}: ${overflow}px`);
     }
-    await page.screenshot({ path: join(outDir, `${LANG ? LANG + '-' : ''}${vname}-${name}.png`), fullPage: true });
+    await page.screenshot({ path: join(outDir, `${LANG ? LANG + '-' : ''}${vname}-${name}.png`), fullPage: true, animations: 'disabled' });
   }
   if (errors.length) {
     problems++;

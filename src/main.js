@@ -6,12 +6,14 @@ import './styles/base.css';
 import './styles/home.css';
 import './styles/pray.css';
 import './styles/spaces.css';
+import './styles/motion.css';
 
 import { getSettings, onSettings } from './core/settings.js';
 import { getCity } from './core/cities.js';
 import { now, setDisplayOffset, ymdKey } from './core/clock.js';
 import { schedule } from './core/prayer-times.js';
 import { toHijri } from './core/hijri.js';
+import { enterPage } from './ui/motion.js';
 import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
 import { isNativeApp, syncNotifications, listenNotificationTaps } from './core/notify.js';
@@ -53,7 +55,7 @@ export const ctx = {
   official: null, // 官方校正的来源
   hijriAdjust: 0,
   hijriOfficial: null,
-  rerender: () => render(),
+  rerender: (opts) => render(opts),
 };
 
 // 由设置和远程配置算出实际使用的时间校正、伊斯兰历调整
@@ -114,10 +116,10 @@ function updateShell() {
   set('.topbar-settings', 'aria-label', t('nav.settings'));
 }
 
-function renderNav(path) {
+function renderNav(path, fresh = false) {
   const html = TABS.map(
     (tab) =>
-      `<a href="${tab.href}" class="tab ${tab.match(path) ? 'is-active' : ''}" ${tab.match(path) ? 'aria-current="page"' : ''}>
+      `<a href="${tab.href}" class="tab ${tab.match(path) ? 'is-active' : ''} ${fresh && tab.match(path) ? 'is-new' : ''}" ${tab.match(path) ? 'aria-current="page"' : ''}>
         <span class="tab-icon">${ICONS[tab.icon]}</span><span class="tab-label">${t(typeof tab.key === 'function' ? tab.key() : tab.key)}</span></a>`,
   ).join('');
   tabbar.innerHTML = html;
@@ -127,7 +129,8 @@ function renderNav(path) {
 let page = null;
 let lastPath = null;
 
-function render() {
+let lastDir = 'up';
+function render(opts) {
   const path = (location.hash || '#/').replace(/^#\/?/, '');
   const changed = path !== lastPath;
   if (changed) ctx.prevPath = lastPath;
@@ -136,12 +139,23 @@ function render() {
   page = resolveRoute(path, ctx);
   app.innerHTML = page.html;
   if (page.mount) page.mount(app);
-  renderNav(path);
+  const prevTab = lastPath == null ? -1 : TABS.findIndex((tab) => tab.match(lastPath));
+  const tab = TABS.findIndex((x) => x.match(path));
+  renderNav(path, changed && prevTab !== tab && lastPath != null);
   if (changed) {
     markUse(path, todayKey());
+    const from = lastPath;
     lastPath = path;
     window.scrollTo(0, 0);
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    // 换页动效：换标签按标签的方向；同一个标签里往里走从右边、返回从左边
+    const depth = (p) => (p ? p.split('/').filter(Boolean).length : 0);
+    const dir = from == null ? 'up' : prevTab !== tab ? (tab > prevTab ? 'right' : 'left') : depth(path) > depth(from) ? 'right' : depth(path) < depth(from) ? 'left' : 'up';
+    lastDir = dir;
+  }
+  if (changed || (opts && opts.enter)) {
+    const sp = document.getElementById('splash');
+    if (!sp || sp.classList.contains('is-out')) enterPage(app, lastDir); // 启动画面还在时，等它退开再浮现
   }
 }
 
@@ -191,8 +205,10 @@ function hideSplash() {
   const el = document.getElementById('splash');
   if (!el || !window.__splash) return;
   const out = () => {
+    if (el.classList.contains('is-out')) return;
     el.classList.add('is-out');
-    setTimeout(() => el.remove(), 500);
+    enterPage(app, 'up'); // 启动画面退开时，首页内容依次浮现
+    setTimeout(() => el.remove(), 650);
   };
   el.addEventListener('click', out, { once: true });
   setTimeout(out, Math.max(0, window.__splash.min - (Date.now() - window.__splash.t0)));

@@ -10,6 +10,7 @@ import { toHijri } from '../../core/hijri.js';
 import { forbiddenDay, sunnahReasons, upcomingSunnah, fastLog, setFast, oweDays, addOwe, ramadanMissed, importMissed, fastPlan, togglePlan, yearCount } from '../../core/fasting.js';
 import { award } from '../../core/badges.js';
 import { cheer } from '../../ui/cheer.js';
+import { setCount } from '../../ui/motion.js';
 import { ramadanScene, star8 } from '../../ui/art.js';
 import { t } from '../../i18n/index.js';
 import { dateShort, durHTML, cityName, hijriLine } from '../../i18n/format.js';
@@ -233,7 +234,7 @@ export function fastingPage(ctx, st) {
         return;
       }
       const node = document.querySelector('[data-vf-count]');
-      if (node) node.innerHTML = durHTML(ff.target - c.now, true);
+      setCount(node, durHTML(ff.target - c.now, true));
     },
   };
 }

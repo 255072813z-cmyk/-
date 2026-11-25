@@ -55,12 +55,12 @@ const loaded = {};
 function lazy(name, ctx, args) {
   if (loaded[name]) return loaded[name](ctx, ...args);
   return {
-    html: `<div class="page"><p class="loading">${t('common.loading')}</p></div>`,
+    html: `<div class="page"><div class="loading skel" role="status" aria-label="${t('common.loading')}"><i class="tall"></i><i></i><i></i><i></i></div></div>`,
     mount() {
       LAZY[name]()
         .then((fn) => {
           loaded[name] = fn;
-          ctx.rerender();
+          ctx.rerender({ enter: true }); // 真正的页面出来时再放一次"依次浮现"
         })
         .catch(() => {
           const el = document.querySelector('.loading');
@@ -126,7 +126,8 @@ function closedPage() {
 /** 空闲时预先下载常用页面，之后断网也能打开 */
 export function prefetchPages() {
   const go = () => {
-    Object.values(LAZY).forEach((f) => f().catch(() => {}));
+    // 空闲时把各页面先下载好；下好的直接记下，以后点进去不再先闪一下"加载中"
+    Object.entries(LAZY).forEach(([k, f]) => f().then((fn) => (loaded[k] = loaded[k] || fn)).catch(() => {}));
     import('./content/region-map.js').catch(() => {}); // 朝向页的地图
     import('./content/wide-map.js').catch(() => {});
     import('./content/hadith.js').catch(() => {}); // 今日圣训、在家礼拜的依据

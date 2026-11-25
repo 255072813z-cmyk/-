@@ -10,6 +10,7 @@ import { ymdKey } from '../../core/clock.js';
 import { cheer } from '../../ui/cheer.js';
 import { onFast } from '../../core/badges.js';
 import { fastingPage } from './fasting.js';
+import { setCount } from '../../ui/motion.js';
 import { dateShort, durHTML, cityName } from '../../i18n/format.js';
 
 const dur = (ms) => durHTML(ms, true);
@@ -204,7 +205,7 @@ export function ramadanPage(ctx) {
         c.rerender();
         return;
       }
-      node.innerHTML = dur(ff.target - c.now);
+      setCount(node, dur(ff.target - c.now));
     },
   };
 }

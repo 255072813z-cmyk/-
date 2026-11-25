@@ -25,7 +25,7 @@ export function quranRead(ctx, n, startAyah) {
       <button type="button" class="btn btn-ghost btn-sm ${prefs.tr ? 'is-on' : ''}" data-q-tr aria-pressed="${prefs.tr}">${t('qr.showTr')}</button>
     </div>
     ${s.n !== 1 && s.n !== 9 ? `<p class="q-basmala" lang="ar" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>` : ''}
-    <div class="ayahs" data-ayahs><p class="loading">${t('common.loading')}</p></div>
+    <div class="ayahs" data-ayahs><div class="skel" role="status" aria-label="${t('common.loading')}"><i class="tall"></i><i></i><i></i><i></i></div></div>
     <nav class="q-nav">
       ${prev ? `<a class="btn btn-ghost" href="#/quran/${prev.n}">← ${prev.n}. ${surahName(prev)}</a>` : '<span></span>'}
       ${next ? `<a class="btn btn-primary" href="#/quran/${next.n}">${next.n}. ${surahName(next)} →</a>` : ''}

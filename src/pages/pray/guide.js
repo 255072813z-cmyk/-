@@ -142,6 +142,8 @@ export function guidePage(ctx, prayerKey, unitId) {
   function go(el, d) {
     i = Math.max(0, Math.min(steps.length, i + d));
     draw(el);
+    const card = el.querySelector('[data-stage] > .card');
+    if (card) card.classList.add(d > 0 ? 'slide-next' : 'slide-prev');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const onKey = (e) => {

@@ -6,6 +6,7 @@ import { load, save } from '../../core/storage.js';
 import { t } from '../../i18n/index.js';
 import { ymdKey } from '../../core/clock.js';
 import { earn } from '../../ui/cheer.js';
+import { replay } from '../../ui/motion.js';
 
 const LEVEL_CLS = { fard: 'lv-fard', sunnah: 'lv-sunnah', mustahab: 'lv-opt' };
 const list = (prefix, n) => Array.from({ length: n }, (_, i) => `<li>${t(`${prefix}.${i + 1}`)}</li>`).join('');
@@ -71,6 +72,7 @@ export function wuduPage(ctx) {
     i = Math.max(0, Math.min(WUDU_STEPS.length - 1, i + d));
     save('wudu:step', i);
     draw(el);
+    replay(el.querySelector('[data-stepper]'), d > 0 ? 'slide-next' : 'slide-prev', d > 0 ? 'slide-prev' : 'slide-next');
     el.querySelector('[data-stepper]').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   return { html, mount: draw };

@@ -66,7 +66,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('.toast', { timeout: 4000 }).catch(() => {});
   const text = await page.locator('.toast').textContent().catch(() => '');
   check('到时间轻声提醒（页面提示）', /晡礼时间到了/.test(text || ''), (text || '').replace(/\s+/g, ' ').slice(0, 40));
-  await page.screenshot({ path: join(shots, 'verify-reminder.png') });
+  await page.screenshot({ path: join(shots, 'verify-reminder.png'), animations: 'disabled' });
   await page.reload();
   await page.waitForTimeout(2500);
   const again = await page.locator('.toast').count();
@@ -97,7 +97,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const rot = await page.getAttribute('[data-rose]', 'transform');
   check('罗盘：没对准时提示转向', /向左转 1[12]\d°/.test(t1), t1);
   check('罗盘：对准后提示"已对准朝向"', t2.includes('已对准'), `${t2}，表盘 ${rot}`);
-  await page.screenshot({ path: join(shots, 'verify-compass.png') });
+  await page.screenshot({ path: join(shots, 'verify-compass.png'), animations: 'disabled' });
   await ctx.close();
 }
 
@@ -382,21 +382,21 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
     const name = (await page.textContent('.splash-name').catch(() => '')) || '';
     const tag = (await page.textContent('.splash-tag').catch(() => '')) || '';
     const visible = await page.locator('#splash.is-on').isVisible().catch(() => false);
-    await page.waitForSelector('#splash', { state: 'detached', timeout: 6000 }).catch(() => {});
+    await page.waitForSelector('#splash', { state: 'detached', timeout: 8000 }).catch(() => {});
     const ms = Date.now() - t0;
     res.push({ locale, name, tag, visible, ms, csp: csp.length });
     if (locale === 'tg-TJ') {
       await page.reload();
       const t1 = Date.now();
-      await page.waitForSelector('#splash', { state: 'detached', timeout: 6000 }).catch(() => {});
+      await page.waitForSelector('#splash', { state: 'detached', timeout: 8000 }).catch(() => {});
       res.push({ again: Date.now() - t1 });
     }
     await ctx.close();
   }
   const [tg, again, ru] = res;
   check(
-    '启动画面：塔吉克语手机显示"Ҷойнамоз"、俄语手机显示"Джойнамоз"；第一次约 2.6 秒、以后约 1.4 秒后淡出；不被安全策略拦',
-    tg.visible && tg.name === 'Ҷойнамоз' && /Намоз дар хона/.test(tg.tag) && ru.name === 'Джойнамоз' && tg.ms >= 2600 && tg.ms < 4500 && again.again < tg.ms && tg.csp + ru.csp === 0,
+    '启动画面：塔吉克语手机显示"Ҷойнамоз"、俄语手机显示"Джойнамоз"；第一次约 3.8 秒、以后约 2.4 秒后淡出（不超过 6.5 秒）；不被安全策略拦',
+    tg.visible && tg.name === 'Ҷойнамоз' && /Намоз дар хона/.test(tg.tag) && ru.name === 'Джойнамоз' && tg.ms >= 3800 && tg.ms < 6500 && again.again >= 2400 && again.again < tg.ms && tg.csp + ru.csp === 0,
     `${tg.name} ${tg.ms} ms → 再次 ${again.again} ms；${ru.name} ${ru.ms} ms`,
   );
 }
@@ -519,7 +519,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const page = await ctx.newPage();
   await page.goto(base + '?weather=snow&now=2026-12-20T20:10');
   await page.waitForTimeout(400);
-  await page.screenshot({ path: join(shots, 'verify-dark-home.png'), fullPage: true });
+  await page.screenshot({ path: join(shots, 'verify-dark-home.png'), fullPage: true, animations: 'disabled' });
   await page.goto(base + '?weather=snow&now=2026-12-20T20:10#/pray/guide/isha/witr');
   let title = '';
   let count = '';
@@ -528,7 +528,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
     title = await page.textContent('.step-title');
     count = await page.textContent('.step-count');
   }
-  await page.screenshot({ path: join(shots, 'verify-dark-witr.png'), fullPage: true });
+  await page.screenshot({ path: join(shots, 'verify-dark-witr.png'), fullPage: true, animations: 'disabled' });
   check('威特尔第 3 拜有"举手，念古努特"一步', title.includes('古努特') && count.startsWith('第 3 拜'), `${count.trim()}：${title}`);
   await ctx.close();
 }
@@ -559,7 +559,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await users[2].page.waitForFunction(() => /你坐在第 1 排第 1 张/.test(document.querySelector('[data-panel]').textContent), null, { timeout: 5000 }).catch(() => {});
   const toastText = (await users[2].page.locator('.toast').textContent().catch(() => '')) || '';
   check('有人起身，垫子自动给排队的人', /你坐在第 1 排第 1 张/.test(await users[2].page.textContent('[data-panel]')) && /轮到你了/.test(toastText), toastText.trim());
-  await users[2].page.screenshot({ path: join(shots, 'verify-hall-queue.png') });
+  await users[2].page.screenshot({ path: join(shots, 'verify-hall-queue.png'), animations: 'disabled' });
   await users[1].ctx.close();
   await users[0].page.waitForFunction(() => /此刻在大殿 2 人/.test(document.querySelector('[data-count]').textContent), null, { timeout: 5000 }).catch(() => {});
   check('有人离开，人数实时减少', /此刻在大殿 2 人/.test(await users[0].page.textContent('[data-count]')));
@@ -726,7 +726,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForTimeout(1300);
   const sheetN = (await page.textContent('[data-cheer-n]').catch(() => '')) || '';
   const sheetK = (await page.textContent('.cheer-k').catch(() => '')) || '';
-  await page.screenshot({ path: join(shots, 'verify-streak-sheet.png') });
+  await page.screenshot({ path: join(shots, 'verify-streak-sheet.png'), animations: 'disabled' });
   await page.waitForTimeout(3000);
   const gone = (await page.locator('.cheer-sheet').count()) === 0;
   check('今天第一次打卡：弹出"又坚持了一天"，数字跳到 9，几秒后自己收起', sheetN === '9' && /又坚持了一天/.test(sheetK) && gone, `${sheetN}，${sheetK}，收起 ${gone}`);

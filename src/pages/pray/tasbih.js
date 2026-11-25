@@ -5,6 +5,7 @@ import { star8 } from '../../ui/art.js';
 import { t, L, TR } from '../../i18n/index.js';
 import { ymdKey } from '../../core/clock.js';
 import { earn } from '../../ui/cheer.js';
+import { replay } from '../../ui/motion.js';
 
 export function tasbihPage(ctx) {
   let st = load('tasbih', { phase: 0, count: 0 }); // phase 0-2 三句，3 = 第 100 句
@@ -22,6 +23,7 @@ export function tasbihPage(ctx) {
     </section>
   </div>`;
 
+  let busy = false;
   function draw(el) {
     const box = el.querySelector('[data-box]');
     if (st.phase === 3) {
@@ -62,14 +64,35 @@ export function tasbihPage(ctx) {
         <button class="btn btn-ghost btn-sm" type="button" data-reset>${t('tasbih.reset')}</button>
       </div>`;
     box.querySelector('[data-tap]').addEventListener('click', () => {
+      if (busy) return; // 正在换下一句，别多记
       st.count++;
       if (navigator.vibrate) navigator.vibrate(st.count >= cur.count ? [40, 60, 40] : 12);
-      if (st.count >= cur.count) st = { phase: st.phase + 1, count: 0 };
+      if (st.count < cur.count) {
+        // 同一句：原地更新数字和圆环，圆环顺滑地走、数字跳一下
+        save('tasbih', st);
+        const num = box.querySelector('[data-num]');
+        num.textContent = st.count;
+        replay(num, 'bump');
+        box.querySelector('.tb-ring').style.strokeDashoffset = String(C * (1 - st.count / cur.count));
+        box.querySelector('[data-tap]').setAttribute('aria-label', t('tasbih.aria', { text: L(cur), i: st.count, n: cur.count }));
+        box.querySelector('[data-undo]').disabled = false;
+        return;
+      }
+      // 这一句念满了：圆环走满、亮一下，再换下一句（从右边滑进来）
+      box.querySelector('[data-num]').textContent = st.count;
+      box.querySelector('.tb-ring').style.strokeDashoffset = '0';
+      replay(box.querySelector('.tb-tap'), 'tb-done');
+      st = { phase: st.phase + 1, count: 0 };
       save('tasbih', st);
-      draw(el);
-      if (st.phase === 3) earn('tasbih', ymdKey(ctx.sched.today)); // 三句各 33 遍念完，只剩最后一句
-      const tap = el.querySelector('[data-tap]');
-      if (tap) tap.focus();
+      busy = true;
+      setTimeout(() => {
+        busy = false;
+        draw(el);
+        replay(box, 'slide-next');
+        if (st.phase === 3) earn('tasbih', ymdKey(ctx.sched.today)); // 三句各 33 遍念完，只剩最后一句
+        const tap = el.querySelector('[data-tap]');
+        if (tap) tap.focus();
+      }, 450);
     });
     box.querySelector('[data-undo]').addEventListener('click', () => {
       st.count = Math.max(0, st.count - 1);

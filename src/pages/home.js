@@ -19,6 +19,7 @@ import { ymdKey } from '../core/clock.js';
 import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
 import { streakCard } from '../ui/streak-ui.js';
 import { softToast } from '../core/reminder.js';
+import { setCount } from '../ui/motion.js';
 import { shareText, shareLink } from '../core/share.js';
 import { L } from '../i18n/index.js';
 
@@ -367,7 +368,7 @@ export function homePage(ctx) {
         return;
       }
       lastKey = key;
-      el.querySelector('.count').innerHTML = countdownText(c.sched.nextTime - c.now);
+      setCount(el.querySelector('.count'), countdownText(c.sched.nextTime - c.now));
       const m = c.now.getUTCMinutes();
       if (m !== lastMinute) {
         lastMinute = m;

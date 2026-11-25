@@ -1,0 +1,139 @@
+/* 动效（参考多邻国：有弹性、跟手、干脆利落）。
+   只动 transform 和 opacity（不触发重排），老手机也流畅；
+   系统开了"减少动态效果"时全部关掉（base.css 末尾的总开关）。
+   持续循环的动画只改颜色、阴影、透明度，不改元素位置大小，免得点的时候按钮在动。 */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --primary-deep: #0a3d2c;
+  --line-deep: #d6c7a4;
+  --gold-deep: #9a7120;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --primary-deep: #164a35; --line-deep: #31453b; --gold-deep: #8d6d27; }
+}
+:root[data-theme='dark'] { --primary-deep: #164a35; --line-deep: #31453b; --gold-deep: #8d6d27; }
+
+/* ---------- 1. 换页：内容从上到下依次浮现；往里走从右边滑入，返回从左边，换标签按标签方向 ---------- */
+#app.is-enter .enter-i { animation: page-in 0.44s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
+#app.dir-right { --ex: 22px; --ey: 0px; }
+#app.dir-left { --ex: -22px; --ey: 0px; }
+@keyframes page-in { from { opacity: 0; transform: translate3d(var(--ex, 0px), var(--ey, 14px), 0); } to { opacity: 1; transform: none; } }
+
+/* ---------- 2. 按钮：有厚度，按下去会"陷"下去（多邻国式） ---------- */
+.btn { transition: transform 0.14s var(--ease-out), box-shadow 0.14s var(--ease-out), background 0.15s, filter 0.15s; -webkit-tap-highlight-color: transparent; }
+.btn-primary { box-shadow: 0 4px 0 var(--primary-deep); margin-bottom: 4px; }
+.btn-primary:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-deep); }
+.btn-ghost { background: var(--card); box-shadow: 0 3px 0 var(--line-deep); margin-bottom: 3px; }
+.btn-ghost:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-deep); }
+.btn:disabled { box-shadow: none; }
+.btn-round { box-shadow: 0 3px 0 var(--line-deep); transition: transform 0.14s var(--ease-out), box-shadow 0.14s var(--ease-out); }
+.btn-round:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-deep); }
+.winter-actions .btn-primary { box-shadow: 0 4px 0 var(--gold-deep); }
+.winter-actions .btn-primary:active { box-shadow: 0 1px 0 var(--gold-deep); }
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+  .card-link:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(60, 45, 10, 0.12); }
+}
+
+/* 卡片、小块：按下去轻轻一缩，松手弹回 */
+.card-link { transition: transform 0.22s var(--ease-spring), box-shadow 0.2s, border-color 0.15s; -webkit-tap-highlight-color: transparent; }
+.card-link:active { transform: scale(0.985); transition-duration: 0.08s; }
+.chip, .pick, .seg, .sura, .me-row, .tool, .q-chips .chip, .day, .set, .juz input { transition: transform 0.2s var(--ease-spring), background 0.15s, color 0.15s; -webkit-tap-highlight-color: transparent; }
+.chip:active, .pick:active, .sura:active, .me-row:active, .day:active:not(:disabled) { transform: scale(0.96); transition-duration: 0.08s; }
+.seg:active { transform: scale(0.95); }
+.seg.is-on { animation: seg-on 0.3s var(--ease-spring); }
+@keyframes seg-on { from { transform: scale(0.92); } }
+
+/* ---------- 3. 底部标签：换过去时图标弹一下，小圆点长出来 ---------- */
+.tab { -webkit-tap-highlight-color: transparent; transition: color 0.2s; }
+.tab .tab-icon { display: inline-block; transition: transform 0.25s var(--ease-spring); }
+.tab:active .tab-icon { transform: scale(0.86); transition-duration: 0.08s; }
+.tab.is-new .tab-icon { animation: tab-pop 0.5s var(--ease-spring); }
+.tab.is-new .tab-icon::after { animation: dot-in 0.4s 0.1s var(--ease-spring) backwards; }
+@keyframes tab-pop { 0% { transform: scale(0.78); } 55% { transform: translateY(-3px) scale(1.16); } 100% { transform: none; } }
+@keyframes dot-in { from { transform: scale(0); opacity: 0; } }
+
+/* ---------- 4. 首页的小细节 ---------- */
+/* 现在这一番：一圈柔和的光慢慢呼吸 */
+.prow.is-current { animation: now-glow 2.8s ease-in-out infinite; }
+@keyframes now-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(15, 89, 64, 0); } 50% { box-shadow: 0 0 0 4px rgba(15, 89, 64, 0.14); } }
+/* 倒计时：变了的数字从上面落下来 */
+.count b { display: inline-block; }
+.count b.chg { animation: digit-in 0.34s var(--ease-out); }
+@keyframes digit-in { from { transform: translateY(-45%); opacity: 0.2; } }
+/* 点亮的灯：火苗轻轻闪 */
+.streak-lamp.is-lit .lamp-flame, .hero-lamp.is-lit .lamp-flame, .me-hero .streak-lamp.is-lit .lamp-flame { animation: flicker 3.4s ease-in-out infinite; }
+@keyframes flicker { 0%, 100% { opacity: 1; } 30% { opacity: 0.82; } 55% { opacity: 0.95; } 72% { opacity: 0.78; } }
+/* 下一番的时间数字：出现时轻轻放大 */
+.hero-time { display: inline-block; animation: pop-soft 0.5s 0.15s var(--ease-spring) backwards; }
+@keyframes pop-soft { from { transform: scale(0.9); opacity: 0; } }
+
+/* ---------- 5. 进度条长出来、徽章依次弹出 ---------- */
+.badge-bar i, .q-bar i { transform-origin: left center; animation: grow-x 0.9s 0.2s var(--ease-out) backwards; }
+@keyframes grow-x { from { transform: scaleX(0); } }
+.badges .badge, .titles .title-item { animation: pop-in 0.45s var(--ease-spring) backwards; }
+.badges .badge:nth-child(2), .titles .title-item:nth-child(2) { animation-delay: 0.05s; }
+.badges .badge:nth-child(3), .titles .title-item:nth-child(3) { animation-delay: 0.1s; }
+.badges .badge:nth-child(4), .titles .title-item:nth-child(4) { animation-delay: 0.15s; }
+.badges .badge:nth-child(5), .titles .title-item:nth-child(5) { animation-delay: 0.2s; }
+.badges .badge:nth-child(n + 6), .titles .title-item:nth-child(n + 6) { animation-delay: 0.25s; }
+@keyframes pop-in { from { transform: scale(0.85); opacity: 0; } }
+/* 得到的徽章：偶尔有一道光掠过 */
+.badge.is-got .badge-medal { position: relative; overflow: hidden; }
+.badge.is-got .badge-medal::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent); transform: skewX(-18deg); animation: sheen 5s 1s ease-in-out infinite; }
+@keyframes sheen { 0%, 70% { left: -60%; } 85%, 100% { left: 130%; } }
+
+/* ---------- 6. 一步一步跟着做：往下一步从右边滑入，往回从左边 ---------- */
+.slide-next { animation: step-next 0.34s var(--ease-out); }
+.slide-prev { animation: step-prev 0.34s var(--ease-out); }
+@keyframes step-next { from { opacity: 0; transform: translate3d(28px, 0, 0); } }
+@keyframes step-prev { from { opacity: 0; transform: translate3d(-28px, 0, 0); } }
+.progress span { transition: width 0.4s var(--ease-out); }
+
+/* ---------- 7. 赞念：点一下，数字跳一下，圆环顺滑地走 ---------- */
+.tb-ring { transition: stroke-dashoffset 0.35s var(--ease-out); }
+.tb-num b.bump { display: inline-block; animation: bump 0.28s var(--ease-spring); }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.tb-tap { -webkit-tap-highlight-color: transparent; transition: transform 0.12s var(--ease-out); }
+.tb-tap:active { transform: scale(0.96); }
+.tb-tap .tb-star { transition: transform 0.6s var(--ease-out); transform-origin: center; }
+.tb-done .tb-ring { animation: ring-done 0.7s var(--ease-out); }
+@keyframes ring-done { 0% { stroke-width: 10; } 40% { stroke-width: 16; } 100% { stroke-width: 10; } }
+
+/* ---------- 8. 其他 ---------- */
+details[open] > :not(summary) { animation: fold-open 0.3s var(--ease-out) backwards; }
+@keyframes fold-open { from { opacity: 0; transform: translateY(-6px); } }
+.toast { animation: toast-in 0.5s var(--ease-spring); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(24px) scale(0.96); } }
+.ayah.is-target { animation: target-flash 1.8s ease-out; }
+@keyframes target-flash { 0% { background: var(--gold); } 100% { background: var(--gold-soft); } }
+.compass-card.is-aligned .dial { animation: aligned-glow 1.6s ease-in-out infinite; border-radius: 50%; }
+@keyframes aligned-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(15, 89, 64, 0)); } 50% { filter: drop-shadow(0 0 12px rgba(15, 89, 64, 0.45)); } }
+
+/* 加载中：闪光的占位条，不是干巴巴的"加载中" */
+.skel { display: grid; gap: 12px; padding: 20px 0; }
+.skel i { display: block; height: 18px; border-radius: 9px; background: linear-gradient(90deg, var(--bg-2) 25%, var(--card) 50%, var(--bg-2) 75%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+.skel i.tall { height: 140px; border-radius: 18px; }
+.skel i:nth-child(3) { width: 82%; }
+.skel i:nth-child(4) { width: 64%; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* 设置里的开关：滑动的小圆钮（代替系统的小方框） */
+.switch-row input[type='checkbox'] { -webkit-appearance: none; appearance: none; position: relative; width: 52px; height: 32px; border-radius: 16px; background: var(--line); cursor: pointer; transition: background 0.25s; margin: 0; }
+.switch-row input[type='checkbox']::before { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: transform 0.3s var(--ease-spring); }
+.switch-row input[type='checkbox']:checked { background: var(--green); }
+.switch-row input[type='checkbox']:checked::before { transform: translateX(20px); }
+.switch-row input[type='checkbox']:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+/* ---------- 9. 轻轻招呼一下：该做的事轻轻亮一亮（只改阴影和透明度，不挪位置） ---------- */
+/* 首页"跟着做"主按钮：每隔几秒有一道光掠过 */
+.hero .btn-primary { position: relative; overflow: hidden; }
+.hero .btn-primary::after { content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent); transform: skewX(-18deg); animation: btn-sheen 6s 2s ease-in-out infinite; pointer-events: none; }
+@keyframes btn-sheen { 0%, 78% { left: -40%; } 92%, 100% { left: 120%; } }
+/* 本周今天还没打卡的圆点、现在这一番还没打勾的圈：一圈光向外扩 */
+.sw-today .sw-dot, .prow.is-current .prow-check:not(.is-on) { animation: invite 2.2s ease-out infinite; }
+@keyframes invite { 0% { box-shadow: 0 0 0 0 rgba(15, 89, 64, 0.35); } 70%, 100% { box-shadow: 0 0 0 9px rgba(15, 89, 64, 0); } }
+/* "继续读"的箭头轻轻往前点一点 */
+.q-continue .r-link-go { display: inline-block; animation: nudge 2.6s ease-in-out infinite; }
+@keyframes nudge { 0%, 60%, 100% { transform: none; } 75% { transform: translateX(5px); } }
