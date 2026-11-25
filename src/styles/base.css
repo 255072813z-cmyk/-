@@ -74,14 +74,15 @@ button { font: inherit; }
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   background: var(--card);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 20px rgba(40, 30, 10, 0.06);
 }
-.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 60px; text-decoration: none; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
-.tab-icon svg { width: 26px; height: 26px; fill: currentColor; stroke: currentColor; }
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 60px; min-width: 0; padding: 0 2px; text-decoration: none; color: var(--muted); font-size: 0.74rem; white-space: nowrap; }
+.tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.tab-icon svg { width: 25px; height: 25px; fill: currentColor; stroke: currentColor; }
 .tab.is-active { color: var(--green); font-weight: 700; }
 .tab.is-active .tab-icon { position: relative; }
 .tab.is-active .tab-icon::after { content: ''; position: absolute; left: 50%; bottom: -3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--gold); }

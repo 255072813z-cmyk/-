@@ -1,6 +1,6 @@
 // 清真寺：三道门——礼拜大殿、庭院、诗歌夜
 import { gateScene } from '../../ui/spaces-art.js';
-import { star8, ICONS } from '../../ui/art.js';
+import { star8 } from '../../ui/art.js';
 import { skyPhase } from '../../core/prayer-times.js';
 import { fmtHM } from '../../core/clock.js';
 import { fetchCounts, presenceEnabled } from '../../core/presence.js';
@@ -17,10 +17,11 @@ export function spacesPage(ctx) {
   const live = presenceEnabled();
   const html = `
   <div class="page spaces">
-    <div class="page-head"><a class="back" href="#/pray" aria-label="${t('common.back')}">${ICONS.back}</a>
-      <h1>${t('nav.masjid')} <span class="ar-sm" lang="ar" dir="rtl">المَسْجِد</span></h1></div>
     <section class="gate-wrap">${gateScene({ phase: skyPhase(s.times, ctx.now) })}</section>
-    <p class="ph-sub">${t('spaces.lead')}</p>
+    <header class="ph">
+      <h1>${t('nav.masjid')} <span class="ar-sm" lang="ar" dir="rtl">المَسْجِد</span></h1>
+      <p class="ph-sub">${t('spaces.lead')}</p>
+    </header>
     <div class="doors">
       <a class="card card-link door door-hall" href="#/masjid/hall">
         <span class="door-t">${t('hall.title')}</span>

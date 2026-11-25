@@ -1,7 +1,6 @@
-// 礼拜（底部标签）：去不了清真寺的日子，从这里开始——跟着做、小净、朝向、赞念、补礼、一起礼拜（网上清真寺）。
+// 礼拜（底部标签）：去不了清真寺的日子，从这里开始——跟着做、小净、朝向、赞念、补礼。
 // 在家礼拜的依据、和家人一起礼拜的说明折叠起来，需要时点开。
 import { homeInterior, star8, ICONS } from '../../ui/art.js';
-import { flagOn } from '../../core/remote.js';
 import { isWinter, loadHadith } from '../home.js';
 import { PRAYER_INFO } from '../../content/prayers.js';
 import { fmtHM } from '../../core/clock.js';
@@ -36,7 +35,6 @@ export function hubPage(ctx) {
       ${tile('#/qibla', ICONS.qibla, t('hub.qibla'), t('hub.qiblaSub'))}
       ${tile('#/tasbih', ICONS.tasbih, t('guide.tasbih'), t('hub.tasbihSub'))}
       ${tile('#/pray/qada', ICONS.qada, t('hub.qada'), t('hub.qadaSub'))}
-      ${flagOn(ctx.remote, 'masjid') ? tile('#/masjid', ICONS.masjid, t('hub.masjid'), t('hub.masjidSub')) : ''}
     </div>
 
     <section class="card">

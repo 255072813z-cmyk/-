@@ -675,11 +675,11 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('.me-hero');
   const me = (await page.textContent('#app')).replace(/\s+/g, ' ');
   const tabs = (await page.locator('.tabbar .tab').allTextContents()).map((x) => x.trim());
-  check('底部五个标签：今天 · 礼拜 · 古兰经 · 封斋 · 我的；"我的"里有坚持、亲友圈、时间表、城市、设置、分享', tabs.join('·') === '今天·礼拜·古兰经·封斋·我的' && /亲友圈/.test(me) && /本月时间表/.test(me) && /提醒和设置/.test(me) && (await page.locator('[data-share-app]').count()) === 1, tabs.join(' · '));
+  check('底部六个标签：今天 · 礼拜 · 清真寺 · 古兰经 · 封斋 · 我的；"我的"里有坚持、亲友圈、时间表、城市、设置、分享', tabs.join('·') === '今天·礼拜·清真寺·古兰经·封斋·我的' && /亲友圈/.test(me) && /本月时间表/.test(me) && /提醒和设置/.test(me) && (await page.locator('[data-share-app]').count()) === 1, tabs.join(' · '));
   await page.goto(base + '?weather=snow&now=2026-12-18T15:20#/pray');
   await page.waitForSelector('.tools');
   const tools = await page.locator('.tools .tool').count();
-  check('"礼拜"标签：跟着做 + 工具格（小净、朝向、赞念、补礼、一起礼拜），依据折叠起来', tools === 5 && (await page.locator('.hub-main').count()) === 1 && (await page.locator('details.excuse-card:not([open])').count()) === 1, `${tools} 个工具`);
+  check('"礼拜"标签：跟着做 + 工具格（小净、朝向、赞念、补礼），依据折叠起来', tools === 4 && (await page.locator('.hub-main').count()) === 1 && (await page.locator('details.excuse-card:not([open])').count()) === 1, `${tools} 个工具`);
   // 补礼记录
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/pray/qada');
   await page.waitForTimeout(500);

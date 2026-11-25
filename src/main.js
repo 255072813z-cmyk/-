@@ -30,10 +30,11 @@ const app = document.getElementById('app');
 const tabbar = document.querySelector('.tabbar');
 const topnav = document.querySelector('.topnav');
 
-// 底部五个标签：今天 · 礼拜 · 古兰经 · 封斋 · 我的（赞念、网上清真寺在"礼拜"里；时间表、亲友圈、设置在"我的"里）
+// 底部六个标签：今天 · 礼拜 · 清真寺 · 古兰经 · 封斋 · 我的（赞念在"礼拜"里；时间表、亲友圈、设置在"我的"里）
 const TABS = [
   { href: '#/', key: 'nav.home', icon: 'home', match: (p) => p === '' },
-  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => (p.startsWith('pray') && !p.startsWith('pray/guide/tarawih')) || p.startsWith('qibla') || p.startsWith('tasbih') || p.startsWith('masjid') },
+  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => (p.startsWith('pray') && !p.startsWith('pray/guide/tarawih')) || p.startsWith('qibla') || p.startsWith('tasbih') },
+  { href: '#/masjid', key: 'nav.masjid', icon: 'masjid', match: (p) => p.startsWith('masjid') },
   { href: '#/quran', key: 'nav.quran', icon: 'quran', match: (p) => p.startsWith('quran') },
   // 斋月里叫"斋月"，平时叫"封斋"（全年都能用：副功斋、补斋）
   { href: '#/ramadan', key: () => (ctx.sched && toHijri(ctx.sched.today, ctx.hijriAdjust).m === 9 ? 'nav.ramadan' : 'nav.fast'), icon: 'ramadan', match: (p) => p.startsWith('ramadan') || p.startsWith('pray/guide/tarawih') },
