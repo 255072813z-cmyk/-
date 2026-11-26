@@ -55,9 +55,6 @@ button { font: inherit; }
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
-@supports (backdrop-filter: blur(8px)) {
-  .topbar { background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-}
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--green); font-family: var(--font-zh-serif); font-weight: 700; font-size: 1.1rem; }
 .brand-mark { display: inline-flex; }
 .star8 rect { fill: none; stroke: var(--gold); stroke-width: 1.6; }
