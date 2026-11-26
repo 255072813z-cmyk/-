@@ -1,5 +1,7 @@
 # 合并到 main 后自动发布到 GitHub Pages。
 # 第一次使用前：仓库 Settings → Pages → Build and deployment → Source 选 "GitHub Actions"。
+# 免费账号要求仓库是公开的（Settings → General → Danger Zone → Change visibility）。
+# 网址：https://<用户名>.github.io/<仓库名>/
 name: 发布网站
 
 on:
@@ -38,6 +40,8 @@ jobs:
           VITE_PRESENCE_URL: ${{ vars.VITE_PRESENCE_URL }}
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_CONFIG_PUBKEY: ${{ vars.VITE_CONFIG_PUBKEY }}
+          # 分享图片和分享文字里的链接；不设就用网站自己的地址
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
