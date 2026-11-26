@@ -38,3 +38,12 @@ export function platform() {
 
 /** 给后台发请求的公共选项：不带 Cookie、不带来源网址 */
 export const QUIET = { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store' };
+
+/** 是不是在手机应用里（Capacitor）。提醒等原生功能只在应用里才下载相关代码 */
+export function isNativeApp() {
+  try {
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  } catch (e) {
+    return false;
+  }
+}

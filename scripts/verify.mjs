@@ -8,6 +8,7 @@
 // 用法：npm run verify
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
+import { gzipSync } from 'node:zlib';
 import { readFile, mkdir } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,11 +19,20 @@ const { chromium } = require('playwright');
 const root = fileURLToPath(new URL('../dist/', import.meta.url));
 const shots = fileURLToPath(new URL('../shots/', import.meta.url));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.webmanifest': 'application/manifest+json' };
+// 和真实的网站托管（GitHub Pages、Cloudflare 等）一样：文字类文件压缩后再发（首屏速度按真实情况测）
+const zipped = new Map();
 const server = createServer(async (req, res) => {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^([/\\])+/, '');
   try {
     const body = await readFile(join(root, p || 'index.html'));
-    res.writeHead(200, { 'content-type': TYPES[extname(p)] || 'text/html; charset=utf-8' });
+    const type = TYPES[extname(p)] || 'text/html; charset=utf-8';
+    if (/gzip/.test(req.headers['accept-encoding'] || '') && !/font/.test(type)) {
+      const key = p || 'index.html';
+      if (!zipped.has(key)) zipped.set(key, gzipSync(body));
+      res.writeHead(200, { 'content-type': type, 'content-encoding': 'gzip', vary: 'accept-encoding' });
+      return res.end(zipped.get(key));
+    }
+    res.writeHead(200, { 'content-type': type });
     res.end(body);
   } catch (e) {
     res.writeHead(404);
@@ -855,6 +865,63 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const bad = await page.textContent('[data-backup-msg]');
   check('选错文件时说明"不是本应用的备份"，什么也不改', /不是本应用的备份/.test(bad), bad);
   check('设置、备份以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 13. 早晚记念：早晨六条、古兰经三章能读、点按计数、刷新后还在、念完整组；首页早晨出现入口、念完收起；傍晚换成傍晚那组
+{
+  const ctx = await browser.newContext(phone);
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  const q = '?weather=clear&now=2026-12-18T08:30'; // 杜尚别，晨礼之后
+  await page.goto(base + q);
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, lang: 'zh' }));
+  });
+  await page.goto(base + q + '&r=1#/');
+  await page.waitForSelector('.prow');
+  const homeCard = await page.locator('.dk-link').count();
+  await page.click('.dk-link');
+  await page.waitForSelector('[data-dk]');
+  const items = await page.locator('[data-dk]').count();
+  const on = (await page.textContent('.adhkar .seg.is-on')).trim();
+  await page.waitForSelector('[data-dk-surah="114"] .dk-ayah');
+  const nas = await page.locator('[data-dk-surah="114"] .dk-ayah').count();
+  const nasTr = (await page.locator('[data-dk-surah="114"] .dk-ayah .tr').first().textContent()).trim();
+  // 第一条（求饶恕词，1 遍）点一下就打勾；"奉主名"（3 遍）点两下还没完
+  await page.click('[data-dk="sayyid"] [data-tap]');
+  await page.click('[data-dk="bism"] [data-tap]');
+  await page.click('[data-dk="bism"] [data-tap]');
+  const sayyidDone = await page.locator('[data-dk="sayyid"].is-done').count();
+  const prog1 = (await page.textContent('.dk-prog-t')).trim();
+  await page.goto(base + q + '&r=2#/adhkar/morning');
+  await page.waitForSelector('[data-dk]');
+  const kept = (await page.textContent('[data-dk="bism"] [data-n]')).trim();
+  check('早晚记念：早晨首页出现入口；早晨 6 条，世人章 6 节带译音；1 遍的点一下打勾，3 遍的记到 2；刷新后还在', homeCard === 1 && items === 6 && on === '早晨' && nas === 6 && /rabbin-nas/.test(nasTr) && sayyidDone === 1 && /1 \/ 6/.test(prog1) && kept === '2', `入口 ${homeCard}，${items} 条，${on}，世人章 ${nas} 节「${nasTr}」，${prog1}，刷新后 ${kept}`);
+  // 念完整组（100 遍的也点满）
+  for (const id of ['quls', 'bism', 'radina', 'subhan', 'tahlil']) {
+    const n = await page.evaluate((x) => { const c = document.querySelector(`[data-dk="${x}"]`); const [a, b] = c.querySelector('.dk-tap-n').textContent.split('/').map((v) => Number(v.trim())); return b - a; }, id);
+    for (let i = 0; i < n; i++) await page.click(`[data-dk="${id}"] [data-tap]`);
+  }
+  const allShown = await page.locator('[data-all]:not([hidden])').count();
+  const prog2 = (await page.textContent('.dk-prog-t')).trim();
+  await page.goto(base + q + '&r=3#/');
+  await page.waitForSelector('.prow');
+  const homeAfter = await page.locator('.dk-link').count();
+  check('念完六条：显示"早晨的记念都念完了"，进度 6/6；回到首页入口收起', allShown === 1 && /6 \/ 6/.test(prog2) && homeAfter === 0, `${prog2}，首页入口 ${homeAfter}`);
+  // 傍晚（晡礼之后）：自动换成傍晚那组，有"完美言辞"那条，没有"一天一百遍"那条；礼拜页一直有入口
+  const q2 = '?weather=clear&now=2026-12-18T16:30';
+  await page.goto(base + q2 + '&r=4#/adhkar');
+  await page.waitForSelector('[data-dk]');
+  const eve = (await page.textContent('.adhkar .seg.is-on')).trim();
+  const ids = await page.locator('[data-dk]').evaluateAll((xs) => xs.map((x) => x.dataset.dk));
+  await page.goto(base + q2 + '&r=5#/pray');
+  await page.waitForSelector('.hub');
+  const hubCard = (await page.textContent('.dk-link').catch(() => '')) || '';
+  check('傍晚打开是傍晚那组（有"完美言辞"，没有"一天一百遍"）；礼拜页一直有早晚记念入口', eve === '傍晚' && ids.includes('kalimat') && !ids.includes('tahlil') && /傍晚的记念/.test(hubCard), `${eve}：${ids.join(' ')}`);
+  check('早晚记念以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }
 

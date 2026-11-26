@@ -1,7 +1,8 @@
 // 跟着做礼拜：先选哪一部分（逊奈/主命/威特尔），再一步一步跟做。
 // 画面上是一排人和你做同样的动作——在家礼拜，也像站在清真寺的班里。
 import { PRAYER_INFO, buildSteps, unitLabel, AFTER_PRAYER, getPrayerInfo } from '../../content/prayers.js';
-import { prayerRow, ICONS } from '../../ui/art.js';
+import { ICONS } from '../../ui/art.js';
+import { prayerRow } from '../../ui/art-scenes.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
 import { PRAYERS } from '../../core/prayer-times.js';

@@ -7,6 +7,12 @@ import { timesFor, highLatitudeDay } from '../src/core/prayer-times.js';
 import { fastTimes } from '../src/core/ramadan.js';
 import { qiblaBearing } from '../src/core/qibla.js';
 import { addDays, fmtHM, setDisplayOffset } from '../src/core/clock.js';
+// 界面文字按需下载：测试里先把中文词典准备好
+{
+  const i18n = await import('../src/i18n/index.js');
+  await i18n.loadLang('zh');
+  i18n.setLang('zh');
+}
 
 const ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 

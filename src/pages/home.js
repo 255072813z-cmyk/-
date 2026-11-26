@@ -11,16 +11,18 @@ import { mosqueScene, star8, ICONS } from '../ui/art.js';
 import { isHeavyRain } from '../core/weather.js';
 import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
-import { isNativeApp, askNotifyPermission } from '../core/notify.js';
+import { isNativeApp } from '../core/api.js';
 import { getSettings } from '../core/settings.js';
 import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
 import { platform } from '../core/api.js';
 import { ymdKey } from '../core/clock.js';
 import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
 import { streakCard } from '../ui/streak-ui.js';
+import { adhkarCard } from '../ui/adhkar-card.js';
 import { softToast } from '../core/reminder.js';
 import { setCount } from '../ui/motion.js';
-import { shareText, shareImage, shareLink } from '../core/share.js';
+// 分享按需下载（点了才用到）
+const share = () => import('../core/share.js');
 import { L } from '../i18n/index.js';
 
 function prayerName(p, sched) {
@@ -122,7 +124,6 @@ function bindShare(root, ctx) {
     const m = btn.parentElement.querySelector('[data-share-msg]');
     if (m) m.textContent = r === 'copied' ? t('times.copied') : r === 'saved' ? t('times.saved') : r === 'failed' ? t('times.shareFailed') : '';
   };
-  const link = () => shareLink(ctx.remote);
   const day = ymdKey(ctx.sched.today);
   // 今天的礼拜时间做成图片分享（群里最常转发的就是这个）
   const img = root.querySelector('[data-share-img]');
@@ -130,9 +131,10 @@ function bindShare(root, ctx) {
     img.addEventListener('click', async () => {
       img.disabled = true;
       try {
-        const { drawTimesCard } = await import('../ui/share-card.js');
+        const [{ drawTimesCard }, { shareImage, shareLink }] = await Promise.all([import('../ui/share-card.js'), share()]);
         const cv = await drawTimesCard(ctx);
-        say(img, await shareImage(cv, `namaz-${day}.png`, `${t('app.name')}${link() ? ' ' + link() : ''}`, day));
+        const link = shareLink(ctx.remote);
+        say(img, await shareImage(cv, `namaz-${day}.png`, `${t('app.name')}${link ? ' ' + link : ''}`, day));
       } catch (e) {
         say(img, 'failed');
       }
@@ -141,14 +143,17 @@ function bindShare(root, ctx) {
   const h = root.querySelector('[data-share-hadith]');
   if (h)
     h.addEventListener('click', async () => {
-      const d = (await loadHadith()).dailyHadith(ctx.sched.today);
-      const text = `${L(d)}\n(${L(d.src)})\n\n${t('share.from', { app: t('app.name') })}${link() ? ' ' + link() : ''}`;
+      const [{ dailyHadith }, { shareText, shareLink }] = await Promise.all([loadHadith(), share()]);
+      const d = dailyHadith(ctx.sched.today);
+      const link = shareLink(ctx.remote);
+      const text = `${L(d)}\n(${L(d.src)})\n\n${t('share.from', { app: t('app.name') })}${link ? ' ' + link : ''}`;
       say(h, await shareText(text, day));
     });
   const a = root.querySelector('[data-share-app]');
   if (a)
     a.addEventListener('click', async () => {
-      const r = await shareText(t('share.msg', { app: t('app.name'), link: link() }).trim(), day);
+      const { shareText, shareLink } = await share();
+      const r = await shareText(t('share.msg', { app: t('app.name'), link: shareLink(ctx.remote) }).trim(), day);
       say(a, r);
       if (r === 'shared' || r === 'copied') import('../ui/cheer.js').then((m) => m.earn('share', day)).catch(() => {});
     });
@@ -168,7 +173,7 @@ function bindNotifyCard(root) {
   const b = root.querySelector('[data-notify-on]');
   if (b)
     b.addEventListener('click', async () => {
-      await askNotifyPermission();
+      await (await import('../core/notify.js')).askNotifyPermission();
       setSettings({}); // 重新排提醒并刷新页面
     });
 }
@@ -324,6 +329,7 @@ export function homePage(ctx) {
     <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
     <section class="card hero" data-hero>${heroHTML(ctx)}</section>
     ${streakCard(ymdKey(ctx.sched.today))}
+    ${adhkarCard(ctx)}
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
     <div data-winter>${winterCard(ctx)}</div>
     ${hadithCard(ctx)}

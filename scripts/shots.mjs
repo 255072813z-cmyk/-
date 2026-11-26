@@ -45,6 +45,8 @@ const PAGES = [
   ['steps-sujud', '#/pray/guide/dhuhr/fard', 10],
   ['qibla', '#/qibla'],
   ['tasbih', '#/tasbih'],
+  ['adhkar', '#/adhkar/morning', 0, '?weather=clear&now=2026-12-18T08:30'],
+  ['adhkar-evening', '#/adhkar/evening', 0, '?weather=clear&now=2026-12-18T16:30'],
   ['settings', '#/settings'],
   ['ramadan-before', '#/ramadan'],
   ['ramadan', '#/ramadan', 0, '?weather=clear&now=2027-02-20T17:50'],

@@ -6,8 +6,8 @@ export const BACKUP_APP = 'joynamoz';
 export const BACKUP_VERSION = 1;
 const MAX_BYTES = 2 * 1024 * 1024;
 
-// 要备份的记录（见各模块）：设置、已礼、连续天数、徽章、补礼、补斋、副功斋、封斋计划、古兰经阅读、赞念
-export const BACKUP_KEYS = ['settings', 'prayed', 'streak', 'badges', 'qada', 'qadaFast', 'vfast', 'fastPlan', 'qread', 'qhist', 'qprog', 'qdays', 'qtoday', 'qmarks', 'qprefs', 'tasbih'];
+// 要备份的记录（见各模块）：设置、已礼、连续天数、徽章、补礼、补斋、副功斋、封斋计划、古兰经阅读、赞念、早晚记念
+export const BACKUP_KEYS = ['settings', 'prayed', 'streak', 'badges', 'qada', 'qadaFast', 'vfast', 'fastPlan', 'qread', 'qhist', 'qprog', 'qdays', 'qtoday', 'qmarks', 'qprefs', 'tasbih', 'adhkar', 'adhkarDays'];
 // 按年份存的：斋月打卡 fast:<年>、30 天通读 quran:<年>
 const PREFIXES = ['fast:', 'quran:'];
 const okKey = (k) => BACKUP_KEYS.includes(k) || PREFIXES.some((p) => k.startsWith(p) && /^\d{4}$/.test(k.slice(p.length)));

@@ -14,7 +14,7 @@ export const STAT_LANGS = ['zh', 'tg', 'ru', 'uz', 'ky'];
 // 功能名（只记"那天用没用"）：每个页面都要有一个，tests/remote.test.mjs 会逐个页面检查；管理后台 server/admin/app.js 里要有中文名
 //   quran = 读古兰经（目录、读一章）；qplan = 30 天通读计划；share = 分享了应用、圣训或时间表；here = 用了"我的位置"
 export const FEATURES = [
-  'home', 'pray', 'wudu', 'guide', 'qibla', 'tasbih', 'qada',
+  'home', 'pray', 'wudu', 'guide', 'qibla', 'tasbih', 'qada', 'adhkar',
   'ramadan', 'tarawih', 'quran', 'qplan',
   'masjid', 'hall', 'courtyard', 'poetry',
   'me', 'streak', 'circle', 'times', 'settings', 'city', 'here', 'share',

@@ -19,7 +19,7 @@ const LABELS = {
   fs: { 0: '标准', 1: '大', 2: '特大' },
   l: { zh: '中文', tg: '塔吉克语', ru: '俄语', uz: '乌兹别克语', ky: '吉尔吉斯语' },
   f: {
-    home: '首页', pray: '礼拜标签', wudu: '小净', guide: '跟着做礼拜', qibla: '朝向', tasbih: '赞念', qada: '补礼记录',
+    home: '首页', pray: '礼拜标签', wudu: '小净', guide: '跟着做礼拜', qibla: '朝向', tasbih: '赞念', qada: '补礼记录', adhkar: '早晚记念',
     ramadan: '封斋/斋月', tarawih: '间歇拜', quran: '读古兰经', qplan: '古兰经 30 天计划',
     masjid: '清真寺入口', hall: '礼拜大殿', courtyard: '庭院', poetry: '诗歌夜',
     me: '我的', streak: '坚持与徽章', circle: '亲友圈', times: '月时间表', settings: '设置', city: '选择城市', here: '用我的位置', share: '分享',

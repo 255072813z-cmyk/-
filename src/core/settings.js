@@ -1,8 +1,16 @@
 // 用户设置（存在本机）。改动后通知订阅者重新渲染。
 import { load, save } from './storage.js';
 import { DEFAULT_CITY, CITIES, guessCity } from './cities.js';
-import { DEFAULT_NOTIFY } from './notify.js';
 import { guessLang } from '../i18n/index.js';
+
+/** 提醒的默认设置（notify.js 也用它） */
+export const DEFAULT_NOTIFY = {
+  prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
+  advance: 0, // 提前几分钟（0 = 准时）
+  ramadan: true, // 斋月里、和用户标了要封斋的日子，提醒封斋饭和开斋
+  jumuah: true, // 星期五晌礼前 1 小时提醒主麻
+  streak: true, // 晚上还没打卡时提醒一次
+};
 
 const DEFAULTS = {
   city: DEFAULT_CITY,

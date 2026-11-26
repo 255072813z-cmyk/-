@@ -1,6 +1,7 @@
 // 小净：图文，一步一步
 import { WUDU_STEPS, WUDU_WINTER_COUNT, WUDU_BREAKER_COUNT } from '../../content/wudu.js';
-import { wuduFigure, ICONS, star8 } from '../../ui/art.js';
+import { ICONS, star8 } from '../../ui/art.js';
+import { wuduFigure } from '../../ui/art-scenes.js';
 import { reciteCard } from '../../ui/recite.js';
 import { load, save } from '../../core/storage.js';
 import { t } from '../../i18n/index.js';

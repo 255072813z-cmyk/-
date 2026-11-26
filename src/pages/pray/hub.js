@@ -1,10 +1,12 @@
 // 礼拜（底部标签）：去不了清真寺的日子，从这里开始——跟着做、小净、朝向、赞念、补礼。
 // 在家礼拜的依据、和家人一起礼拜的说明折叠起来，需要时点开。
-import { homeInterior, star8, ICONS } from '../../ui/art.js';
+import { star8, ICONS } from '../../ui/art.js';
+import { homeInterior } from '../../ui/art-scenes.js';
 import { isWinter, loadHadith } from '../home.js';
 import { PRAYER_INFO } from '../../content/prayers.js';
 import { fmtHM } from '../../core/clock.js';
 import { t, L } from '../../i18n/index.js';
+import { adhkarCard } from '../../ui/adhkar-card.js';
 
 export function hubPage(ctx) {
   const s = ctx.sched;
@@ -28,6 +30,8 @@ export function hubPage(ctx) {
     <a class="card card-link step-link is-main hub-main" href="#/pray/guide/${target}">
       <span class="step-t">${t('home.follow', { name })}</span>
       <span class="step-s">${s.current ? t('hub.nowIs', { name }) : t('hub.nextAt', { time: fmtHM(s.nextTime) })} · ${t('hub.everyStep')}</span></a>
+
+    ${adhkarCard(ctx, true)}
 
     <h2 class="sec">${t('hub.secTools')}</h2>
     <div class="tools">

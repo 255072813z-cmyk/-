@@ -16,7 +16,9 @@ import { toHijri } from './core/hijri.js';
 import { enterPage } from './ui/motion.js';
 import { getWeather, classify } from './core/weather.js';
 import { checkReminder } from './core/reminder.js';
-import { isNativeApp, syncNotifications, listenNotificationTaps } from './core/notify.js';
+import { isNativeApp } from './core/api.js';
+// 提醒（本地通知）只在手机应用里用：按需下载，网页首屏不带它
+const notify = () => import('./core/notify.js');
 import { cachedRemote, refreshRemote, effectiveOffsets, effectiveHijri, flagOn } from './core/remote.js';
 import { setStatsGate, setPresenceGate } from './core/gates.js';
 import { markUse } from './core/usage.js';
@@ -33,7 +35,7 @@ const topnav = document.querySelector('.topnav');
 // 底部六个标签：今天 · 礼拜 · 清真寺 · 古兰经 · 封斋 · 我的（赞念在"礼拜"里；时间表、亲友圈、设置在"我的"里）
 const TABS = [
   { href: '#/', key: 'nav.home', icon: 'home', match: (p) => p === '' },
-  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => (p.startsWith('pray') && !p.startsWith('pray/guide/tarawih')) || p.startsWith('qibla') || p.startsWith('tasbih') },
+  { href: '#/pray', key: 'nav.pray', icon: 'pray', match: (p) => (p.startsWith('pray') && !p.startsWith('pray/guide/tarawih')) || p.startsWith('qibla') || p.startsWith('tasbih') || p.startsWith('adhkar') },
   { href: '#/masjid', key: 'nav.masjid', icon: 'masjid', match: (p) => p.startsWith('masjid') },
   { href: '#/quran', key: 'nav.quran', icon: 'quran', match: (p) => p.startsWith('quran') },
   // 斋月里叫"斋月"，平时叫"封斋"（全年都能用：副功斋、补斋）
@@ -242,10 +244,13 @@ onSettings((s) => {
 function resync() {
   if (!isNativeApp()) return;
   refreshSchedule();
-  syncNotifications(ctx).then((r) => {
-    ctx.notifyState = r;
-    if (page && page.onNotify) page.onNotify(r);
-  });
+  notify()
+    .then((m) => m.syncNotifications(ctx))
+    .then((r) => {
+      ctx.notifyState = r;
+      if (page && page.onNotify) page.onNotify(r);
+    })
+    .catch(() => {});
   // 安卓桌面小组件：交给它未来 7 天的时间（见 core/widget.js）
   import('./core/widget.js').then((m) => m.updateWidget(ctx)).catch(() => {});
 }
@@ -273,6 +278,8 @@ function start() {
   window.addEventListener('hashchange', render);
   render();
   hideSplash();
+  if (document.readyState === 'complete') afterFirstScreen();
+  else window.addEventListener('load', afterFirstScreen, { once: true });
   loadWeather();
   resync(); // 手机应用：排好提醒（词典已就绪，提醒文字是所选语言）
   // 与整秒对齐地走时，倒计时更稳
@@ -320,14 +327,20 @@ window.addEventListener('error', (e) => stats().then((m) => m.reportError(e.mess
 window.addEventListener('unhandledrejection', (e) => stats().then((m) => m.reportError(String((e.reason && e.reason.message) || e.reason), 'promise', todayKey())).catch(() => {}));
 if (isNativeApp()) {
   document.documentElement.classList.add('is-app');
-  listenNotificationTaps();
+  notify()
+    .then((m) => m.listenNotificationTaps())
+    .catch(() => {});
 }
 
 // 首屏显示后，空闲时把其他页面也下载好（配合离线缓存，断网也能打开）
-window.addEventListener('load', () => {
-  prefetchPages();
-  setTimeout(phoneHome, 1500);
-});
+// 首屏画好以后（start 之后）再等一会儿才开始，不和首屏抢网速
+let started = false;
+function afterFirstScreen() {
+  if (started) return;
+  started = true;
+  setTimeout(prefetchPages, 1500);
+  setTimeout(phoneHome, 2500);
+}
 
 // 离线缓存（微信 iOS 等不支持的环境会静默跳过）
 // 手机应用里网页文件本来就在手机上，不需要离线缓存（也避免更新应用后还显示旧版）

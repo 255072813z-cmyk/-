@@ -8,6 +8,32 @@
     <meta name="theme-color" content="#0f5940" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
+    <script id="lang-js">
+      // 判断界面语言（设置里选的 → 手机语言 → 默认语言），并马上预先下载这种语言的词典，和主程序同时下。
+      // 放在样式表前面：行内脚本会等前面的样式表下完才执行，放这里不会被挡住。__DICT_FILES__ 构建时换成词典的文件名。
+      (function () {
+        var lang = '';
+        try {
+          var st = JSON.parse(localStorage.getItem('masjid:settings') || 'null');
+          if (st && /^(zh|tg|ru|uz|ky)$/.test(st.lang)) lang = st.lang;
+        } catch (e) {}
+        if (!lang) {
+          var list = navigator.languages || [navigator.language || ''];
+          for (var i = 0; i < list.length && !lang; i++) {
+            var p = String(list[i] || '').toLowerCase().slice(0, 2);
+            if (/^(zh|tg|ru|uz|ky)$/.test(p)) lang = p;
+          }
+        }
+        window.__lang = lang = lang || '__DEFAULT_LANG__';
+        var D = '__DICT_FILES__';
+        if (D && typeof D === 'object' && D[lang]) {
+          var pl = document.createElement('link');
+          pl.rel = 'modulepreload';
+          pl.href = './' + D[lang];
+          document.head.appendChild(pl);
+        }
+      })();
+    </script>
     <style>
       /* 首屏占位：脚本加载前就有底色和标题，避免白屏 */
       html { background: #f7f2e6; }
@@ -79,22 +105,13 @@
       // 自动化测试（navigator.webdriver）里不显示，免得挡住页面。__DEFAULT_LANG__ 构建时换成 src/i18n 里的默认语言。
       (function () {
         var s = document.getElementById('splash');
+        var lang = window.__lang || '__DEFAULT_LANG__', seen = false;
+        try {
+          seen = !!localStorage.getItem('masjid:opened');
+        } catch (e) {}
         if (!s) return;
         if (navigator.webdriver) { s.parentNode.removeChild(s); return; }
-        var lang = '', seen = false;
-        try {
-          var st = JSON.parse(localStorage.getItem('masjid:settings') || 'null');
-          if (st) lang = st.lang || '';
-          seen = !!localStorage.getItem('masjid:opened');
-          localStorage.setItem('masjid:opened', '1');
-        } catch (e) {}
-        if (!lang) {
-          var list = navigator.languages || [navigator.language || ''];
-          for (var i = 0; i < list.length && !lang; i++) {
-            var p = String(list[i] || '').toLowerCase().slice(0, 2);
-            if (p === 'tg' || p === 'ru' || p === 'uz' || p === 'ky' || p === 'zh') lang = p;
-          }
-        }
+        try { localStorage.setItem('masjid:opened', '1'); } catch (e) {}
         var T = {
           tg: ['Ҷойнамоз', 'Вақти намоз · Намоз дар хона', 'Бепул · бе бақайдгирӣ · бе интернет ҳам кор мекунад'],
           ru: ['Джойнамоз', 'Время намаза · Намаз дома', 'Бесплатно · без регистрации · работает без интернета'],

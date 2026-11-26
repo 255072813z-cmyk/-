@@ -8,7 +8,7 @@ import { fastTimes } from './ramadan.js';
 import { toHijri } from './hijri.js';
 import { addDays, localParts, fmtHM, ymdKey } from './clock.js';
 import { t } from '../i18n/index.js';
-import { platform } from './api.js';
+import { platform, isNativeApp } from './api.js';
 
 export const NOTIFY_DAYS = 7;
 // 手机应用里实际排多远：安卓 14 天；苹果系统最多同时保留 64 条，按时间排满为止（约 9–10 天）。
@@ -16,13 +16,9 @@ export const NOTIFY_DAYS = 7;
 export const APP_DAYS = 14;
 export const CAP = { ios: 63, android: 150 };
 export const SAHUR_WARN_MIN = 30; // 斋月：停止吃喝前 30 分钟提醒一次
-export const DEFAULT_NOTIFY = {
-  prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
-  advance: 0, // 提前几分钟（0 = 准时）
-  ramadan: true, // 斋月里、和用户标了要封斋的日子，提醒封斋饭和开斋
-  jumuah: true, // 星期五晌礼前 1 小时提醒主麻
-  streak: true, // 晚上还没打卡时提醒一次
-};
+// 默认的提醒设置在 settings.js（设置模块要用，放这里会把整个提醒模块带进首屏）
+import { DEFAULT_NOTIFY } from './settings.js';
+export { DEFAULT_NOTIFY };
 export const STREAK_HOUR = 21; // 当地晚上 9 点（宵礼还没到时，改到宵礼后 30 分钟）
 export const JUMUAH_WARN_MIN = 60;
 
@@ -93,13 +89,7 @@ export function buildSchedule(city, now, settings) {
 }
 
 /** 是否运行在手机应用里（Capacitor 会在页面加载前注入） */
-export function isNativeApp() {
-  try {
-    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  } catch (e) {
-    return false;
-  }
-}
+export { isNativeApp } from './api.js';
 
 // 注意：Capacitor 的插件对象不能直接作为 async 函数的返回值（会被当成 Promise 去调用 .then），所以包一层返回
 let LN = null;

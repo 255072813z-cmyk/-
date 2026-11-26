@@ -4,6 +4,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+// 界面文字按需下载：测试里先把中文词典准备好
+{
+  const i18n = await import('../src/i18n/index.js');
+  await i18n.loadLang('zh');
+  i18n.setLang('zh');
+}
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 

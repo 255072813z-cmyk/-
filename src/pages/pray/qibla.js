@@ -1,6 +1,7 @@
 // 朝向：手机上用罗盘指向麦加；电脑上看地图和角度。
 import { qiblaBearing, distanceKm, compassPoint, startCompass, greatCirclePoints, KAABA } from '../../core/qibla.js';
-import { kaaba, ICONS, star8 } from '../../ui/art.js';
+import { ICONS, star8 } from '../../ui/art.js';
+import { kaaba } from '../../ui/art-scenes.js';
 import { t, getLang, LANGS } from '../../i18n/index.js';
 import { cityName } from '../../i18n/format.js';
 

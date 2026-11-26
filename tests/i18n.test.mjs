@@ -167,3 +167,30 @@ test('内容：念词、经文、圣训、诗歌都有各语言的意思、出�
   }
   assert.deepEqual(miss, []);
 });
+
+test('早晚记念：每条都有五种语言的标题、意思、贵处、出处和三种译音；条数和首页用的一致', async () => {
+  const { ADHKAR, MORNING, EVENING, NAS_TR } = await import('../src/content/adhkar.js');
+  const { ADHKAR_TOTAL } = await import('../src/core/adhkar.js');
+  assert.equal(MORNING.length, ADHKAR_TOTAL.m);
+  assert.equal(EVENING.length, ADHKAR_TOTAL.e);
+  const L5 = ['zh', 'tg', 'ru', 'uz', 'ky'];
+  const miss = [];
+  for (const id of new Set([...MORNING, ...EVENING])) {
+    const x = ADHKAR[id];
+    if (!x) {
+      miss.push(id);
+      continue;
+    }
+    assert.ok(Number.isInteger(x.count) && x.count >= 1, id);
+    for (const f of ['title', 'fadl', 'src']) for (const l of L5) if (!x[f] || !x[f][l]) miss.push(`${id}.${f}.${l}`);
+    if (x.quran || x.tasbih100) continue;
+    for (const l of L5) if (!x.mean || !x.mean[l]) miss.push(`${id}.mean.${l}`);
+    assert.ok(/[؀-ۿ]/.test(x.ar) && x.tr, id);
+    for (const l of ['tg', 'ru', 'uz']) if (!x.trc || !x.trc[l]) miss.push(`${id}.trc.${l}`);
+    assert.ok(!/[A-Za-z]/.test(x.trc.ru + x.trc.tg), `${id} 西里尔译音里混进了拉丁字母`);
+    assert.ok(!/[Ѐ-ӿ]/.test(x.trc.uz + L5.map((l) => (l === 'uz' ? x.mean.uz + x.fadl.uz + x.title.uz : '')).join('')), `${id} 乌兹别克语里有西里尔字母`);
+  }
+  assert.deepEqual(miss, []);
+  for (const k of ['tr', 'tg', 'ru', 'uz']) assert.equal(NAS_TR[k].length, 6, k);
+  assert.ok(!/[A-Za-z]/.test(NAS_TR.ru.join('') + NAS_TR.tg.join('')));
+});

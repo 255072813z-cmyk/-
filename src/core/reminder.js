@@ -4,7 +4,7 @@ import { load, save } from './storage.js';
 import { ymdKey } from './clock.js';
 import { PRAYERS } from './prayer-times.js';
 import { playChime } from './chime.js';
-import { isNativeApp } from './notify.js';
+import { isNativeApp } from './api.js';
 import { t } from '../i18n/index.js';
 
 const WINDOW = 10 * 60 * 1000;

@@ -438,3 +438,36 @@
 .ayah-mark.is-pop { animation: bump 0.35s var(--ease-spring, ease-out); }
 .q-done { text-align: center; margin: var(--sp-4) 0 0; padding: var(--sp-3); border-radius: var(--r-md); background: var(--green-soft); color: var(--green); font-weight: 700; }
 .q-done.is-pop { animation: pop-in 0.5s var(--ease-spring, ease-out); }
+
+/* 早晚记念 */
+.dk-link { display: grid; grid-template-columns: auto 1fr auto; column-gap: var(--sp-3); row-gap: 2px; align-items: center; margin: var(--sp-3) 0; }
+.dk-link .tool-ico { grid-row: span 3; }
+.dk-link-t { font-weight: 700; color: var(--ink); }
+.dk-link-s { font-size: var(--fs-sm); color: var(--muted); }
+.dk-link .q-bar { grid-column: 2; }
+.dk-link .r-link-go { grid-row: 1 / span 3; grid-column: 3; }
+.dk-link.is-done .dk-link-s { color: var(--green); font-weight: 600; }
+.adhkar .segmented a.seg { text-decoration: none; display: grid; place-items: center; }
+.dk-prog { padding: var(--sp-3) var(--sp-4); }
+.dk-prog-t { margin: 0 0 var(--sp-2); font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.dk-all { margin: var(--sp-2) 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md); background: var(--green-soft); color: var(--green); font-weight: 700; text-align: center; }
+.dk { position: relative; transition: border-color 0.3s var(--ease-out), opacity 0.3s var(--ease-out); }
+.dk-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.dk-title { margin: 0; font-size: var(--fs-lg); font-family: var(--font-zh-serif); color: var(--ink); display: flex; align-items: center; gap: var(--sp-2); }
+.dk-count { flex: none; font-size: var(--fs-sm); color: var(--gold-ink); font-weight: 700; }
+.dk .ar { font-family: var(--font-ar); font-size: 1.55rem; line-height: 2.1; margin: var(--sp-2) 0; }
+.dk .tr { color: var(--ink-2); font-style: italic; margin: var(--sp-1) 0; }
+.dk .zh { margin: var(--sp-1) 0 var(--sp-2); }
+.dk-fadl { margin: var(--sp-2) 0; padding: var(--sp-2) var(--sp-3); border-left: 3px solid var(--gold); background: var(--gold-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; font-size: var(--fs-sm); }
+.dk-fadl b { color: var(--gold-ink); margin-right: var(--sp-1); }
+.dk-surah + .dk-surah { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: var(--hairline); }
+.dk-sname { margin: 0 0 var(--sp-1); font-weight: 700; color: var(--green); }
+.dk-ayah .ar { font-size: 1.45rem; margin: var(--sp-1) 0 0; }
+.dk-ayah .zh { font-size: var(--fs-sm); color: var(--ink-2); }
+.dk-tap { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); width: 100%; min-height: 56px; margin-top: var(--sp-2); padding: 0 var(--sp-4); border: 0; border-radius: var(--r-pill); background: var(--green); color: #fff; font: inherit; cursor: pointer; box-shadow: 0 4px 0 var(--primary-deep); transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.dk-tap:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-deep); }
+.dk-tap-n { font-variant-numeric: tabular-nums; font-size: var(--fs-lg); }
+.dk-tap-n b { display: inline-block; font-size: var(--fs-xl); }
+.dk-tap-l { font-weight: 600; }
+.dk.is-done { border-color: var(--green); }
+.dk.is-done .dk-tap { background: var(--green-soft); color: var(--green); box-shadow: none; cursor: default; }

@@ -1,11 +1,10 @@
 // 多语言
 //
-// 所有界面文字都在语言文件里（zh.js 中文；以后加 tg.js 塔吉克语、ru.js 俄语），代码里不写死任何文字。
+// 所有界面文字都在语言文件里（zh.js 中文开发版、tg.js 塔吉克语、ru.js 俄语、uz.js 乌兹别克语、ky.js 吉尔吉斯语），代码里不写死任何文字。
 // 翻译时：复制 zh.js，逐条翻译右边的文字，保留 {名字} 这样的占位符不动。
 // 宗教内容（念词的意思、诗句译文、古兰经译文）在 content/ 下，每条按语言分字段：{ zh: '…', tg: '…', ru: '…' }。
 //
 // 单复数：词条可以写成 { one, few, many, other }（俄语需要），t(key, { n }) 会按语言规则选择。
-import zh from './zh.js';
 
 export const LANGS = {
   zh: { name: '中文', locale: 'zh-CN', ready: true },
@@ -19,20 +18,21 @@ const FALLBACK = { uz: 'ru', ky: 'ru', tg: 'ru' };
 // 手机语言既不是塔吉克语、俄语也不是中文时用哪种。开发阶段为中文；上线前改成 'tg'（或 'ru'）。
 export const DEFAULT_LANG = 'zh';
 
-const DICTS = { zh };
-// 塔吉克语、俄语按需下载（不增加首屏体积）
-const LOADERS = { tg: () => import('./tg.js'), ru: () => import('./ru.js'), uz: () => import('./uz.js'), ky: () => import('./ky.js') };
+const DICTS = {};
+// 每种语言的词典都按需下载：只下载用户用的那一种（中文是开发用语言，正式用户不用下载它）
+const LOADERS = { zh: () => import('./zh.js'), tg: () => import('./tg.js'), ru: () => import('./ru.js'), uz: () => import('./uz.js'), ky: () => import('./ky.js') };
 
 /** 下载某种语言的词典；成功返回 true */
 export function loadLang(l) {
   if (DICTS[l]) return Promise.resolve(true);
   if (!LOADERS[l]) return Promise.resolve(false);
-  return LOADERS[l]()
-    .then((m) => {
+  const once = () =>
+    LOADERS[l]().then((m) => {
       DICTS[l] = m.default;
       return true;
-    })
-    .catch(() => false);
+    });
+  // 网络偶尔抖一下：隔一会儿再试一次
+  return once().catch(() => new Promise((r) => setTimeout(r, 800)).then(once).catch(() => false));
 }
 
 /** 第一次打开时按手机语言选（塔吉克语、俄语、乌兹别克语、吉尔吉斯语、中文），都不是就用 DEFAULT_LANG */
@@ -79,9 +79,11 @@ function pluralForm(n) {
 }
 
 function lookup(key) {
-  const d = DICTS[lang] || zh;
-  if (d[key] != null) return d[key];
-  if (zh[key] != null) return zh[key];
+  // 当前语言 → 退到的语言 → 已经下载的任何一种（各语言的词条一一对应，测试保证）
+  for (const l of [lang, FALLBACK[lang], ...Object.keys(DICTS)]) {
+    const d = l && DICTS[l];
+    if (d && d[key] != null) return d[key];
+  }
   return null;
 }
 

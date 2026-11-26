@@ -3,7 +3,8 @@
 import { ramadanStatus, fastPhase, fastTimes, holidays, SAHUR_MARGIN_MIN } from '../../core/ramadan.js';
 import { fmtHM, addDays } from '../../core/clock.js';
 import { load, save } from '../../core/storage.js';
-import { ramadanScene, star8 } from '../../ui/art.js';
+import { star8 } from '../../ui/art.js';
+import { ramadanScene } from '../../ui/art-scenes.js';
 import { reciteCard } from '../../ui/recite.js';
 import { t } from '../../i18n/index.js';
 import { ymdKey } from '../../core/clock.js';

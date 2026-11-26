@@ -18,9 +18,8 @@ function contentSecurityPolicy(env) {
   };
   function cspHandler(html) {
     const app = env.APP_BUILD === '1';
-    // 启动画面那一小段行内脚本：按内容摘要放行（内容一改，摘要跟着变）
-    const splash = html.match(/<script id="splash-js">([\s\S]*?)<\/script>/);
-    const own = splash ? [createHash('sha256').update(splash[1], 'utf8').digest('base64')] : [];
+    // 头部判断语言的小脚本、启动画面的脚本：按内容摘要放行（内容一改，摘要跟着变）
+    const own = [...html.matchAll(/<script id="(?:splash|lang)-js">([\s\S]*?)<\/script>/g)].map((m) => createHash('sha256').update(m[1], 'utf8').digest('base64'));
     const origins = new Set(['https://api.open-meteo.com']);
     for (const v of [env.VITE_API_URL, env.VITE_PRESENCE_URL]) {
       try {
@@ -59,7 +58,20 @@ function contentSecurityPolicy(env) {
 function splashLang() {
   const m = readFileSync(new URL('./src/i18n/index.js', import.meta.url), 'utf8').match(/export const DEFAULT_LANG = '(\w+)'/);
   const lang = m ? m[1] : 'tg';
-  return { name: 'splash-lang', transformIndexHtml: (html) => html.replace("'__DEFAULT_LANG__'", `'${lang}'`) };
+  return {
+    name: 'splash-lang',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        // 词典按需下载：启动脚本一判断出语言，就和主程序同时预先下载那一种的词典（不等主程序下完再去下）
+        const dicts = {};
+        for (const c of Object.values((ctx && ctx.bundle) || {}))
+          if (c.type === 'chunk' && c.facadeModuleId && /src\/i18n\/(zh|tg|ru|uz|ky)\.js$/.test(c.facadeModuleId) && !/-legacy/.test(c.fileName))
+            dicts[c.facadeModuleId.match(/(\w+)\.js$/)[1]] = c.fileName;
+        return html.replaceAll("'__DEFAULT_LANG__'", `'${lang}'`).replaceAll("'__DICT_FILES__'", JSON.stringify(dicts));
+      },
+    },
+  };
 }
 
 export default defineConfig(({ mode }) => {

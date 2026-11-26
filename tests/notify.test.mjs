@@ -5,6 +5,12 @@ import { buildSchedule, notifId, DEFAULT_NOTIFY, SAHUR_WARN_MIN } from '../src/c
 import { getCity } from '../src/core/cities.js';
 import { timesFor } from '../src/core/prayer-times.js';
 import { fastTimes } from '../src/core/ramadan.js';
+// 界面文字按需下载：测试里先把中文词典准备好
+{
+  const i18n = await import('../src/i18n/index.js');
+  await i18n.loadLang('zh');
+  i18n.setLang('zh');
+}
 
 const city = getCity('dushanbe');
 const base = { remind: true, notify: DEFAULT_NOTIFY, offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }, hijriAdjust: 0 };

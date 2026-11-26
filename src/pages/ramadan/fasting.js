@@ -11,7 +11,8 @@ import { forbiddenDay, sunnahReasons, upcomingSunnah, fastLog, setFast, oweDays,
 import { award } from '../../core/badges.js';
 import { cheer } from '../../ui/cheer.js';
 import { setCount } from '../../ui/motion.js';
-import { ramadanScene, star8 } from '../../ui/art.js';
+import { star8 } from '../../ui/art.js';
+import { ramadanScene } from '../../ui/art-scenes.js';
 import { t } from '../../i18n/index.js';
 import { dateShort, durHTML, cityName, hijriLine } from '../../i18n/format.js';
 
