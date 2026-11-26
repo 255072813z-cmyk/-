@@ -289,6 +289,7 @@ function fillForm(cfg) {
     ['UZ', '乌兹别克斯坦'],
     ['KG', '吉尔吉斯斯坦'],
     ['RU', '俄罗斯'],
+    ['CN', '中国'],
   ]
     .map(([cc, name]) => {
       const h = c.hijri[cc] || {};

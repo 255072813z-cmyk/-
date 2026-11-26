@@ -19,6 +19,7 @@ import { ymdKey } from '../core/clock.js';
 import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
 import { streakCard } from '../ui/streak-ui.js';
 import { adhkarCard } from '../ui/adhkar-card.js';
+import { markFeature } from '../core/usage.js';
 import { softToast } from '../core/reminder.js';
 import { setCount } from '../ui/motion.js';
 // 分享按需下载（点了才用到）
@@ -185,9 +186,11 @@ function welcomeHTML(ctx) {
     <p class="notify-card-t">${t('home.welcomeTitle')}</p>
     <p>${t('home.welcomeText', { city: cityName(ctx.city) })}</p>
     <div class="step-btns">
-      <button type="button" class="btn btn-primary" data-city-ok>${t('home.welcomeOk', { city: cityName(ctx.city) })}</button>
+      <button type="button" class="btn btn-primary" data-city-auto>${t('home.welcomeAuto')}</button>
+      <button type="button" class="btn btn-ghost" data-city-ok>${t('home.welcomeOk', { city: cityName(ctx.city) })}</button>
       <a class="btn btn-ghost" href="#/city">${t('home.welcomeChoose')}</a>
     </div>
+    <p class="note" data-auto-msg aria-live="polite">${t('home.welcomeAutoNote')}</p>
   </section>`;
 }
 
@@ -374,6 +377,23 @@ export function homePage(ctx) {
       );
       const ok = el.querySelector('[data-city-ok]');
       if (ok) ok.addEventListener('click', () => setSettings({ cityConfirmed: true }));
+      // 自动定位：位置只在手机上算礼拜时间和朝向，不上传；时区用手机的
+      const auto = el.querySelector('[data-city-auto]');
+      if (auto)
+        auto.addEventListener('click', async () => {
+          const msg = el.querySelector('[data-auto-msg]');
+          auto.disabled = true;
+          msg.textContent = t('city.locating');
+          try {
+            const { locate } = await import('../core/location.js');
+            const loc = await locate();
+            markFeature('here', ymdKey(ctx.sched.today));
+            setSettings({ city: 'here', loc, cityConfirmed: true, autoLoc: true });
+          } catch (e) {
+            auto.disabled = false;
+            msg.textContent = t(e && e.code === 1 ? 'city.denied' : e && e.message === 'unsupported' ? 'city.unsupported' : 'city.failed');
+          }
+        });
     },
     onNotify(r) {
       const box = document.querySelector('[data-notify-card]');

@@ -8,7 +8,7 @@ import './styles/pray.css';
 import './styles/spaces.css';
 import './styles/motion.css';
 
-import { getSettings, onSettings } from './core/settings.js';
+import { getSettings, onSettings, setSettings } from './core/settings.js';
 import { getCity, withMethod } from './core/cities.js';
 import { now, setDisplayOffset, ymdKey } from './core/clock.js';
 import { schedule } from './core/prayer-times.js';
@@ -333,6 +333,23 @@ if (isNativeApp()) {
 }
 
 // 首屏显示后，空闲时把其他页面也下载好（配合离线缓存，断网也能打开）
+// "我的位置"模式：打开时跟着手机时区走；开了自动定位、又已经允许过定位，就悄悄更新位置（不弹窗）。
+// 切回应用时也查一次（最多 30 分钟一次），出门、换时区后不用手动改。
+let lastLocCheck = 0;
+function refreshLocation() {
+  if (ctx.settings.city !== 'here' || Date.now() - lastLocCheck < 30 * 60000) return;
+  lastLocCheck = Date.now();
+  import('./core/location.js')
+    .then((m) => m.refreshHere(ctx.settings))
+    .then((loc) => {
+      if (loc) setSettings({ loc });
+    })
+    .catch(() => {});
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshLocation();
+});
+
 // 首屏画好以后（start 之后）再等一会儿才开始，不和首屏抢网速
 let started = false;
 function afterFirstScreen() {
@@ -340,6 +357,7 @@ function afterFirstScreen() {
   started = true;
   setTimeout(prefetchPages, 1500);
   setTimeout(phoneHome, 2500);
+  refreshLocation();
 }
 
 // 离线缓存（微信 iOS 等不支持的环境会静默跳过）

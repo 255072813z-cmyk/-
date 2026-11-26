@@ -1,10 +1,10 @@
 // 城市数据（见 content/cities-data.js：坐标、时区、磁偏角、算法，脚本生成）
-// - 时区：塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯都不实行夏令时，按固定 UTC 偏移计算，不读取手机时区。
+// - 时区：塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯、中国（北京时间）都不实行夏令时，按固定 UTC 偏移计算，不读取手机时区。
 // - "我的位置"：坐标只在手机上计算礼拜时间，不上传；查天气时用最近的城市代替，不把位置发出去。
 import { CITY_DATA } from '../content/cities-data.js';
 
 export const CITIES = Object.fromEntries(CITY_DATA.map((c) => [c.id, c]));
-export const CITY_GROUPS = ['TJ', 'UZ', 'KG', 'RU'].map((cc) => ({ cc, ids: CITY_DATA.filter((c) => c.cc === cc).map((c) => c.id) }));
+export const CITY_GROUPS = ['TJ', 'UZ', 'KG', 'RU', 'CN'].map((cc) => ({ cc, ids: CITY_DATA.filter((c) => c.cc === cc).map((c) => c.id) }));
 export const DEFAULT_CITY = 'dushanbe';
 
 /** 两点距离（公里） */
@@ -56,6 +56,14 @@ const TZ_CITY = {
   'Asia/Tashkent': 'tashkent',
   'Asia/Samarkand': 'samarkand',
   'Asia/Bishkek': 'bishkek',
+  // 中国：手机设北京时间的猜北京；设新疆时间的猜乌鲁木齐；不准时首页请用户确认或自动定位
+  'Asia/Shanghai': 'beijing',
+  'Asia/Chongqing': 'chongqing',
+  'Asia/Chungking': 'chongqing',
+  'Asia/Harbin': 'beijing',
+  'PRC': 'beijing',
+  'Asia/Urumqi': 'urumqi',
+  'Asia/Kashgar': 'kashgar',
   'Europe/Moscow': 'moscow',
   'Europe/Volgograd': 'rostov',
   'Europe/Kirov': 'kazan',

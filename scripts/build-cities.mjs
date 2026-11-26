@@ -44,6 +44,33 @@ const LIST = [
   ['naryn', 'Naryn', 'KG', 'karachi'],
   ['talas', 'Talas', 'KG', 'karachi'],
   ['batken', 'Batken', 'KG', 'karachi'],
+  // 中国：统一用北京时间（官方时间；新疆的城市也一样，手机多数设的是北京时间），算法 18°/18°（与《中国天文年历》的天文晨光一致）
+  ['beijing', 'Beijing', 'CN', 'karachi'],
+  ['tianjin', 'Tianjin', 'CN', 'karachi'],
+  ['shanghai', 'Shanghai', 'CN', 'karachi'],
+  ['hangzhou', 'Hangzhou', 'CN', 'karachi'],
+  ['yiwu', 'Yiwu', 'CN', 'karachi'],
+  ['nanjing', 'Nanjing', 'CN', 'karachi'],
+  ['guangzhou', 'Guangzhou', 'CN', 'karachi'],
+  ['shenzhen', 'Shenzhen', 'CN', 'karachi'],
+  ['wuhan', 'Wuhan', 'CN', 'karachi'],
+  ['zhengzhou', 'Zhengzhou', 'CN', 'karachi'],
+  ['xian', "Xi'an", 'CN', 'karachi'],
+  ['chengdu', 'Chengdu', 'CN', 'karachi'],
+  ['chongqing', 'Chongqing', 'CN', 'karachi'],
+  ['kunming', 'Kunming', 'CN', 'karachi'],
+  ['lanzhou', 'Lanzhou', 'CN', 'karachi'],
+  ['linxia', 'Linxia', 'CN', 'karachi'],
+  ['xining', 'Xining', 'CN', 'karachi'],
+  ['yinchuan', 'Yinchuan', 'CN', 'karachi'],
+  ['wuzhong', 'Wuzhong', 'CN', 'karachi'],
+  ['hohhot', 'Hohhot', 'CN', 'karachi'],
+  ['urumqi', 'Urumqi', 'CN', 'karachi'],
+  ['turpan', 'Turpan', 'CN', 'karachi'],
+  ['yining', 'Yining', 'CN', 'karachi'],
+  ['aksu', 'Aksu', 'CN', 'karachi'],
+  ['kashgar', 'Kashgar', 'CN', 'karachi'],
+  ['hotan', 'Hotan', 'CN', 'karachi'],
   ['moscow', 'Moscow', 'RU', 'dumrf'],
   ['spb', 'Saint Petersburg', 'RU', 'dumrf'],
   ['kazan', 'Kazan', 'RU', 'dumrf'],
@@ -93,6 +120,8 @@ const model = geomagnetism.model(new Date('2026-12-01'));
 const out = [];
 for (const [id, name, cc, method] of LIST) {
   const g = await geocode(name, cc);
+  // 中国全国用北京时间（地名库里新疆的城市记的是 Asia/Urumqi，即 UTC+6 的"新疆时间"）
+  if (cc === 'CN') g.timezone = 'Asia/Shanghai';
   const winter = offsetHours(g.timezone, new Date('2027-01-15T12:00:00Z'));
   const summer = offsetHours(g.timezone, new Date('2027-07-15T12:00:00Z'));
   if (winter !== summer) throw new Error(`${name} 有夏令时，需要单独处理`);
@@ -114,7 +143,7 @@ writeFileSync(
   new URL('../src/content/cities-data.js', import.meta.url),
   `// 自动生成：npm run cities（scripts/build-cities.mjs）。请勿手改。
 // 坐标与时区：Open-Meteo 地名库（数据来自 GeoNames，geonameId 可查）；磁偏角：WMM-2025（2026 年 12 月）。
-// 塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
+// 塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯、中国都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）；中国统一用北京时间。
 export const CITY_DATA = ${JSON.stringify(out, null, 1)};
 `,
 );

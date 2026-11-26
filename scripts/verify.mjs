@@ -619,8 +619,10 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await users[0].page.waitForFunction(() => /此刻在大殿 2 人/.test(document.querySelector('[data-count]').textContent), null, { timeout: 5000 }).catch(() => {});
   check('有人离开，人数实时减少', /此刻在大殿 2 人/.test(await users[0].page.textContent('[data-count]')));
   await users[0].page.goto(base + q.replace('#/masjid/hall', '#/masjid'));
-  await users[0].page.waitForFunction(() => /此刻/.test(document.querySelector('[data-count="hall"]').textContent), null, { timeout: 5000 }).catch(() => {});
-  check('入口页只读人数（看人数不算人头）', /此刻 1 人 · 垫子 1\/2/.test(await users[0].page.textContent('[data-count="hall"]')), await users[0].page.textContent('[data-count="hall"]'));
+  // 离开大殿的那条连接断开要一点时间：等人数稳定下来，只读一次
+  await users[0].page.waitForFunction(() => /此刻 1 人 · 垫子 1\/2/.test(document.querySelector('[data-count="hall"]').textContent), null, { timeout: 15000 }).catch(() => {});
+  const entry = await users[0].page.textContent('[data-count="hall"]');
+  check('入口页只读人数（看人数不算人头）', /此刻 1 人 · 垫子 1\/2/.test(entry), entry);
   for (const u of users) await u.ctx.close().catch(() => {});
   await ps.close();
 }
@@ -922,6 +924,45 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const hubCard = (await page.textContent('.dk-link').catch(() => '')) || '';
   check('傍晚打开是傍晚那组（有"完美言辞"，没有"一天一百遍"）；礼拜页一直有早晚记念入口', eve === '傍晚' && ids.includes('kalimat') && !ids.includes('tahlil') && /傍晚的记念/.test(hubCard), `${eve}：${ids.join(' ')}`);
   check('早晚记念以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 14. 中国大陆：中文手机、北京时间 → 默认北京；首页一键自动定位（喀什）→ 用"我的位置"、北京时间；
+//     手机换了位置（到乌鲁木齐），下次打开悄悄更新，不弹窗
+{
+  const ctx = await browser.newContext({ ...phone, locale: 'zh-CN', timezoneId: 'Asia/Shanghai', geolocation: { latitude: 39.4704, longitude: 75.9898 }, permissions: ['geolocation'] });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  const q = '?weather=clear&now=2026-12-18T09:20';
+  await page.goto(base + q);
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(base + q + '&r=1#/');
+  await page.waitForSelector('.welcome-card');
+  const guessed = (await page.textContent('.city-btn')).trim();
+  const welcome = (await page.textContent('.welcome-card')).replace(/\s+/g, ' ');
+  await page.click('[data-city-auto]');
+  await page.waitForFunction(() => /"city":"here"/.test(localStorage.getItem('masjid:settings') || ''), null, { timeout: 8000 });
+  await page.waitForSelector('.welcome-card', { state: 'detached' });
+  const st = await page.evaluate(() => JSON.parse(localStorage.getItem('masjid:settings')));
+  const cityBtn = (await page.textContent('.city-btn')).trim();
+  const dhuhr = (await page.locator('.prow').nth(2).locator('.prow-time').textContent()).trim();
+  check('中国：中文手机、北京时间默认选北京；首页"自动定位"后用我的位置（喀什附近）、北京时间，晌礼在下午两点多，自动定位打开', /北京/.test(guessed) && /自动定位/.test(welcome) && st.city === 'here' && st.autoLoc === true && st.loc.utcOffset === 8 && /喀什/.test(cityBtn) && /^14:/.test(dhuhr), `猜的 ${guessed}；定位后 ${cityBtn}，晌礼 ${dhuhr}，时区 +${st.loc.utcOffset}`);
+  // 人到了乌鲁木齐：重新打开应用，位置悄悄更新（不弹窗）
+  await ctx.setGeolocation({ latitude: 43.8, longitude: 87.6 });
+  await page.goto(base + q + '&r=2#/');
+  await page.waitForFunction(() => /"lat":43\.8/.test(localStorage.getItem('masjid:settings') || ''), null, { timeout: 10000 }).catch(() => {});
+  const st2 = await page.evaluate(() => JSON.parse(localStorage.getItem('masjid:settings')));
+  await page.waitForTimeout(300);
+  const cityBtn2 = (await page.textContent('.city-btn')).trim();
+  check('开了自动定位：换了地方再打开，位置自己更新到乌鲁木齐附近', st2.loc.lat === 43.8 && /乌鲁木齐/.test(cityBtn2), `${st2.loc.lat}, ${st2.loc.lon}，${cityBtn2}`);
+  // 城市列表里有中国，中文界面排在前面
+  await page.goto(base + q + '&r=3#/city');
+  await page.waitForSelector('[data-group]');
+  const firstGroup = (await page.locator('[data-group] .card-title').first().textContent()).trim();
+  const cn = await page.locator('[data-pick="lanzhou"], [data-pick="linxia"], [data-pick="xining"], [data-pick="yinchuan"]').count();
+  check('城市列表有中国（兰州、临夏、西宁、银川等），中文界面中国排第一组', /中国/.test(firstGroup) && cn === 4, firstGroup);
+  check('中国、自动定位以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }
 

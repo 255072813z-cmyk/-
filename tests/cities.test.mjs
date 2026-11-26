@@ -16,16 +16,17 @@ import { addDays, fmtHM, setDisplayOffset } from '../src/core/clock.js';
 
 const ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-test('51 个城市：塔吉克斯坦 12 个、乌兹别克斯坦 13 个、吉尔吉斯斯坦 10 个、俄罗斯 16 个，编号不重复', () => {
-  assert.equal(CITY_DATA.length, 51);
-  assert.equal(new Set(CITY_DATA.map((c) => c.id)).size, 51);
+test('77 个城市：塔吉克斯坦 12、乌兹别克斯坦 13、吉尔吉斯斯坦 10、俄罗斯 16、中国 26，编号不重复', () => {
+  assert.equal(CITY_DATA.length, 77);
+  assert.equal(new Set(CITY_DATA.map((c) => c.id)).size, 77);
   const n = (cc) => CITY_DATA.filter((c) => c.cc === cc).length;
-  assert.deepEqual([n('TJ'), n('UZ'), n('KG'), n('RU')], [12, 13, 10, 16]);
+  assert.deepEqual([n('TJ'), n('UZ'), n('KG'), n('RU'), n('CN')], [12, 13, 10, 16, 26]);
   for (const c of CITY_DATA) {
     assert.ok(Number.isFinite(c.lat) && Number.isFinite(c.lon) && Number.isFinite(c.utcOffset) && Number.isFinite(c.declination), c.id);
     // 塔吉克斯坦、乌兹别克斯坦 UTC+5，吉尔吉斯斯坦 UTC+6（都没有夏令时）
     if (c.cc === 'TJ' || c.cc === 'UZ') assert.equal(c.utcOffset, 5, c.id);
     if (c.cc === 'KG') assert.equal(c.utcOffset, 6, c.id);
+    if (c.cc === 'CN') assert.equal(c.utcOffset, 8, c.id); // 中国全国北京时间（包括新疆）
   }
 });
 
@@ -39,11 +40,11 @@ test('全部城市全年每一天：时间有值、先后顺序正确、间隔�
       const v = ORDER.map((k) => t[k].getTime());
       if (v.some((x) => !Number.isFinite(x))) problems.push(`${c.id} ${d.y}-${d.m}-${d.d} 有空值`);
       for (let k = 1; k < v.length; k++) if (!(v[k] > v[k - 1])) problems.push(`${c.id} ${d.y}-${d.m}-${d.d} ${ORDER[k - 1]}≥${ORDER[k]}`);
-      // 晌礼在当地 10:30–14:30 之间（时区与经度匹配）
-      const noon = +fmtHM(new Date(t.dhuhr.getTime() + c.utcOffset * 36e5 - 0)).slice(0, 2);
+      // 晌礼在太阳正午前后（按经度和时区算出的正午 ± 25 分钟；中国西部用北京时间，正午在下午两三点）
       const dh = new Date(t.dhuhr.getTime() + c.utcOffset * 36e5);
       const hh = dh.getUTCHours() + dh.getUTCMinutes() / 60;
-      if (hh < 10.5 || hh > 14.5) problems.push(`${c.id} 晌礼 ${hh.toFixed(2)} 不在中午附近 ${noon}`);
+      const noon = 12 - c.lon / 15 + c.utcOffset;
+      if (Math.abs(hh - noon) > 25 / 60) problems.push(`${c.id} 晌礼 ${hh.toFixed(2)} 不在正午 ${noon.toFixed(2)} 附近`);
       // 每两番之间至少 20 分钟
       for (let k = 1; k < v.length; k++) if (v[k] - v[k - 1] < 20 * 60000) problems.push(`${c.id} ${d.y}-${d.m}-${d.d} ${ORDER[k - 1]}→${ORDER[k]} 不到 20 分钟`);
       const f = fastTimes(c, d);
@@ -87,8 +88,9 @@ test('显示时间跟着所选城市的时区（莫斯科 UTC+3、符拉迪沃�
   // 晌礼必在当地正午前后 1 个半小时内：说明时区用对了
   for (const c of CITY_DATA) {
     setDisplayOffset(c.utcOffset);
-    const [hh] = fmtHM(timesFor(c, ymd).dhuhr).split(':').map(Number);
-    assert.ok(hh >= 11 && hh <= 13, `${c.id} 晌礼 ${hh} 点`);
+    const [hh, mm] = fmtHM(timesFor(c, ymd).dhuhr).split(':').map(Number);
+    const noon = 12 - c.lon / 15 + c.utcOffset; // 按经度和时区算的太阳正午（当地钟点）
+    assert.ok(Math.abs(hh + mm / 60 - noon) < 0.5, `${c.id} 晌礼 ${hh}:${mm}，正午约 ${noon.toFixed(2)}`);
   }
   setDisplayOffset(5);
 });

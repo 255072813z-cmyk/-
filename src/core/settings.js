@@ -24,6 +24,7 @@ const DEFAULTS = {
   hijriAdjust: 0, // 伊斯兰历按当地宣布调整（天）——只在 hijriManual 为 true 时使用
   hijriManual: false, // false：跟随当地宣布（后台发布的调整）；true：用户自己调
   stats: true, // 匿名使用统计（可关闭）
+  autoLoc: false, // 自动定位：用"我的位置"时，每次打开应用自动更新位置和时区（位置只在手机上用）
   lang: 'zh', // zh 中文（开发用）/ tg 塔吉克语 / ru 俄语；第一次打开按手机语言选
 };
 
@@ -52,6 +53,7 @@ export function normalizeSettings(saved) {
   out.remind = bool(s.remind, true);
   out.sound = bool(s.sound, false);
   out.stats = bool(s.stats, true);
+  out.autoLoc = bool(s.autoLoc, false) && out.city === 'here';
   const o = s.offsets || {};
   out.offsets = {};
   for (const p of Object.keys(DEFAULTS.offsets)) out.offsets[p] = int(Number(o[p]), -30, 30, 0);

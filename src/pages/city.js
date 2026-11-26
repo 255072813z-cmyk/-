@@ -29,7 +29,7 @@ function row(ctx, id, showTime) {
 }
 
 // 分组顺序：当前城市所在的国家排第一；乌兹别克语、吉尔吉斯语界面再把本国排在前面
-const HOME_CC = { uz: 'UZ', ky: 'KG', tg: 'TJ' };
+const HOME_CC = { uz: 'UZ', ky: 'KG', tg: 'TJ', zh: 'CN' };
 function orderedGroups(ctx) {
   const rank = (g) => (g.cc === ctx.city.cc ? 0 : g.cc === HOME_CC[getLang()] ? 1 : 2);
   return [...CITY_GROUPS].sort((a, b) => rank(a) - rank(b));
@@ -72,7 +72,7 @@ export function cityPage(ctx) {
     mount(el) {
       el.querySelectorAll('[data-pick]').forEach((b) =>
         b.addEventListener('click', () => {
-          setSettings({ city: b.dataset.pick, cityConfirmed: true });
+          setSettings({ city: b.dataset.pick, cityConfirmed: true, autoLoc: false });
           done();
         }),
       );
@@ -100,7 +100,7 @@ export function cityPage(ctx) {
         locate()
           .then((loc) => {
             markFeature('here', ymdKey(ctx.sched.today));
-            setSettings({ city: 'here', loc, cityConfirmed: true });
+            setSettings({ city: 'here', loc, cityConfirmed: true, autoLoc: true });
             done();
           })
           .catch((e) => {

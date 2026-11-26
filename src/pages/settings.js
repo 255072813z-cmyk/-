@@ -32,6 +32,11 @@ export function settingsPage(ctx) {
       <span class="athome-t">${t('settings.cityIs', { name: cityName(ctx.city) })}</span>
       <span class="athome-s">${t('settings.cityChange')} →</span>
     </a>
+    <section class="card">
+      <label class="switch-row"><span><b>${t('settings.autoLoc')}</b><small>${t('settings.autoLocSub')}</small></span>
+        <input type="checkbox" data-autoloc ${s.autoLoc ? 'checked' : ''}></label>
+      <p class="note" data-autoloc-msg aria-live="polite"></p>
+    </section>
 
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('settings.fontTitle')}</h2>
@@ -219,6 +224,20 @@ export function settingsPage(ctx) {
       el.querySelector('[data-hj-auto]').addEventListener('click', () => setSettings({ hijriAdjust: 0, hijriManual: false }));
       el.querySelector('[data-stats]').addEventListener('change', (e) => setSettings({ stats: e.target.checked }));
       bindBackup(el, ctx);
+      const al = el.querySelector('[data-autoloc]');
+      al.addEventListener('change', async () => {
+        const msg = el.querySelector('[data-autoloc-msg]');
+        if (!al.checked) return setSettings({ autoLoc: false });
+        msg.textContent = t('city.locating');
+        try {
+          const { locate } = await import('../core/location.js');
+          const loc = await locate();
+          setSettings({ city: 'here', loc, cityConfirmed: true, autoLoc: true });
+        } catch (e) {
+          al.checked = false;
+          msg.textContent = t(e && e.code === 1 ? 'city.denied' : e && e.message === 'unsupported' ? 'city.unsupported' : 'city.failed');
+        }
+      });
       el.querySelectorAll('[data-lang]:not([disabled])').forEach((b) => b.addEventListener('click', () => setSettings({ lang: b.dataset.lang })));
     },
   };

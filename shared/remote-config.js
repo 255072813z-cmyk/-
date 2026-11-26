@@ -10,7 +10,7 @@ export const LANGS = ['zh', 'tg', 'ru', 'uz', 'ky'];
 export const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 export const FLAGS = ['masjid', 'presence', 'weather', 'stats'];
 // 伊斯兰历按国家校正（各国宗教局公布的日期可能不同）
-export const COUNTRIES = ['TJ', 'UZ', 'KG', 'RU'];
+export const COUNTRIES = ['TJ', 'UZ', 'KG', 'RU', 'CN'];
 export const LIMITS = { offsetMin: 30, hijri: 2, text: 400, notices: 3, body: 65536 };
 // 应用商店链接只允许这些网址
 export const STORE_HOSTS = { android: ['play.google.com', 'galaxystore.samsung.com', 'apps.samsung.com'], ios: ['apps.apple.com'] };

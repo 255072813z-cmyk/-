@@ -1,6 +1,6 @@
 // 自动生成：npm run cities（scripts/build-cities.mjs）。请勿手改。
 // 坐标与时区：Open-Meteo 地名库（数据来自 GeoNames，geonameId 可查）；磁偏角：WMM-2025（2026 年 12 月）。
-// 塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）。
+// 塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯、中国都不实行夏令时，UTC 偏移全年固定（生成时已核对冬、夏两个日期）；中国统一用北京时间。
 export const CITY_DATA = [
  {
   "id": "dushanbe",
@@ -386,6 +386,292 @@ export const CITY_DATA = [
   "declination": 5,
   "method": "karachi",
   "geonameId": 1528735
+ },
+ {
+  "id": "beijing",
+  "cc": "CN",
+  "lat": 39.9075,
+  "lon": 116.39723,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -7.6,
+  "method": "karachi",
+  "geonameId": 1816670
+ },
+ {
+  "id": "tianjin",
+  "cc": "CN",
+  "lat": 39.14222,
+  "lon": 117.17667,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -7.6,
+  "method": "karachi",
+  "geonameId": 1792947
+ },
+ {
+  "id": "shanghai",
+  "cc": "CN",
+  "lat": 31.22222,
+  "lon": 121.45806,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -6.6,
+  "method": "karachi",
+  "geonameId": 1796236
+ },
+ {
+  "id": "hangzhou",
+  "cc": "CN",
+  "lat": 30.29365,
+  "lon": 120.16142,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -6.1,
+  "method": "karachi",
+  "geonameId": 1808926
+ },
+ {
+  "id": "yiwu",
+  "cc": "CN",
+  "lat": 29.31506,
+  "lon": 120.07676,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -5.9,
+  "method": "karachi",
+  "geonameId": 1814870
+ },
+ {
+  "id": "nanjing",
+  "cc": "CN",
+  "lat": 32.06167,
+  "lon": 118.77778,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -6.3,
+  "method": "karachi",
+  "geonameId": 1799962
+ },
+ {
+  "id": "guangzhou",
+  "cc": "CN",
+  "lat": 23.11667,
+  "lon": 113.25,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -3.3,
+  "method": "karachi",
+  "geonameId": 1809858
+ },
+ {
+  "id": "shenzhen",
+  "cc": "CN",
+  "lat": 22.54554,
+  "lon": 114.0683,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -3.3,
+  "method": "karachi",
+  "geonameId": 1795565
+ },
+ {
+  "id": "wuhan",
+  "cc": "CN",
+  "lat": 30.58333,
+  "lon": 114.26667,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -4.9,
+  "method": "karachi",
+  "geonameId": 1791247
+ },
+ {
+  "id": "zhengzhou",
+  "cc": "CN",
+  "lat": 34.75778,
+  "lon": 113.64861,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -5.6,
+  "method": "karachi",
+  "geonameId": 1784658
+ },
+ {
+  "id": "xian",
+  "cc": "CN",
+  "lat": 34.25833,
+  "lon": 108.92861,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -4.2,
+  "method": "karachi",
+  "geonameId": 1790630
+ },
+ {
+  "id": "chengdu",
+  "cc": "CN",
+  "lat": 30.66667,
+  "lon": 104.06667,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -2.4,
+  "method": "karachi",
+  "geonameId": 1815286
+ },
+ {
+  "id": "chongqing",
+  "cc": "CN",
+  "lat": 29.56026,
+  "lon": 106.55771,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -2.9,
+  "method": "karachi",
+  "geonameId": 1814906
+ },
+ {
+  "id": "kunming",
+  "cc": "CN",
+  "lat": 25.03889,
+  "lon": 102.71833,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -1.7,
+  "method": "karachi",
+  "geonameId": 1804651
+ },
+ {
+  "id": "lanzhou",
+  "cc": "CN",
+  "lat": 36.05701,
+  "lon": 103.83987,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -2.9,
+  "method": "karachi",
+  "geonameId": 1804430
+ },
+ {
+  "id": "linxia",
+  "cc": "CN",
+  "lat": 35.60028,
+  "lon": 103.20639,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -2.7,
+  "method": "karachi",
+  "geonameId": 1803331
+ },
+ {
+  "id": "xining",
+  "cc": "CN",
+  "lat": 36.62554,
+  "lon": 101.75739,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -2.3,
+  "method": "karachi",
+  "geonameId": 1788852
+ },
+ {
+  "id": "yinchuan",
+  "cc": "CN",
+  "lat": 38.46806,
+  "lon": 106.27306,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -4,
+  "method": "karachi",
+  "geonameId": 1786657
+ },
+ {
+  "id": "wuzhong",
+  "cc": "CN",
+  "lat": 37.9867,
+  "lon": 106.201,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -3.9,
+  "method": "karachi",
+  "geonameId": 1790842
+ },
+ {
+  "id": "hohhot",
+  "cc": "CN",
+  "lat": 40.81056,
+  "lon": 111.65222,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": -6.2,
+  "method": "karachi",
+  "geonameId": 2036892
+ },
+ {
+  "id": "urumqi",
+  "cc": "CN",
+  "lat": 43.80096,
+  "lon": 87.60046,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": 2.5,
+  "method": "karachi",
+  "geonameId": 1529102
+ },
+ {
+  "id": "turpan",
+  "cc": "CN",
+  "lat": 42.94769,
+  "lon": 89.17886,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": 1.8,
+  "method": "karachi",
+  "geonameId": 1529114
+ },
+ {
+  "id": "yining",
+  "cc": "CN",
+  "lat": 43.91515,
+  "lon": 81.32151,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": 4.4,
+  "method": "karachi",
+  "geonameId": 1529435
+ },
+ {
+  "id": "aksu",
+  "cc": "CN",
+  "lat": 41.18418,
+  "lon": 80.27921,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": 3.8,
+  "method": "karachi",
+  "geonameId": 1529660
+ },
+ {
+  "id": "kashgar",
+  "cc": "CN",
+  "lat": 39.46718,
+  "lon": 75.98675,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": 4.1,
+  "method": "karachi",
+  "geonameId": 1280849
+ },
+ {
+  "id": "hotan",
+  "cc": "CN",
+  "lat": 37.10927,
+  "lon": 79.93433,
+  "tz": "Asia/Shanghai",
+  "utcOffset": 8,
+  "declination": 2.8,
+  "method": "karachi",
+  "geonameId": 1281019
  },
  {
   "id": "moscow",

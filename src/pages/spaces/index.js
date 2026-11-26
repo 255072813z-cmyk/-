@@ -45,20 +45,28 @@ export function spacesPage(ctx) {
       <p class="note">${t('spaces.quiet')}</p>
     </section>
   </div>`;
+  // 门上的人数：停在这一页时每 10 秒刷新一次（这次没取到，下次再取）
+  let timer = 0;
   return {
     html,
     mount(el) {
       if (!live) return;
-      fetchCounts().then((c) => {
-        if (!c) return;
-        const set = (room, text) => {
-          const n = el.querySelector(`[data-count="${room}"]`);
-          if (n) n.textContent = text;
-        };
-        set('hall', t('spaces.hallCount', { n: c.hall.online, taken: c.hall.taken, cap: c.hall.capacity }));
-        set('courtyard', t('spaces.count', { n: c.courtyard.online }));
-        set('poetry', open ? t('spaces.count', { n: c.poetry.online }) : '');
-      });
+      const load = () =>
+        fetchCounts().then((c) => {
+          if (!c || !el.isConnected) return;
+          const set = (room, text) => {
+            const n = el.querySelector(`[data-count="${room}"]`);
+            if (n) n.textContent = text;
+          };
+          set('hall', t('spaces.hallCount', { n: c.hall.online, taken: c.hall.taken, cap: c.hall.capacity }));
+          set('courtyard', t('spaces.count', { n: c.courtyard.online }));
+          set('poetry', open ? t('spaces.count', { n: c.poetry.online }) : '');
+        });
+      load();
+      timer = setInterval(load, 10000);
+    },
+    unmount() {
+      clearInterval(timer);
     },
   };
 }
