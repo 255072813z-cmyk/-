@@ -30,11 +30,16 @@ function baseUrl() {
 export async function fetchCounts() {
   const base = baseUrl();
   if (!base) return null;
+  // 6 秒没回音就算这次没取到（手机网络里请求偶尔会一直挂着，不能让门上一直是"…"）
+  const ac = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ac ? setTimeout(() => ac.abort(), 6000) : 0;
   try {
-    const r = await fetch(base.replace(/^ws/, 'http') + '/counts', { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' });
+    const r = await fetch(base.replace(/^ws/, 'http') + '/counts', { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ac ? ac.signal : undefined });
     return r.ok ? cleanCounts(await r.json()) : null;
   } catch (e) {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
