@@ -21,6 +21,12 @@ import { DEFAULT_NOTIFY } from './settings.js';
 export { DEFAULT_NOTIFY };
 export const STREAK_HOUR = 21; // 当地晚上 9 点（宵礼还没到时，改到宵礼后 30 分钟）
 export const JUMUAH_WARN_MIN = 60;
+// 到点前 10 分钟轻声说一句：只排最近 3 天（苹果系统最多同时保留 64 条，别挤掉后面几天的到点提醒）
+export const SOON_MIN = 10;
+export const SOON_DAYS = 3;
+const SURE_DAYS = 9; // 位置不够时，先保证这么多天的到点提醒
+/** 到点前 10 分钟那一条的编号（和到点提醒的编号错开） */
+export const soonId = (ymd, idx) => 1e9 + notifId(ymd, idx);
 
 /** 每条提醒的编号：日期 × 10 + 序号（0–4 五番拜，5 续排，6 封斋饭，7 开斋，8 主麻，9 打卡），同一条提醒重排时编号不变 */
 export function notifId(ymd, idx) {
@@ -47,15 +53,20 @@ export function buildSchedule(city, now, settings) {
       const at = new Date(times[p].getTime() - (Number(n.advance) || 0) * 60000);
       if (at <= now) return;
       const name = t(ymd.wd === 5 && p === 'dhuhr' ? 'prayer.jumuah' : 'prayer.' + p);
+      const time = fmtHM(times[p], city.utcOffset);
       out.push({
         id: notifId(ymd, idx),
         at,
         title: n.advance ? t('notify.soonTitle', { name, n: n.advance }) : t('remind.title', { name }),
-        body: t('notify.body', { time: fmtHM(times[p], city.utcOffset) }),
+        body: n.advance ? t('notify.soonBody', { time }) : t('notify.body', { time }),
         kind: 'prayer',
         prayer: p,
         route: '#/pray/guide/' + p,
       });
+      // 到点前 10 分钟一句温和的话（自己已经设了提前 10 分钟以上的，就不再重复）
+      const soon = new Date(times[p].getTime() - SOON_MIN * 60000);
+      if (n.soon && i < SOON_DAYS && (Number(n.advance) || 0) < SOON_MIN && soon > now)
+        out.push({ id: soonId(ymd, idx), at: soon, title: t('notify.soonTitle', { name, n: SOON_MIN }), body: t('notify.soonBody', { time }), kind: 'soon', prayer: p, route: '#/' });
     });
     // 晚上还没打卡：提醒一次。今天已经打卡就不排（打卡时会重新排一遍）
     if (n.streak && !(i === 0 && settings.checkedToday)) {
@@ -78,8 +89,16 @@ export function buildSchedule(city, now, settings) {
       if (f.iftar > now) out.push({ id: notifId(ymd, 7), at: f.iftar, title: t('notify.iftarTitle'), body: t('notify.iftarBody'), kind: 'iftar', route: '#/ramadan' });
     }
   }
-  // 按时间排好，留一个位置给"续排"提醒（苹果手机最多同时排 64 条）
-  const list = out.sort((a, b) => a.at - b.at).slice(0, settings.renew ? cap - 1 : cap);
+  // 按时间排好，留一个位置给"续排"提醒（苹果手机最多同时排 64 条）。
+  // 位置不够时："到点前 10 分钟"那几条让位：先保证 9 天内的到点提醒，剩下的位置再给它们
+  const room = settings.renew ? cap - 1 : cap;
+  const byTime = (a, b) => a.at - b.at;
+  const horizon = now.getTime() + SURE_DAYS * 864e5;
+  const main = out.filter((x) => x.kind !== 'soon').sort(byTime);
+  const sure = main.filter((x) => x.at.getTime() < horizon).slice(0, room);
+  const soon = out.filter((x) => x.kind === 'soon').sort(byTime).slice(0, room - sure.length);
+  const later = main.filter((x) => x.at.getTime() >= horizon).slice(0, room - sure.length - soon.length);
+  const list = [...sure, ...soon, ...later].sort(byTime);
   if (settings.renew && list.length) {
     const last = list[list.length - 1];
     const at = new Date(last.at.getTime() + 10 * 60000);

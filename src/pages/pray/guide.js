@@ -120,7 +120,7 @@ export function guidePage(ctx, prayerKey, unitId) {
     const tx = stepText(st);
     stage.innerHTML = `
       <section class="card stepper">
-        <div class="progress" aria-hidden="true"><span style="width:${((i + 1) / steps.length) * 100}%"></span></div>
+        <div class="progress" aria-hidden="true"><span style="transform:scaleX(${((i + 1) / steps.length)})"></span></div>
         <p class="step-count">${t('guide.count', { r: st.rakah, rn: unit.rakats, i: i + 1, sn: steps.length })}</p>
         <div class="row-stage posture-${st.posture}">${prayerRow(st.posture)}</div>
         <div class="step-head">

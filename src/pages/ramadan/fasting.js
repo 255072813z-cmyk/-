@@ -151,7 +151,8 @@ export function fastingPage(ctx, st) {
     <section class="ramadan-wrap">${ramadanScene({ iftar: false })}</section>
     <div class="ph">
       <h1>${t('vf.title')} <span class="ar-sm" lang="ar" dir="rtl">الصِّيَام</span></h1>
-      <p class="ph-sub">${hijriLine(h)}</p>
+      <p class="ph-sub">${t('vf.sub')}</p>
+      <p class="ph-date">${hijriLine(h)}</p>
       <p class="local-note">${t('fast.datesNote')}</p>
     </div>
     <div class="r-grid">

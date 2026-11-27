@@ -1,30 +1,33 @@
 // 首页：今天的礼拜
-// 用户一打开就要看到三件事：下一番拜是什么、还有多久、今天在家礼拜行不行。
-import { t } from '../i18n/index.js';
+// 一个穆斯林打开首页，3 秒内要知道：今天该做什么、下一番拜几点。所以首页只放三层：
+//   顶部：日期（公历 + 伊斯兰历）和城市
+//   中间："下一番拜"大卡片：拜名、时间、倒计时
+//   下面：今天要做的事——礼拜时间表、封斋状态、今日圣训和记念
+// 其他入口都在底部导航里。
+// 两种显示方式（第一次打开时问一句，设置里随时改）：
+//   年轻人：精致简洁；年纪大的人：大字极简，首页只有时间和下一番。
+import { t, L } from '../i18n/index.js';
 import { dateLine, hijriLine, durHTML, cityName, remoteText, esc } from '../i18n/format.js';
-import { fmtHM, splitDuration, addDays } from '../core/clock.js';
+import { fmtHM, splitDuration, addDays, ymdKey } from '../core/clock.js';
 import { PRAYERS, skyPhase, highLatitudeDay, METHODS } from '../core/prayer-times.js';
 import { toHijri } from '../core/hijri.js';
-import { setSettings } from '../core/settings.js';
+import { setSettings, getSettings } from '../core/settings.js';
 import { PRAYER_INFO } from '../content/prayers.js';
 import { mosqueScene, star8, ICONS } from '../ui/art.js';
 import { isHeavyRain } from '../core/weather.js';
 import { homeRamadanCard } from './ramadan/card.js';
 import { ramadanStatus } from '../core/ramadan.js';
-import { isNativeApp } from '../core/api.js';
-import { getSettings } from '../core/settings.js';
+import { sunnahReasons } from '../core/fasting.js';
+import { festivalOf } from '../core/festival.js';
+import { isNativeApp, platform } from '../core/api.js';
 import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
-import { platform } from '../core/api.js';
-import { ymdKey } from '../core/clock.js';
 import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
-import { streakCard } from '../ui/streak-ui.js';
 import { adhkarCard } from '../ui/adhkar-card.js';
 import { markFeature } from '../core/usage.js';
 import { softToast } from '../core/reminder.js';
 import { setCount } from '../ui/motion.js';
 // 分享按需下载（点了才用到）
 const share = () => import('../core/share.js');
-import { L } from '../i18n/index.js';
 
 function prayerName(p, sched) {
   if (p === 'dhuhr' && sched.today.wd === 5) return t('prayer.jumuah');
@@ -32,6 +35,7 @@ function prayerName(p, sched) {
 }
 
 const countdownText = (ms) => durHTML(ms, true);
+const SOON_MS = 10 * 60 * 1000; // 到点前 10 分钟，主卡片上说一句温和的话
 
 /** 冬季画面（雪景）：下雪、严寒，或者查不到天气时的 12～2 月 */
 export function isWinter(ctx) {
@@ -56,34 +60,45 @@ const WX_STYLE = {
   heat: ['wx-heat', 'sun'], uv: ['wx-heat', 'sun'], fog: ['wx-fog', 'fog'], clear: ['wx-clear', 'sun'],
 };
 
+// 这些天气下，引用先知让大家"在住处礼拜"的圣训（布哈里 666、901），让人安心在家礼拜
+const HOME_PRAYER_KINDS = ['heavy', 'snow', 'rain', 'storm', 'cold'];
+
 /**
  * 今天的天气提示：一句关心的话 + 一句教法上站得住的说明。
  * 雨、雪、泥泞、严寒是哈乃斐学派认可的可以不去清真寺参加集体礼拜的理由；
  * 大风只在夜里算；酷热时晌礼可以等凉快些再礼（圣训）；年老体弱、身体不适的人也属于可以不去的情况。
  * 不为没有依据的情况编造"可以不去"的说法。
+ * 首页只在天气不好时出现（晴天不占地方）。
  */
 function weatherCard(ctx) {
   const k = ctx.weatherKind;
-  if (!k) return '';
+  if (!k || k === 'clear') return '';
   const w = ctx.weather || {};
   const r = (v) => (v == null ? '' : Math.round(v));
   const msgKey = k === 'rain' && isHeavyRain(w) ? 'wx.rainHeavy' : 'wx.' + k;
   const vars = { temp: r(w.temp), max: r(w.maxTemp), gust: r(w.gust || w.wind), uv: r(w.uv) };
   const [cls, icon] = WX_STYLE[k] || WX_STYLE.clear;
-  const showActions = k !== 'clear';
   return `<section class="card weather-card ${cls}" aria-label="${t('winter.label')}">
     <div class="wx-head"><svg class="wx-icon" viewBox="0 0 24 24" aria-hidden="true">${WX_ICON[icon]}</svg>
       <p class="winter-msg">${t(msgKey, vars)}</p></div>
     <p class="winter-why">${t('wx.' + k + 'Why', vars)}</p>
     ${HOME_PRAYER_KINDS.includes(k) ? `<details class="wx-more"><summary>${t('wx.proof')}</summary><div data-wx-hadith="${ctx.sched.today.wd === 5 ? 'b901' : 'b666'}">${HAD ? hadithQuote(HAD.HADITH[ctx.sched.today.wd === 5 ? 'b901' : 'b666'], 'wx-hadith') : ''}</div></details>` : ''}
-    ${showActions ? `<div class="winter-actions">
-      <a class="btn btn-primary" href="#/pray">${t('winter.go')}</a>
-      <a class="btn btn-ghost" href="#/pray/wudu">${t('winter.wudu')}</a>
-    </div>` : ''}
+    <div class="winter-actions">
+      <a class="btn btn-primary btn-sm" href="#/pray">${t('winter.go')}</a>
+      <a class="btn btn-ghost btn-sm" href="#/pray/wudu">${t('winter.wudu')}</a>
+    </div>
     ${w.demo ? `<p class="note">${t('winter.demo')}</p>` : ''}
   </section>`;
 }
-const winterCard = weatherCard;
+
+/** 年纪大的人：天气不好时，只在主卡片里说一句（不另起卡片） */
+function weatherLine(ctx) {
+  const k = ctx.weatherKind;
+  if (!HOME_PRAYER_KINDS.includes(k)) return '';
+  const w = ctx.weather || {};
+  const msgKey = k === 'rain' && isHeavyRain(w) ? 'wx.rainHeavy' : 'wx.' + k;
+  return t(msgKey, { temp: w.temp == null ? '' : Math.round(w.temp) });
+}
 
 // 圣训内容按需加载（不拖慢首屏）；加载过一次后同步可用
 let HAD = null;
@@ -91,8 +106,6 @@ export function loadHadith() {
   return HAD ? Promise.resolve(HAD) : import('../content/hadith.js').then((m) => (HAD = m));
 }
 
-// 这些天气下，引用先知让大家"在住处礼拜"的圣训（布哈里 666、901），让人安心在家礼拜
-const HOME_PRAYER_KINDS = ['heavy', 'snow', 'rain', 'storm', 'cold'];
 function hadithQuote(h, cls = '') {
   return `<blockquote class="hadith-quote ${cls}">
     <p class="hq-ar" lang="ar" dir="rtl">${h.ar}</p>
@@ -103,10 +116,10 @@ function hadithQuote(h, cls = '') {
 /** 今日圣训（每天一句，可以分享给亲友） */
 function hadithCard(ctx) {
   return `<section class="card hadith-card">
-    <h2 class="card-title">${star8(18)} ${t('hadith.title')}</h2>
+    <h2 class="card-title">${star8(16)} ${t('hadith.title')}</h2>
     <div data-daily-hadith>${HAD ? hadithQuote(HAD.dailyHadith(ctx.sched.today)) : ''}</div>
-    <button type="button" class="btn btn-ghost btn-sm" data-share-hadith>${t('hadith.share')}</button>
-    <p class="note" data-share-msg aria-live="polite"></p>
+    <div class="card-foot"><button type="button" class="text-btn" data-share-hadith>${ICONS.share}${t('hadith.share')}</button>
+    <span class="note" data-share-msg aria-live="polite"></span></div>
   </section>`;
 }
 
@@ -150,14 +163,6 @@ function bindShare(root, ctx) {
       const text = `${L(d)}\n(${L(d.src)})\n\n${t('share.from', { app: t('app.name') })}${link ? ' ' + link : ''}`;
       say(h, await shareText(text, day));
     });
-  const a = root.querySelector('[data-share-app]');
-  if (a)
-    a.addEventListener('click', async () => {
-      const { shareText, shareLink } = await share();
-      const r = await shareText(t('share.msg', { app: t('app.name'), link: shareLink(ctx.remote) }).trim(), day);
-      say(a, r);
-      if (r === 'shared' || r === 'copied') import('../ui/cheer.js').then((m) => m.earn('share', day)).catch(() => {});
-    });
 }
 
 /** 手机应用里还没允许通知时，在首页直接请用户开启（很多老人不会去翻设置） */
@@ -179,9 +184,22 @@ function bindNotifyCard(root) {
     });
 }
 
-/** 第一次打开：请用户确认城市（按手机时区猜的，可能不对） */
+/** 第一次打开：先问一句"你是年轻人还是年纪大的人？"（页面里的卡片，不弹窗；设置里随时可改） */
+function modeHTML(ctx) {
+  if (ctx.settings.modeAsked) return '';
+  return `<section class="card welcome-card mode-card">
+    <p class="notify-card-t">${t('mode.ask')}</p>
+    <p class="note">${t('mode.askNote')}</p>
+    <div class="mode-pick">
+      <button type="button" class="mode-opt" data-set-mode="young"><b>${t('mode.young')}</b><small>${t('mode.youngSub')}</small></button>
+      <button type="button" class="mode-opt is-elder" data-set-mode="elder"><b>${t('mode.elder')}</b><small>${t('mode.elderSub')}</small></button>
+    </div>
+  </section>`;
+}
+
+/** 第一次打开：请用户确认城市（按手机时区猜的，可能不对）。先问显示方式，问完再问城市，一次只一张卡片 */
 function welcomeHTML(ctx) {
-  if (ctx.settings.cityConfirmed) return '';
+  if (ctx.settings.cityConfirmed || !ctx.settings.modeAsked) return '';
   return `<section class="card welcome-card">
     <p class="notify-card-t">${t('home.welcomeTitle')}</p>
     <p>${t('home.welcomeText', { city: cityName(ctx.city) })}</p>
@@ -222,52 +240,7 @@ function bindNotices(root) {
   );
 }
 
-function heroHTML(ctx) {
-  const s = ctx.sched;
-  const name = prayerName(s.next, s);
-  const info = PRAYER_INFO[s.next];
-  const nowLine = s.current
-    ? `${t('home.nowIn', { name: t('prayer.' + s.current) })}<span class="until">${t('home.until', { time: fmtHM(s.currentEnd) })}</span>`
-    : t('home.noPrayerNow');
-  const fajrWarn = s.current === 'fajr' ? `<p class="hero-warn">${t('home.fajrEnd', { time: fmtHM(s.times.sunrise) })}</p>` : '';
-  const followTarget = s.current || s.next;
-  return `<div class="hero-now">${nowLine}</div>
-    ${fajrWarn}
-    <div class="hero-next">
-      <span class="hero-label">${t('home.next')}</span>
-      <span class="hero-name">${name}</span>
-      <span class="hero-ar" lang="ar" dir="rtl">${info.ar}</span>
-      <span class="hero-time">${s.nextTomorrow ? t('home.tomorrow') + ' ' : ''}${fmtHM(s.nextTime)}</span>
-    </div>
-    <div class="hero-count" aria-hidden="true">${t('home.left')} <span class="count">${countdownText(s.nextTime - ctx.now)}</span></div>
-    <span class="sr-only" data-sr-count></span>
-    <a class="btn btn-primary btn-wide" href="#/pray/guide/${followTarget}">${t('home.follow', { name: t('prayer.' + followTarget) })}</a>`;
-}
-
-function listHTML(ctx) {
-  const s = ctx.sched;
-  const T = s.times;
-  const n = ctx.now.getTime();
-  const rows = [];
-  const done = prayedOn(ymdKey(s.today));
-  // 这番拜的时间已经开始（宵礼过了午夜仍算前一天的，这里按当天的时间表）
-  const started = (p) => n >= T[p].getTime();
-  for (const p of PRAYERS) {
-    const passed = n >= (p === 'isha' ? T.isha : T[p]).getTime() && s.current !== p;
-    const cls = [s.current === p ? 'is-current' : '', s.next === p && !s.nextTomorrow ? 'is-next' : '', passed ? 'is-passed' : ''].join(' ');
-    rows.push(`<li class="prow ${cls}">
-      <span class="prow-name">${prayerName(p, s)}</span>
-      <span class="prow-ar" lang="ar" dir="rtl">${PRAYER_INFO[p].ar}</span>
-      <span class="prow-time">${fmtHM(T[p])}</span>
-      ${s.current === p ? `<span class="prow-badge">${t('home.badgeNow')}</span>` : s.next === p && !s.nextTomorrow ? `<span class="prow-badge soft">${t('home.next')}</span>` : ''}
-      ${started(p) ? `<button type="button" class="prow-check ${done[p] ? 'is-on' : ''}" data-prayed="${p}" aria-pressed="${!!done[p]}" aria-label="${t('home.markPrayed', { name: prayerName(p, s) })}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>` : '<span class="prow-check-gap"></span>'}
-    </li>`);
-    if (p === 'fajr') {
-      rows.push(`<li class="prow prow-sun"><span class="prow-name">${t('prayer.sunrise')}</span><span class="prow-ar"></span><span class="prow-time">${fmtHM(T.sunrise)}</span></li>`);
-    }
-  }
-  return rows.join('');
-}
+// ---------- 顶部：日期和城市 ----------
 
 function dateHTML(ctx) {
   const d = ctx.sched.today;
@@ -279,64 +252,199 @@ function dateHTML(ctx) {
     ${hn ? `<span class="date-eve">${t('home.hijriEve', { d: hn.d })}</span>` : ''}`;
 }
 
-export function homePage(ctx) {
-  const s = ctx.sched;
-  const phase = skyPhase(s.times, ctx.now);
-  const ru = ctx.city.cc === 'RU';
-  const mine = ctx.settings.method !== 'auto' && METHODS[ctx.settings.method]; // 用户自己选了算法
-  const highLat = highLatitudeDay(ctx.city, s.today);
-  const adjusted = Object.values(ctx.settings.offsets).some((v) => Number(v));
-  const html = `
-  <div class="page home">
-    <div class="col col-a">
-    <section class="scene-wrap" data-scene>
-      ${mosqueScene({ phase, winter: isWinter(ctx) })}
-      <div class="scene-top">
-        <p class="bismillah" lang="ar" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-      </div>
-    </section>
-    <section class="card list-card">
-      <h2 class="card-title">${star8(18)} ${t('home.today')}</h2>
-      <ul class="plist" data-list>${listHTML(ctx)}</ul>
-      <p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>
-      ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
-      ${prayedDays().size ? '' : `<p class="note prayed-note">${t('home.prayedNote')}</p>`}
-      <p class="local-note">${
-        ctx.official
-          ? t(adjusted ? 'home.localNoteOfficialAdjusted' : 'home.localNoteOfficial', { src: remoteText(ctx.official) })
-          : adjusted
-            ? t('home.localNoteAdjusted')
-            : t('home.localNote')
-      }</p>
-      <details class="method">
-        <summary>${t('home.howCalc')}</summary>
-        <p>${mine ? t('home.methodAngles', mine) : t(ru ? 'home.methodRu' : 'home.method')}</p>
-        <p>${t(ru ? 'home.methodLocalRu' : 'home.methodLocal')}</p>
-        ${Math.abs(ctx.city.lat) >= 45 ? `<p>${t('home.methodHighLat')}</p>` : ''}
-        <p>${t('home.offline')}</p>
-      </details>
-      <a class="link-row" href="#/settings">${adjusted ? t('home.adjusted') : t('home.adjust')} →</a>
-      <a class="link-row" href="#/times">${t('home.monthTable')} →</a>
-      <div class="share-img-row"><button type="button" class="btn btn-ghost btn-sm" data-share-img>${ICONS.share}${t('times.shareImage')}</button><p class="note" data-share-msg aria-live="polite"></p></div>
-    </section>
-    </div>
-    <div class="col col-b">
+/** 选的城市和手机不在同一个时区时，提一句"当地时间"（时间都按城市当地算） */
+function otherZone(ctx) {
+  const dev = -new Date().getTimezoneOffset() / 60;
+  return Math.abs(dev - ctx.city.utcOffset) > 0.01;
+}
+
+function topHTML(ctx) {
+  return `<header class="home-top">
     <div class="date" data-date>${dateHTML(ctx)}</div>
     <div class="city-row">
       <a class="city-btn" href="#/city" aria-label="${t('city.choose', { name: cityName(ctx.city) })}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="10" r="2.6"/></svg>
         <span>${cityName(ctx.city)}</span><span class="city-caret" aria-hidden="true">▾</span></a>
-      <span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>
+      ${otherZone(ctx) ? `<span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>` : ''}
     </div>
-    <div class="notice-slot">${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
-    <div class="ramadan-slot ${ramadanStatus(ctx.sched.today, ctx.hijriAdjust).active ? 'is-active' : ''}" data-ramadan>${homeRamadanCard(ctx)}</div>
-    <section class="card hero" data-hero>${heroHTML(ctx)}</section>
-    ${streakCard(ymdKey(ctx.sched.today))}
-    ${adhkarCard(ctx)}
+  </header>`;
+}
+
+// ---------- 中间：下一番拜 ----------
+
+/** 节日问候：一句话 + 一个小图标（斋月新月、节日的八角星）；平常日子没有 */
+function greetHTML(ctx, elder) {
+  const f = festivalOf(ctx.sched.today, ctx.hijriAdjust);
+  if (!f) return '';
+  const icon = f.tone === 'night' ? ICONS.ramadan : star8(18);
+  return `<p class="hero-greet"><span class="greet-ico" aria-hidden="true">${icon}</span><span>${t('fest.' + f.id, { y: f.y || '' })}</span></p>
+    ${f.ar && !elder ? `<p class="greet-ar" lang="ar" dir="rtl">${f.ar}</p>` : ''}`;
+}
+
+/** 到点前 10 分钟：一句温和的话 */
+function soonText(ctx) {
+  const left = ctx.sched.nextTime - ctx.now;
+  if (left <= 0 || left > SOON_MS) return '';
+  return t('home.soon', { name: prayerName(ctx.sched.next, ctx.sched), n: Math.ceil(left / 60000) });
+}
+
+function heroBody(ctx, elder) {
+  const s = ctx.sched;
+  const name = prayerName(s.next, s);
+  const info = PRAYER_INFO[s.next];
+  const nowLine = s.current
+    ? `<span>${t('home.nowIn', { name: t('prayer.' + s.current) })}</span><span class="until">${t('home.until', { time: fmtHM(s.currentEnd) })}</span>`
+    : `<span>${t('home.noPrayerNow')}</span>`;
+  const fajrWarn = s.current === 'fajr' ? `<p class="hero-warn">${t('home.fajrEnd', { time: fmtHM(s.times.sunrise) })}</p>` : '';
+  const followTarget = s.current || s.next;
+  const wx = elder ? weatherLine(ctx) : '';
+  return `${greetHTML(ctx, elder)}
+    <p class="hero-now">${nowLine}</p>
+    ${fajrWarn}
+    <p class="hero-label">${t('home.next')}</p>
+    <p class="hero-next"><span class="hero-name">${name}</span><span class="hero-ar" lang="ar" dir="rtl">${info.ar}</span></p>
+    <p class="hero-time">${s.nextTomorrow ? `<small>${t('home.tomorrow')}</small>` : ''}${fmtHM(s.nextTime)}</p>
+    <p class="hero-count" aria-hidden="true">${t('home.left')} <span class="count">${countdownText(s.nextTime - ctx.now)}</span></p>
+    <span class="sr-only" data-sr-count></span>
+    <p class="hero-soon" data-soon aria-live="polite">${soonText(ctx)}</p>
+    ${wx ? `<p class="hero-wx">${wx}</p>` : ''}
+    <a class="btn btn-primary btn-wide" href="#/pray/guide/${followTarget}">${t('home.follow', { name: t('prayer.' + followTarget) })}</a>`;
+}
+
+function heroHTML(ctx, elder) {
+  const f = festivalOf(ctx.sched.today, ctx.hijriAdjust);
+  const tone = f ? 'fest-' + f.tone : '';
+  if (elder) {
+    // 年纪大的人：不放插图，节日只留一句问候
+    return `<section class="card hero is-elder ${tone}" data-hero>${heroBody(ctx, true)}</section>`;
+  }
+  return `<section class="card hero ${tone}" data-hero>
+    <div class="hero-band" data-scene>${mosqueScene({ phase: skyPhase(ctx.sched.times, ctx.now), winter: isWinter(ctx) })}</div>
+    <div class="hero-body">${heroBody(ctx, false)}</div>
+  </section>`;
+}
+
+// ---------- 下面：今天要做的事 ----------
+
+function listHTML(ctx, elder) {
+  const s = ctx.sched;
+  const T = s.times;
+  const n = ctx.now.getTime();
+  const rows = [];
+  const done = prayedOn(ymdKey(s.today));
+  const started = (p) => n >= T[p].getTime();
+  for (const p of PRAYERS) {
+    const passed = n >= T[p].getTime() && s.current !== p;
+    const cls = [s.current === p ? 'is-current' : '', s.next === p && !s.nextTomorrow ? 'is-next' : '', passed ? 'is-passed' : ''].join(' ');
+    // 年纪大的人：只看名字和时间，不放打勾
+    const check = elder
+      ? ''
+      : started(p)
+        ? `<button type="button" class="prow-check ${done[p] ? 'is-on' : ''}" data-prayed="${p}" aria-pressed="${!!done[p]}" aria-label="${t('home.markPrayed', { name: prayerName(p, s) })}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`
+        : '<span class="prow-check-gap"></span>';
+    const badge = s.current === p ? `<span class="prow-badge">${t('home.badgeNow')}</span>` : s.next === p && !s.nextTomorrow ? `<span class="prow-badge soft">${t('home.next')}</span>` : '';
+    rows.push(`<li class="prow ${cls}">
+      <span class="prow-name">${prayerName(p, s)}${badge}</span>
+      <span class="prow-ar" lang="ar" dir="rtl">${PRAYER_INFO[p].ar}</span>
+      <span class="prow-time">${fmtHM(T[p])}</span>
+      ${check}
+    </li>`);
+    if (p === 'fajr') {
+      rows.push(`<li class="prow prow-sun"><span class="prow-name">${t('prayer.sunrise')}</span><span class="prow-ar"></span><span class="prow-time">${fmtHM(T.sunrise)}</span></li>`);
+    }
+  }
+  return rows.join('');
+}
+
+function localNote(ctx) {
+  const adjusted = Object.values(ctx.settings.offsets).some((v) => Number(v));
+  return ctx.official
+    ? t(adjusted ? 'home.localNoteOfficialAdjusted' : 'home.localNoteOfficial', { src: remoteText(ctx.official) })
+    : adjusted
+      ? t('home.localNoteAdjusted')
+      : t('home.localNote');
+}
+
+function timesCard(ctx, elder) {
+  const s = ctx.sched;
+  const ru = ctx.city.cc === 'RU';
+  const mine = ctx.settings.method !== 'auto' && METHODS[ctx.settings.method]; // 用户自己选了算法
+  const highLat = highLatitudeDay(ctx.city, s.today);
+  const adjusted = Object.values(ctx.settings.offsets).some((v) => Number(v));
+  return `<section class="card list-card">
+    <h2 class="card-title">${star8(16)} ${t('home.today')}</h2>
+    <ul class="plist" data-list>${listHTML(ctx, elder)}</ul>
+    ${elder ? '' : `<p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>`}
+    ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
+    ${elder || prayedDays().size ? '' : `<p class="note prayed-note">${t('home.prayedNote')}</p>`}
+    <p class="local-note">${localNote(ctx)}</p>
+    ${
+      elder
+        ? ''
+        : `<details class="method">
+      <summary>${t('home.howCalc')}</summary>
+      <p>${mine ? t('home.methodAngles', mine) : t(ru ? 'home.methodRu' : 'home.method')}</p>
+      <p>${t(ru ? 'home.methodLocalRu' : 'home.methodLocal')}</p>
+      ${Math.abs(ctx.city.lat) >= 45 ? `<p>${t('home.methodHighLat')}</p>` : ''}
+      <p>${t('home.offline')}</p>
+      <p><a href="#/settings">${adjusted ? t('home.adjusted') : t('home.adjust')} →</a></p>
+    </details>
+    <div class="card-foot">
+      <a class="text-btn" href="#/times">${ICONS.calendar}${t('home.monthShort')}</a>
+      <button type="button" class="text-btn" data-share-img>${ICONS.share}${t('times.shareImage')}</button>
+      <span class="note" data-share-msg aria-live="polite"></span>
+    </div>`
+    }
+  </section>`;
+}
+
+/** 封斋状态：斋月里、自己在封斋时是倒计时卡片；平时一行——明天是不是圣行斋日、斋月还有几天 */
+function fastHTML(ctx) {
+  const card = homeRamadanCard(ctx);
+  if (card) return card;
+  const tomorrow = addDays(ctx.sched.today, 1);
+  const why = sunnahReasons(tomorrow, ctx.hijriAdjust);
+  const st = ramadanStatus(ctx.sched.today, ctx.hijriAdjust);
+  const line = why.length
+    ? t('home.fastTomorrow', { why: why.map((r) => t('vf.r.' + r)).join(' · ') })
+    : st.start
+      ? t('fast.daysLeft', { n: st.start.inDays })
+      : '';
+  if (!line) return '';
+  return `<a class="card card-link fast-row" href="#/ramadan">
+    <span class="tool-ico">${ICONS.ramadan}</span>
+    <span class="fast-row-t">${t('nav.fast')}</span>
+    <span class="fast-row-s">${line}</span>
+    <span class="r-link-go" aria-hidden="true">→</span>
+  </a>`;
+}
+
+export function homePage(ctx) {
+  const elder = ctx.settings.mode === 'elder';
+  const s = ctx.sched;
+  const ramadanOn = ramadanStatus(s.today, ctx.hijriAdjust).active;
+  const html = elder
+    ? `
+  <div class="page home is-elder">
+    ${topHTML(ctx)}
+    <div class="notice-slot">${modeHTML(ctx)}${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
+    ${heroHTML(ctx, true)}
+    <div class="ramadan-slot" data-ramadan>${ramadanOn ? homeRamadanCard(ctx) : ''}</div>
+    ${timesCard(ctx, true)}
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
-    <div data-winter>${winterCard(ctx)}</div>
+  </div>`
+    : `
+  <div class="page home">
+    ${topHTML(ctx)}
+    <div class="notice-slot">${modeHTML(ctx)}${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
+    ${heroHTML(ctx, false)}
+    <div data-winter>${weatherCard(ctx)}</div>
+    <h2 class="sec home-sec">${t('home.todo')}</h2>
+    ${timesCard(ctx, false)}
+    <div class="ramadan-slot" data-ramadan>${fastHTML(ctx)}</div>
+    ${adhkarCard(ctx)}
     ${hadithCard(ctx)}
-    </div>
+    <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
   </div>`;
 
   let lastMinute = -1;
@@ -347,7 +455,13 @@ export function homePage(ctx) {
       bindNotifyCard(el);
       bindNotices(el);
       bindShare(el, ctx);
-      fillHadith(el, ctx);
+      if (!elder) fillHadith(el, ctx);
+      el.querySelectorAll('[data-set-mode]').forEach((b) =>
+        b.addEventListener('click', () => {
+          setSettings({ mode: b.dataset.setMode, modeAsked: true });
+          markFeature('settings', ymdKey(ctx.sched.today));
+        }),
+      );
       el.querySelectorAll('[data-prayed]').forEach((b) =>
         b.addEventListener('click', () => {
           const on = b.getAttribute('aria-pressed') !== 'true';
@@ -362,9 +476,7 @@ export function homePage(ctx) {
             b.classList.add('is-pop');
             if (navigator.vibrate) navigator.vibrate(20);
           }
-          // 打卡：更新卡片；今天第一次打卡放"又坚持了一天"，解锁称号、徽章时庆祝；今晚的"还没打卡"提醒随之取消
-          const card = el.querySelector('[data-streak]');
-          if (card) card.outerHTML = streakCard(day, !!(res && res.fresh));
+          // 今天第一次打卡放"又坚持了一天"，解锁称号、徽章时庆祝；今晚的"还没打卡"提醒随之取消
           if (res) {
             // 动画和徽章按需加载，首页打开更快
             Promise.all([import('../ui/cheer.js'), import('../core/badges.js')])
@@ -417,22 +529,26 @@ export function homePage(ctx) {
         lastMinute = m;
         const { h, m: mm } = splitDuration(c.sched.nextTime - c.now);
         el.querySelector('[data-sr-count]').textContent = t('home.srCount', { h, m: mm });
+        const soon = el.querySelector('[data-soon]');
+        if (soon) soon.textContent = soonText(c);
         const note = document.querySelector('.city-note');
         if (note) note.textContent = t('home.localTime', { time: fmtHM(c.now) });
         const d = document.querySelector('[data-date]');
         if (d) d.innerHTML = dateHTML(c);
         const r = document.querySelector('[data-ramadan]');
-        if (r) r.innerHTML = homeRamadanCard(c);
+        if (r) r.innerHTML = elder ? (ramadanStatus(c.sched.today, c.hijriAdjust).active ? homeRamadanCard(c) : '') : fastHTML(c);
       }
     },
     onWeather(c) {
       const box = document.querySelector('[data-winter]');
       if (box) {
-        box.innerHTML = winterCard(c);
+        box.innerHTML = weatherCard(c);
         fillHadith(box, c);
       }
       const scene = document.querySelector('[data-scene] svg');
       if (scene) scene.outerHTML = mosqueScene({ phase: skyPhase(c.sched.times, c.now), winter: isWinter(c) });
+      // 年纪大的人：天气不好时只在主卡片里说一句
+      if (elder && weatherLine(c)) c.rerender();
     },
   };
 }

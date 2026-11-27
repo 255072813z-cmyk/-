@@ -38,7 +38,7 @@ export function wuduPage(ctx) {
     const box = el.querySelector('[data-stepper]');
     const times = st.count ? `<span class="times">${st.count === 1 ? t('common.once') : t('common.times', { n: st.count })}</span>` : '';
     box.innerHTML = `
-      <div class="progress" aria-hidden="true"><span style="width:${((i + 1) / WUDU_STEPS.length) * 100}%"></span></div>
+      <div class="progress" aria-hidden="true"><span style="transform:scaleX(${((i + 1) / WUDU_STEPS.length)})"></span></div>
       <p class="step-count">${t('wudu.stepCount', { i: i + 1, n: WUDU_STEPS.length })}</p>
       <div class="wudu-body">
         <div class="wudu-art">${wuduFigure(st.zone)}</div>

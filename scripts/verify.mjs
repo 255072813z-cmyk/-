@@ -672,13 +672,18 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   page.on('pageerror', (e) => errs.push(e.message));
   await page.goto(base + '?weather=snow&now=2026-12-18T15:20');
   await page.waitForTimeout(800);
-  // 第一次打开：首页请用户确认城市；确认后不再出现
+  // 第一次打开：先问一句"你是年轻人还是年纪大的人？"（页面里的卡片，不弹窗），选了再请用户确认城市；确认后都不再出现
+  const ask = (await page.locator('.mode-card [data-set-mode]').count()) === 2 && (await page.locator('[data-city-ok]').count()) === 0;
+  const askText = (await page.textContent('.mode-card')).replace(/\s+/g, ' ');
+  await page.click('[data-set-mode="young"]');
+  await page.waitForTimeout(200);
   const welcome = await page.locator('[data-city-ok]').count();
   await page.click('[data-city-ok]');
   await page.waitForTimeout(200);
   await page.reload();
   await page.waitForTimeout(500);
-  check('第一次打开请确认城市，确认后不再出现', welcome === 1 && (await page.locator('[data-city-ok]').count()) === 0);
+  const popups = await page.locator('[role="dialog"], dialog[open], .celebrate, .cheer-sheet').count();
+  check('第一次打开先问"年轻人还是年纪大的人"（页面里的卡片，不弹窗），再确认城市；之后都不再出现', ask && /年轻人/.test(askText) && /年纪大的人/.test(askText) && welcome === 1 && (await page.locator('[data-city-ok], .mode-card').count()) === 0 && popups === 0);
   // 已礼打勾：只有已到时间的拜能点；刷新后还在
   const checks = await page.locator('[data-prayed]').count();
   await page.click('[data-prayed="dhuhr"]');
@@ -694,13 +699,13 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('[data-daily-hadith] .hq-src', { timeout: 3000 }).catch(() => {});
   const hd = (await page.textContent('[data-daily-hadith]').catch(() => '')) || '';
   check('今日圣训有原文、意思和出处', /[\u0600-\u06FF]/.test(hd) && /出处：(布哈里|提尔密济)/.test(hd), hd.replace(/\s+/g, ' ').slice(-30));
-  // 首页只放今天要用的：不再有"在家礼拜""进清真寺""分享应用"大卡片和隐私长文（移到"礼拜""我的"）
-  const homeClean = (await page.locator('.athome, .to-masjid, [data-share-app], .page.home .privacy').count()) === 0;
+  // 首页只放今天要用的：顶部日期和城市 → 下一番大卡片 → 今天要做的事（时间表、封斋、圣训）；其他入口在底部导航
+  const homeClean = (await page.locator('.athome, .to-masjid, [data-share-app], .page.home .privacy, .page.home [data-streak], .page.home .scene-wrap').count()) === 0;
   const order = await page.evaluate(() => {
     const y = (sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top + window.scrollY : -1; };
-    return [y('[data-hero]'), y('.list-card'), y('[data-streak]'), y('.hadith-card')];
+    return [y('.home-top .date-g'), y('[data-hero] .hero-time'), y('.home-sec'), y('.list-card'), y('[data-ramadan] .fast-row'), y('.hadith-card')];
   });
-  check('首页精简：下一番 → 五番拜打勾 → 打卡 → 今日圣训（可分享），没有多余的大卡片', homeClean && order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])) && (await page.locator('[data-share-hadith]').count()) === 1, order.map(Math.round).join(' < '));
+  check('首页：日期城市 → 下一番（拜名、时间、倒计时）→ 今天要做的事：时间表、封斋、今日圣训（可分享），没有多余的卡片', homeClean && order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])) && (await page.locator('[data-share-hadith]').count()) === 1, order.map(Math.round).join(' < '));
   await page.goto(base + '?weather=snow&now=2026-12-18T15:20#/me');
   await page.waitForSelector('.me-hero');
   const me = (await page.textContent('#app')).replace(/\s+/g, ' ');
@@ -755,13 +760,14 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   });
   await page.reload();
   await page.waitForTimeout(500);
-  const before = (await page.textContent('[data-streak] .streak-n')) || '';
+  const streakN = () => page.evaluate(() => String((JSON.parse(localStorage.getItem('masjid:streak') || '{}').cur) || 0));
+  const before = await streakN();
   await page.click('[data-prayed="fajr"]');
   await page.waitForTimeout(400);
   const cele = await page.locator('.celebrate').count();
   const celeText = cele ? await page.textContent('.celebrate h2') : '';
   if (cele) await page.click('[data-cele-ok]');
-  const after = (await page.textContent('[data-streak] .streak-n')) || '';
+  const after = await streakN();
   check('打卡：连续 6 天 → 点"已礼"变 7 天，解锁"一周"并庆祝', /6/.test(before) && /7/.test(after) && cele === 1 && /一周/.test(celeText), `${before.trim()} → ${after.trim()}，${celeText}`);
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/streak');
   await page.waitForTimeout(500);
@@ -938,7 +944,9 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.goto(base + q);
   await page.evaluate(() => localStorage.clear());
   await page.goto(base + q + '&r=1#/');
-  await page.waitForSelector('.welcome-card');
+  await page.waitForSelector('.mode-card');
+  await page.click('[data-set-mode="young"]');
+  await page.waitForSelector('[data-city-auto]');
   const guessed = (await page.textContent('.city-btn')).trim();
   const welcome = (await page.textContent('.welcome-card')).replace(/\s+/g, ' ');
   await page.click('[data-city-auto]');
@@ -963,6 +971,97 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const cn = await page.locator('[data-pick="lanzhou"], [data-pick="linxia"], [data-pick="xining"], [data-pick="yinchuan"]').count();
   check('城市列表有中国（兰州、临夏、西宁、银川等），中文界面中国排第一组', /中国/.test(firstGroup) && cn === 4, firstGroup);
   check('中国、自动定位以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 15. 首页改版：两种显示方式、到点前 10 分钟的温和话、节日问候、倒计时滚动、顶栏不透明、动画只动 transform/opacity
+{
+  const ctx = await browser.newContext({ ...phone, timezoneId: 'Asia/Dushanbe' });
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' }));
+  });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  const noScroll = () => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+  // 年轻人：到点前 10 分钟，主卡片上一句温和的话；倒计时数字一位一位滚动
+  await page.goto(base + '?weather=clear&now=2026-12-17T12:15');
+  await page.waitForSelector('[data-hero] .hero-time');
+  await page.waitForTimeout(2600);
+  const soon = (await page.textContent('[data-soon]')).trim();
+  const digits = await page.locator('.count .dg').count();
+  const rolled = await page.evaluate(() => new Promise((res) => {
+    const seen = () => !!document.querySelector('.count .dg.is-roll');
+    if (seen()) return res(true);
+    const mo = new MutationObserver(() => seen() && (mo.disconnect(), res(true)));
+    mo.observe(document.querySelector('.count'), { childList: true, subtree: true });
+    setTimeout(() => res(seen()), 2500);
+  }));
+  check('到点前 10 分钟：主卡片上说"晌礼还有 N 分钟，先把手头的事收个尾"', /晌礼还有 \d+ 分钟/.test(soon) && /收个尾/.test(soon), soon);
+  check('倒计时数字一位一位放，变了的那一位滚过去', digits >= 2 && rolled, `${digits} 位数字，滚动 ${rolled}`);
+  // 顶栏：不透明的实色
+  const bar = await page.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('.topbar'));
+    return { bg: cs.backgroundColor, bf: cs.backdropFilter || cs.webkitBackdropFilter || 'none' };
+  });
+  check('顶栏是不透明的实色（没有半透明、毛玻璃）', /^rgb\(/.test(bar.bg) && (bar.bf === 'none' || !bar.bf), `${bar.bg} ${bar.bf}`);
+  // 动画：所有关键帧都不动会引起重排的属性；换页约 200 毫秒
+  const anim = await page.evaluate(() => {
+    const bad = [];
+    const layout = /^(left|right|top|bottom|width|height|margin|padding|font-size|inset)/;
+    for (const sh of document.styleSheets) {
+      let rules = [];
+      try { rules = sh.cssRules; } catch (e) { continue; }
+      for (const r of rules) if (r.type === CSSRule.KEYFRAMES_RULE) for (const k of r.cssRules) for (let i = 0; i < k.style.length; i++) if (layout.test(k.style[i])) bad.push(r.name + ':' + k.style[i]);
+    }
+    const el = document.createElement('div');
+    el.className = 'enter-i';
+    document.getElementById('app').classList.add('is-enter');
+    document.getElementById('app').appendChild(el);
+    const d = getComputedStyle(el).animationDuration;
+    el.remove();
+    return { bad: [...new Set(bad)], d };
+  });
+  check('动画只用 transform / opacity（没有引起重排的动画），换页约 200 毫秒', anim.bad.length === 0 && parseFloat(anim.d) <= 0.25, anim.bad.join(', ') || anim.d);
+  // 节日：开斋节、斋月换问候语和颜色，平常日子没有
+  await page.goto(base + '?weather=clear&now=2027-03-09T10:00');
+  await page.waitForSelector('[data-hero]');
+  const fitr = { cls: await page.getAttribute('[data-hero]', 'class'), t: (await page.textContent('.hero-greet').catch(() => '')).trim() };
+  await page.goto(base + '?weather=clear&now=2027-02-20T05:20&r=1');
+  await page.waitForSelector('[data-hero]');
+  const ram = { cls: await page.getAttribute('[data-hero]', 'class'), t: (await page.textContent('.hero-greet').catch(() => '')).trim() };
+  await page.goto(base + '?weather=clear&now=2026-12-17T10:00&r=2');
+  await page.waitForSelector('[data-hero]');
+  const plain = await page.locator('.hero-greet').count();
+  check('节日首页不一样：开斋节金色"开斋节吉庆"、斋月夜蓝"斋月吉庆"，平常日子没有问候', /fest-gold/.test(fitr.cls) && /开斋节/.test(fitr.t) && /fest-night/.test(ram.cls) && /斋月/.test(ram.t) && plain === 0, `${fitr.t} / ${ram.t}`);
+  check('年轻人首页：手机上没有横向滚动', await noScroll());
+  // 年纪大的人：大字极简，首页只有时间和下一番
+  await page.click('[data-share-img]').catch(() => {});
+  await page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem('masjid:settings'));
+    localStorage.setItem('masjid:settings', JSON.stringify({ ...st, mode: 'elder' }));
+  });
+  await page.goto(base + '?weather=snow&now=2026-12-17T12:15&r=3');
+  await page.waitForSelector('[data-hero] .hero-time');
+  await page.waitForTimeout(400);
+  const elder = await page.evaluate(() => ({
+    root: parseFloat(getComputedStyle(document.documentElement).fontSize),
+    mode: document.documentElement.dataset.mode,
+    cards: [...document.querySelectorAll('.page.home > .card, .page.home > div > .card, .page.home > a.card')].map((c) => c.className.split(' ').filter((x) => !['card', 'card-link', 'enter-i'].includes(x)).join('.')),
+    extra: document.querySelectorAll('.page.home .hadith-card, .page.home .dk-link, .page.home .fast-row, .page.home [data-prayed], .page.home .weather-card, .page.home .hero-band').length,
+    time: parseFloat(getComputedStyle(document.querySelector('.hero-time')).fontSize),
+    wx: (document.querySelector('.hero-wx') || {}).textContent || '',
+  }));
+  check('年纪大的人：大字（正文 20 像素起），首页只有下一番和时间表；天气只在主卡片里说一句', elder.mode === 'elder' && elder.root >= 20 && elder.time >= 70 && elder.extra === 0 && elder.cards.length === 2 && /雪/.test(elder.wx), `正文 ${elder.root}px，大数字 ${elder.time}px，卡片：${elder.cards.join('、')}`);
+  check('年纪大的人首页：手机上没有横向滚动', await noScroll());
+  // 设置里随时改回来
+  await page.goto(base + '?weather=clear&now=2026-12-17T12:15#/settings');
+  await page.waitForSelector('.mode-list [data-set-mode="young"]');
+  await page.click('.mode-list [data-set-mode="young"]');
+  await page.goto(base + '?weather=clear&now=2026-12-17T12:15&r=4#/');
+  await page.waitForSelector('[data-hero] .hero-band');
+  check('设置里可以改回"年轻人"', (await page.evaluate(() => document.documentElement.dataset.mode)) === 'young' && (await page.locator('.hadith-card').count()) === 1);
+  check('首页改版以上操作没有页面错误', errs.length === 0, errs.join('; '));
   await ctx.close();
 }
 

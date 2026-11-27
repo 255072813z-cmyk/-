@@ -99,7 +99,10 @@
   color-scheme: dark;
 }
 
-/* 字号：标准 18px，大 20px，特大 22px（老人也能看清） */
-html { font-size: 112.5%; }
-html[data-fs='1'] { font-size: 125%; }
-html[data-fs='2'] { font-size: 137.5%; }
+/* 字号：正文标准 17px，大 19px，特大 21px；"年纪大的人"显示方式再大一档（20 / 22 / 24px） */
+html { font-size: 106.25%; }
+html[data-fs='1'] { font-size: 118.75%; }
+html[data-fs='2'] { font-size: 131.25%; }
+html[data-mode='elder'] { font-size: 125%; }
+html[data-mode='elder'][data-fs='1'] { font-size: 137.5%; }
+html[data-mode='elder'][data-fs='2'] { font-size: 150%; }

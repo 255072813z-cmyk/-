@@ -22,7 +22,8 @@ export function enterPage(app, dir = 'up') {
     .sort((a, b) => a.top - b.top)
     .forEach(({ e, top }, i) => {
       e.classList.add('enter-i');
-      e.style.setProperty('--i', String(top > vh ? Math.min(i, 8) : Math.min(i, 10)));
+      // 依次浮现：最多错开 6 个，整页 400 毫秒内出齐（屏幕以下的不用等）
+      e.style.setProperty('--i', String(top > vh ? 6 : Math.min(i, 6)));
     });
   void app.offsetWidth;
   app.classList.add('is-enter');
@@ -30,16 +31,36 @@ export function enterPage(app, dir = 'up') {
   enterTimer = setTimeout(() => {
     app.classList.remove('is-enter', 'dir-right', 'dir-left');
     app.querySelectorAll('.enter-i').forEach((e) => e.classList.remove('enter-i'));
-  }, 1300);
+  }, 900);
 }
 
-/** 更新倒计时：只让变了的数字落下来（数字放在 <b> 里） */
+/**
+ * 更新倒计时：数字一位一位放，变了的那一位平滑地滚过去（旧数字往下滑出，新数字从上面滑进来）。
+ * 只用 transform 和 opacity，不引起重排；内容没变就什么都不做。
+ */
 export function setCount(el, html) {
   if (!el) return;
-  const before = [...el.querySelectorAll('b')].map((b) => b.textContent);
-  el.innerHTML = html;
-  if (!before.length) return;
-  el.querySelectorAll('b').forEach((b, k) => before[k] !== undefined && before[k] !== b.textContent && b.classList.add('chg'));
+  const box = document.createElement('span');
+  box.innerHTML = html;
+  const sig = box.textContent;
+  if (el.dataset.v === sig) return;
+  el.dataset.v = sig;
+  const before = [...el.querySelectorAll('b')].map((b) => b.dataset.n);
+  const still = calm();
+  box.querySelectorAll('b').forEach((b, k) => {
+    const val = b.textContent;
+    const old = before[k];
+    b.dataset.n = val;
+    b.innerHTML = [...val]
+      .map((ch, i) => {
+        const o = old && old.length === val.length ? old[i] : undefined;
+        return o !== undefined && o !== ch && !still
+          ? `<span class="dg is-roll"><span class="dg-o">${o}</span><span class="dg-n">${ch}</span></span>`
+          : `<span class="dg"><span class="dg-n">${ch}</span></span>`;
+      })
+      .join('');
+  });
+  el.innerHTML = box.innerHTML;
 }
 
 /** 重新播放一个动画（先拿掉类名、强制重排、再加上） */

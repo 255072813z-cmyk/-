@@ -10,6 +10,7 @@ export const DEFAULT_NOTIFY = {
   ramadan: true, // 斋月里、和用户标了要封斋的日子，提醒封斋饭和开斋
   jumuah: true, // 星期五晌礼前 1 小时提醒主麻
   streak: true, // 晚上还没打卡时提醒一次
+  soon: true, // 到点前 10 分钟轻声说一句（"晌礼还有 10 分钟，先把手头的事收个尾"）
 };
 
 const DEFAULTS = {
@@ -17,6 +18,8 @@ const DEFAULTS = {
   cityConfirmed: false,
   loc: null, // "我的位置"：{ lat, lon, utcOffset }，只存本机
   fontScale: 0, // 0 标准 / 1 大 / 2 特大
+  mode: 'young', // 显示方式：young 年轻人（精致简洁）/ elder 年纪大的人（大字极简，首页只有时间和下一番）
+  modeAsked: false, // 第一次打开时在首页问一句（问过就不再问，设置里随时可改）
   remind: true, // 按时提醒（网页：页面开着时提示；手机应用：系统通知）
   notify: DEFAULT_NOTIFY, // 提醒哪几番、提前几分钟、斋月提醒
   sound: false, // 提示时是否响一声（默认静音）
@@ -50,6 +53,8 @@ export function normalizeSettings(saved) {
       : null;
   if (!CITIES[out.city] && !(out.city === 'here' && out.loc)) out.city = DEFAULT_CITY;
   out.fontScale = int(s.fontScale, 0, 2, 0);
+  out.mode = s.mode === 'elder' ? 'elder' : 'young';
+  out.modeAsked = bool(s.modeAsked, false);
   out.remind = bool(s.remind, true);
   out.sound = bool(s.sound, false);
   out.stats = bool(s.stats, true);
@@ -64,6 +69,7 @@ export function normalizeSettings(saved) {
     ramadan: bool(n.ramadan, true),
     jumuah: bool(n.jumuah, true),
     streak: bool(n.streak, true),
+    soon: bool(n.soon, true),
   };
   // 计算方法：auto = 按城市所在国家；也可以自己选（见 prayer-times.js 的 METHODS）
   out.method = ['auto', 'karachi', 'mwl', 'dumrf', 'isna'].includes(s.method) ? s.method : 'auto';

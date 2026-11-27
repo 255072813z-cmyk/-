@@ -39,6 +39,13 @@ export function settingsPage(ctx) {
     </section>
 
     <section class="card">
+      <h2 class="card-title">${star8(18)} ${t('mode.title')}</h2>
+      <div class="method-list mode-list" role="radiogroup" aria-label="${t('mode.title')}">
+        ${['young', 'elder'].map((m) => `<button type="button" class="method-opt ${s.mode === m ? 'is-on' : ''}" role="radio" aria-checked="${s.mode === m}" data-set-mode="${m}"><b>${t('mode.' + m)}</b><small>${t('mode.' + m + 'Sub')}</small></button>`).join('')}
+      </div>
+    </section>
+
+    <section class="card">
       <h2 class="card-title">${star8(18)} ${t('settings.fontTitle')}</h2>
       <div class="segmented big" role="group" aria-label="${t('settings.fontTitle')}">
         ${fs.map((k, i) => `<button type="button" class="seg ${s.fontScale === i ? 'is-on' : ''}" data-fs="${i}" aria-pressed="${s.fontScale === i}" style="font-size:${1 + i * 0.12}em">${t(k)}</button>`).join('')}
@@ -57,6 +64,8 @@ export function settingsPage(ctx) {
       <div class="segmented" role="group" aria-label="${t('settings.advance')}">
         ${[0, 5, 10, 15].map((m) => `<button type="button" class="seg ${Number(s.notify.advance) === m ? 'is-on' : ''}" data-adv="${m}" aria-pressed="${Number(s.notify.advance) === m}">${m ? t('settings.advanceN', { n: m }) : t('settings.onTime')}</button>`).join('')}
       </div>
+      <label class="switch-row"><span><b>${t('settings.soonRemind')}</b><small>${t('settings.soonRemindSub')}</small></span>
+        <input type="checkbox" data-nsoon ${s.notify.soon ? 'checked' : ''}></label>
       <label class="switch-row"><span><b>${t('settings.ramadanRemind')}</b><small>${t('settings.ramadanRemindSub')}</small></span>
         <input type="checkbox" data-nr ${s.notify.ramadan ? 'checked' : ''}></label>
       ${app ? `<label class="switch-row"><span><b>${t('settings.jumuahRemind')}</b><small>${t('settings.jumuahRemindSub')}</small></span>
@@ -175,6 +184,7 @@ export function settingsPage(ctx) {
     },
     mount(el) {
       el.querySelectorAll('[data-fs]').forEach((b) => b.addEventListener('click', () => setSettings({ fontScale: +b.dataset.fs })));
+      el.querySelectorAll('[data-set-mode]').forEach((b) => b.addEventListener('click', () => setSettings({ mode: b.dataset.setMode, modeAsked: true })));
       el.querySelector('[data-remind]').addEventListener('change', async (e) => {
         // 手机应用里第一次打开提醒时，向系统要通知权限（必须在点按后要）
         if (e.target.checked && app) await askNotifyPermission();
@@ -195,6 +205,7 @@ export function settingsPage(ctx) {
       );
       el.querySelectorAll('[data-adv]').forEach((b) => b.addEventListener('click', () => setSettings({ notify: { ...notify(), advance: +b.dataset.adv } })));
       el.querySelector('[data-nr]').addEventListener('change', (e) => setSettings({ notify: { ...notify(), ramadan: e.target.checked } }));
+      el.querySelector('[data-nsoon]').addEventListener('change', (e) => setSettings({ notify: { ...notify(), soon: e.target.checked } }));
       const nj = el.querySelector('[data-nj]');
       if (nj) nj.addEventListener('change', (e) => setSettings({ notify: { ...notify(), jumuah: e.target.checked } }));
       const ns = el.querySelector('[data-ns]');

@@ -1,14 +1,15 @@
 /* 首页 */
-.scene-wrap { position: relative; border-radius: 22px; overflow: hidden; margin: 4px 0 10px; box-shadow: var(--shadow); aspect-ratio: 16 / 10; max-height: 300px; width: 100%; }
 .scene { display: block; width: 100%; height: 100%; }
-.scene-top { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; padding: 10px 12px; text-align: center; pointer-events: none; }
-.bismillah { font-size: 1.45rem; line-height: 1.6; margin: 0; color: #fff7df; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
-.date { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.55; margin: 2px 0 10px; }
-.date-g { font-family: var(--font-zh-serif); font-weight: 700; font-size: 1.15rem; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; }
-.date-h { color: var(--ink-2); display: inline-flex; align-items: baseline; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.bismillah { font-size: 1.2rem; line-height: 1.6; margin: 0; color: #fff7df; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
+/* 顶部：左边日期（公历 + 伊斯兰历），右边城市 */
+.home-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'g city' 'h h' 'eve eve'; align-items: center; column-gap: var(--sp-3); margin: var(--sp-3) 2px var(--sp-4); line-height: 1.5; }
+.home-top .date { display: contents; }
+.date-g { grid-area: g; font-family: var(--font-zh-serif); font-weight: 700; font-size: var(--fs-lg); color: var(--ink); display: flex; align-items: center; gap: 2px 8px; flex-wrap: wrap; word-break: keep-all; }
+.date-h { grid-area: h; margin-top: 2px; color: var(--ink-2); font-size: var(--fs-sm); display: flex; align-items: baseline; gap: 0 6px; flex-wrap: wrap; }
+.date-eve { grid-area: eve; }
 .date-ar { color: var(--gold-ink); font-size: 1.1em; }
-.date-eve { color: var(--muted); font-size: 0.88rem; }
-.jumuah { font-family: var(--font-zh); font-size: 0.8rem; background: var(--primary); color: var(--on-primary); padding: 1px 10px; border-radius: 999px; }
+.date-eve { color: var(--muted); font-size: var(--fs-xs); }
+.jumuah { font-family: var(--font-zh); font-size: var(--fs-xs); font-weight: 600; background: var(--primary); color: var(--on-primary); padding: 1px 9px; border-radius: 999px; }
 
 /* 天色 */
 .scene .sky { fill: #8fc3d9; }
@@ -59,22 +60,44 @@
 .scene .snow circle { fill: #fff; opacity: 0.9; animation: fall linear infinite; }
 @keyframes fall { from { transform: translate(0, 0); } to { transform: translate(-14px, 214px); } }
 
-.city-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.city-note { color: var(--muted); font-size: 0.9rem; }
+.city-row { grid-area: city; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; max-width: 46vw; }
+.city-note { color: var(--muted); font-size: var(--fs-xs); padding-right: 4px; }
 
-/* 下一番拜 */
-.hero { border: 1.5px solid var(--gold); background: linear-gradient(180deg, var(--card), var(--gold-soft)); text-align: center; padding: 18px 16px; }
-.hero-now { color: var(--green); font-weight: 700; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-.hero-now .until { color: var(--ink-2); font-weight: 600; }
-.hero-warn { color: var(--danger); font-size: 0.95rem; font-weight: 600; }
-.hero-next { display: flex; align-items: baseline; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 2px; }
-.hero-label { color: var(--muted); font-size: 0.95rem; }
-.hero-name { font-family: var(--font-zh-serif); font-size: 2rem; font-weight: 700; color: var(--ink); }
-.hero-ar { font-size: 1.5rem; color: var(--gold-ink); }
-.hero-time { font-size: 1.9rem; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
-.hero-count { color: var(--ink-2); margin-bottom: 12px; }
-.count b { font-size: 1.7rem; color: var(--ink); font-variant-numeric: tabular-nums; margin: 0 2px; }
-.count small { font-size: 0.95rem; margin-right: 4px; }
+/* 下一番拜：首页的主角。上面一条小插图（天色、雪景、节日问候），下面拜名、时间、倒计时 */
+.hero { border: 1.5px solid var(--gold); background: var(--card); text-align: center; padding: 0; overflow: hidden; }
+.hero-band { position: relative; height: 96px; overflow: hidden; background: var(--bg-2); }
+.hero-band .scene { position: absolute; top: 0; left: 0; }
+.hero-body { padding: var(--sp-4) var(--sp-5) var(--sp-5); background: linear-gradient(180deg, var(--card) 40%, var(--gold-soft)); }
+.hero-now { display: inline-flex; justify-content: center; gap: 0 8px; flex-wrap: wrap; margin: 0 0 var(--sp-3); padding: 3px 14px; border-radius: var(--r-md); background: var(--green-soft); color: var(--green); font-size: var(--fs-sm); font-weight: 600; }
+.hero-now .until { color: var(--ink-2); font-weight: 500; }
+.hero-warn { color: var(--danger); font-size: var(--fs-sm); font-weight: 600; }
+.hero-label { margin: 0; color: var(--muted); font-size: var(--fs-sm); letter-spacing: 0.06em; }
+.hero-next { display: flex; align-items: baseline; justify-content: center; gap: 4px 10px; flex-wrap: wrap; margin: 0; line-height: 1.3; }
+.hero-name { font-family: var(--font-zh-serif); font-size: 2.1rem; font-weight: 700; color: var(--ink); }
+.hero-ar { font-size: 1.35rem; color: var(--gold-ink); }
+.hero-time { margin: 0; font-size: 3.1rem; font-weight: 700; line-height: 1.15; color: var(--green); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.hero-time small { font-size: var(--fs-md); font-weight: 600; color: var(--muted); margin-inline-end: 8px; letter-spacing: 0; }
+.hero-count { margin: 2px 0 0; color: var(--ink-2); font-size: var(--fs-md); }
+.count b { font-size: 1.35rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin: 0 2px; }
+.count small { font-size: var(--fs-sm); margin-inline-end: 4px; }
+/* 到点前 10 分钟：一句温和的话 */
+.hero-soon { margin: var(--sp-3) auto 0; max-width: 26em; padding: 8px 12px; border-radius: var(--r-md); background: var(--gold-soft); color: var(--gold-ink); font-weight: 600; font-size: var(--fs-sm); }
+.hero-soon:empty { display: none; }
+.hero-wx { margin: var(--sp-3) 0 0; padding: 8px 12px; border-radius: var(--r-md); background: var(--bg-2); color: var(--ink-2); }
+.hero-body .btn, .hero.is-elder .btn { margin-top: var(--sp-4); }
+/* 节日：换一句问候、一个小图标，颜色微调（斋月夜蓝、节日金色、朝觐月绿色），版面不变 */
+.hero-greet { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; font-family: var(--font-zh-serif); font-weight: 700; font-size: var(--fs-md); color: var(--gold-ink); }
+.greet-ico { display: inline-flex; flex: none; }
+.greet-ico svg { width: 18px; height: 18px; fill: var(--gold); stroke: var(--gold); }
+.greet-ico .star8 rect { stroke: var(--gold); }
+.greet-ar { margin: 0 0 var(--sp-2); font-size: 1.15rem; line-height: 1.6; color: var(--gold-ink); }
+.hero-greet + .hero-now { margin-top: var(--sp-2); }
+.hero.fest-night .hero-band::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: linear-gradient(180deg, rgba(14, 24, 48, 0.42), rgba(14, 24, 48, 0.08)); }
+.hero.fest-night .hero-body { background: linear-gradient(180deg, var(--card) 40%, color-mix(in srgb, #1c2c4a 10%, var(--card))); }
+.hero.fest-gold { border-width: 2px; box-shadow: 0 0 0 4px var(--gold-soft), var(--shadow); }
+.hero.fest-gold .hero-band::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: linear-gradient(180deg, rgba(201, 162, 75, 0.38), rgba(201, 162, 75, 0)); }
+.hero.fest-green { border-color: var(--green-2); }
+.hero.fest-green .hero-body { background: linear-gradient(180deg, var(--card) 40%, var(--green-soft)); }
 
 /* 冬季提示 */
 .weather-card { background: linear-gradient(160deg, #23384a, #2f4c5e); color: #f4efe2; border: 0; position: relative; overflow: hidden; }
@@ -99,22 +122,22 @@
 
 /* 五番拜列表 */
 .plist { list-style: none; margin: 0; padding: 0; }
-.prow { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: 'name time badge' 'ar time badge'; align-items: center; column-gap: 10px; padding: 10px 12px; border-radius: 12px; border-bottom: var(--hairline); }
+.prow { position: relative; display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'name time' 'ar time'; align-items: center; column-gap: 12px; padding: 9px 12px; border-radius: var(--r-md); border-bottom: var(--hairline); }
 .prow:last-child { border-bottom: 0; }
-.prow-name { grid-area: name; font-weight: 700; font-size: 1.1rem; }
-.prow-ar { grid-area: ar; font-size: 1rem; color: var(--gold-ink); text-align: left; line-height: 1.4; }
-.prow-time { grid-area: time; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.prow-badge { grid-area: badge; font-size: 0.8rem; background: var(--primary); color: var(--on-primary); padding: 2px 8px; border-radius: 999px; }
+.prow-name { grid-area: name; font-weight: 600; font-size: var(--fs-md); line-height: 1.4; }
+.prow-ar { grid-area: ar; font-size: 0.95rem; color: var(--gold-ink); text-align: left; line-height: 1.4; }
+.prow-time { grid-area: time; font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.prow-badge { display: inline-block; vertical-align: 2px; margin-inline-start: 8px; font-size: var(--fs-xs); font-weight: 600; line-height: 1.5; background: var(--primary); color: var(--on-primary); padding: 0 8px; border-radius: 999px; white-space: nowrap; }
 .prow-badge.soft { background: var(--gold-soft); color: var(--gold-ink); }
 .prow.is-current { background: var(--green-soft); border-bottom-color: transparent; }
 .prow.is-current .prow-time { color: var(--green); }
-.prow.is-passed .prow-name, .prow.is-passed .prow-time { color: var(--muted); font-weight: 600; }
-.prow-sun { grid-template-areas: 'name time badge'; padding-top: 6px; padding-bottom: 6px; }
-.prow-sun .prow-name, .prow-sun .prow-time { font-size: 0.95rem; color: var(--muted); font-weight: 500; }
-.sunline { color: var(--muted); font-size: 0.9rem; text-align: center; margin-top: 8px; }
-.local-note { text-align: center; font-weight: 700; color: var(--gold-ink); background: var(--gold-soft); border-radius: 10px; padding: 6px 10px; font-size: 0.95rem; }
-details.method { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 4px; font-size: 0.92rem; color: var(--ink-2); }
-details.method summary { color: var(--green); }
+.prow.is-passed .prow-name, .prow.is-passed .prow-time { color: var(--muted); font-weight: 500; }
+.prow-sun { grid-template-areas: 'name time'; padding-top: 4px; padding-bottom: 4px; }
+.prow-sun .prow-name, .prow-sun .prow-time { font-size: var(--fs-sm); color: var(--muted); font-weight: 500; }
+.sunline { color: var(--muted); font-size: var(--fs-sm); text-align: center; margin-top: 8px; }
+.local-note { text-align: center; font-weight: 600; color: var(--gold-ink); background: var(--gold-soft); border-radius: var(--r-sm); padding: 6px 10px; font-size: var(--fs-sm); }
+details.method { margin-top: 8px; border-top: var(--hairline); padding-top: 2px; font-size: var(--fs-sm); color: var(--ink-2); }
+details.method summary { color: var(--green); font-weight: 600; }
 .link-row { display: flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
 
 .athome { display: grid; gap: 2px; padding: 18px; background: var(--green); color: #fff; border-color: transparent; }
@@ -124,24 +147,13 @@ details.method summary { color: var(--green); }
 :root[data-theme='dark'] .athome, .athome { color: #fff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .athome { background: var(--primary); } }
 
-/* 手机：一列，按"插图 → 日期 → 城市 → 提示 → 下一番 → 五番拜打勾 → 打卡 → 天气 → 今日圣训"排列（首页只放今天要用的） */
-.page.home { display: flex; flex-direction: column; }
-.page.home > .col { display: contents; }
-.page.home .card { margin: 6px 0; }
-.page.home .scene-wrap { order: 1; aspect-ratio: 16 / 8; }
-.page.home .date { order: 2; }
-.page.home .city-row { order: 3; margin-bottom: 6px; }
-.page.home .notice-slot { order: 4; }
-.page.home .ramadan-slot.is-active { order: 5; }
-.page.home .hero { order: 6; }
-.page.home .list-card { order: 7; }
-.page.home .streak-card { order: 8; }
-.page.home .notify-slot { order: 9; }
+/* 首页一列：顶部日期城市 → 提示 → 下一番 → 天气 → 今天要做的事。卡片之间留足空 */
+.page.home { max-width: 640px; }
+.page.home .card { margin: var(--sp-4) 0; }
+.page.home .hero { margin-top: var(--sp-2); }
+.home-sec { margin-top: var(--sp-8); }
 .notify-card { border: 1.5px solid var(--green); background: var(--green-soft); }
-.notify-card-t { font-family: var(--font-zh-serif); font-size: 1.2rem; font-weight: 700; color: var(--green); margin: 0; }
-.page.home [data-winter] { order: 10; }
-.page.home .ramadan-slot { order: 10; }
-.page.home .hadith-card { order: 11; }
+.notify-card-t { font-family: var(--font-zh-serif); font-size: var(--fs-lg); font-weight: 700; color: var(--green); margin: 0; }
 .wx-more summary { cursor: pointer; font-weight: 600; margin: 4px 0; }
 .ramadan-slot:empty, .notify-slot:empty, [data-winter]:empty { display: none; }
 /* 浅色卡片上借用 athome 的标题样式时，换成深色字（白字在米色卡片上看不见） */
@@ -151,14 +163,48 @@ details.method summary { color: var(--green); }
 .to-masjid .athome-t { color: var(--gold-ink); }
 .to-masjid .athome-s { color: var(--ink-2); }
 
-/* 电脑、平板横屏：左边插图和时间表，右边日期、下一番、提示 */
-@media (min-width: 900px) {
-  .page.home { max-width: 1100px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-items: start; }
-  .page.home > .col { display: flex; flex-direction: column; }
-  .page.home .card { margin: 12px 0; }
-  .page.home .scene-wrap { aspect-ratio: 360 / 200; max-height: none; margin-top: 12px; }
-  .page.home .date { align-items: flex-start; text-align: left; margin-top: 12px; }
-}
+/* 卡片底部的一排小按钮：本月时间表、分享图片、分享圣训 */
+.card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--sp-5); margin-top: var(--sp-3); padding-top: 2px; border-top: var(--hairline); }
+.card-foot .note:empty { display: none; }
+.text-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border: 0; background: none; color: var(--green); font: inherit; font-size: var(--fs-sm); font-weight: 600; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.text-btn svg { width: 18px; height: 18px; flex: none; stroke: currentColor; }
+.text-btn svg circle { fill: currentColor; }
+.text-btn:active { opacity: 0.6; }
+.text-btn:disabled { opacity: 0.45; }
+
+/* 封斋状态：一行 */
+.fast-row { display: grid; grid-template-columns: auto 1fr auto; column-gap: var(--sp-3); row-gap: 2px; align-items: center; }
+.fast-row .tool-ico { grid-row: span 2; }
+.fast-row-t { font-weight: 700; color: var(--ink); }
+.fast-row-s { font-size: var(--fs-sm); color: var(--ink-2); }
+.fast-row .r-link-go { grid-row: 1 / span 2; grid-column: 3; color: var(--green); font-weight: 800; }
+
+/* 第一次打开：问一句"你是年轻人还是年纪大的人？" */
+.mode-pick { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-3); }
+.mode-opt { display: grid; align-content: center; justify-items: center; gap: 4px; min-height: 96px; padding: var(--sp-3); border: 1.5px solid var(--line); border-radius: var(--r-md); background: var(--card); color: var(--ink); font: inherit; text-align: center; cursor: pointer; box-shadow: 0 3px 0 var(--line-deep, var(--line)); transition: transform 0.14s var(--ease-out, ease), box-shadow 0.14s; -webkit-tap-highlight-color: transparent; }
+.mode-opt:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-deep, var(--line)); }
+.mode-opt b { font-family: var(--font-zh-serif); font-size: var(--fs-lg); color: var(--green); }
+.mode-opt.is-elder b { font-size: 1.45rem; }
+.mode-opt small { color: var(--muted); font-size: var(--fs-sm); line-height: 1.4; }
+@media (max-width: 340px) { .mode-pick { grid-template-columns: 1fr; } }
+
+/* 年纪大的人：大字极简，首页只有时间和下一番 */
+.page.home.is-elder .card { margin: var(--sp-5) 0; }
+.hero.is-elder { padding: var(--sp-5) var(--sp-4) var(--sp-5); background: linear-gradient(180deg, var(--card) 40%, var(--gold-soft)); border-width: 2px; }
+.hero.is-elder .hero-greet { color: var(--gold-ink); text-shadow: none; display: block; margin-bottom: var(--sp-2); }
+.hero.is-elder .hero-now { font-size: var(--fs-md); }
+.hero.is-elder .hero-label { font-size: var(--fs-md); }
+.hero.is-elder .hero-name { font-size: 2.5rem; }
+.hero.is-elder .hero-ar { font-size: 1.5rem; }
+.hero.is-elder .hero-time { font-size: 4rem; }
+.hero.is-elder .hero-count { font-size: 1.2rem; }
+.hero.is-elder .count b { font-size: 1.6rem; }
+.hero.is-elder .hero-soon { font-size: var(--fs-md); }
+.page.home.is-elder .prow { padding: 12px; }
+.page.home.is-elder .prow-name { font-size: 1.25rem; font-weight: 700; }
+.page.home.is-elder .prow-time { font-size: 1.65rem; }
+.page.home.is-elder .prow-badge { font-size: var(--fs-sm); }
+.page.home.is-elder .local-note { font-size: var(--fs-md); }
 
 /* 首页城市按钮：点开选择城市 */
 .city-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 14px 6px 10px; border-radius: 12px; background: var(--bg-2); color: var(--ink); text-decoration: none; font-weight: 700; max-width: 100%; }
@@ -179,7 +225,8 @@ details.method summary { color: var(--green); }
 .welcome-card .step-btns { flex-wrap: wrap; }
 
 /* "已礼"：每番拜右边一个可以点的勾，只给自己看 */
-.prow { grid-template-columns: 1fr auto auto auto; grid-template-areas: 'name time badge check' 'ar time badge check'; }
+.page.home:not(.is-elder) .prow { grid-template-columns: 1fr auto auto; grid-template-areas: 'name time check' 'ar time check'; }
+.page.home:not(.is-elder) .prow-sun { grid-template-areas: 'name time check'; }
 .prow-check, .prow-check-gap { grid-area: check; width: 40px; height: 40px; }
 .prow-check { display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--line); background: var(--card); cursor: pointer; padding: 0; }
 .prow-check svg { width: 22px; height: 22px; fill: none; stroke: var(--line); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
@@ -196,9 +243,8 @@ details.method summary { color: var(--green); }
 .weather-card .hadith-quote { background: rgba(255, 255, 255, 0.1); border-color: var(--lamp); }
 .weather-card .hq-src { color: inherit; opacity: 0.8; }
 .weather-card.wx-clear .hadith-quote { background: var(--gold-soft); }
-.share-card, .hadith-card { display: grid; gap: 4px; }
-.share-card .btn, .hadith-card .btn { justify-self: start; }
-.page.home .share-card { order: 8; }
+.share-card { display: grid; gap: 4px; }
+.share-card .btn { justify-self: start; }
 
 /* 坚持打卡卡片 */
 .streak-card { display: grid; gap: 8px; padding: 14px 16px; }

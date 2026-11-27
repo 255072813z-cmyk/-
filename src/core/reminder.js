@@ -8,6 +8,28 @@ import { isNativeApp } from './api.js';
 import { t } from '../i18n/index.js';
 
 const WINDOW = 10 * 60 * 1000;
+const SOON = 10 * 60 * 1000; // 到点前 10 分钟轻声说一句
+
+/** 到点前 10 分钟：一句温和的话（网页开着时；手机应用里由系统通知说） */
+function checkSoon(ctx, on) {
+  if (isNativeApp() || (ctx.settings.notify && ctx.settings.notify.soon === false)) return;
+  const n = ctx.now.getTime();
+  for (const p of PRAYERS) {
+    if (on[p] === false) continue;
+    const left = ctx.sched.times[p].getTime() - n;
+    if (left > 0 && left <= SOON) {
+      const key = ymdKey(ctx.sched.today) + ':' + p + ':' + ctx.city.id;
+      if (load('soonReminded', '') === key) return;
+      save('soonReminded', key);
+      const isFriday = ctx.sched.today.wd === 5;
+      const name = t(p === 'dhuhr' && isFriday ? 'prayer.jumuah' : 'prayer.' + p);
+      // 首页的主卡片上已经写着这句话，就不再弹提示
+      if (document.querySelector('[data-soon]')) return;
+      softToast(t('home.soon', { name, n: Math.ceil(left / 60000) }), 12000);
+      return;
+    }
+  }
+}
 
 export function checkReminder(ctx) {
   const s = ctx.settings;
@@ -15,6 +37,7 @@ export function checkReminder(ctx) {
   const times = ctx.sched.times;
   const n = ctx.now.getTime();
   const on = (s.notify && s.notify.prayers) || {};
+  checkSoon(ctx, on);
   for (const p of PRAYERS) {
     if (on[p] === false) continue;
     const at = times[p].getTime();
@@ -49,12 +72,12 @@ export function showToast(prayer, ctx) {
 }
 
 /** 一句轻声的提示（几秒后自己消失） */
-export function softToast(text) {
+export function softToast(text, ms = 5000) {
   const layer = document.querySelector('.toast-layer');
   if (!layer) return;
   layer.innerHTML = `<div class="toast" role="status"><div class="toast-text"><span></span></div></div>`;
   layer.querySelector('span').textContent = text;
   setTimeout(() => {
     if (layer.querySelector('span') && layer.querySelector('span').textContent === text) layer.innerHTML = '';
-  }, 5000);
+  }, ms);
 }

@@ -1,4 +1,4 @@
-/* 动效（参考多邻国：有弹性、跟手、干脆利落）。
+/* 动效：轻、快、自然。
    只动 transform 和 opacity（不触发重排），老手机也流畅；
    系统开了"减少动态效果"时全部关掉（base.css 末尾的总开关）。
    持续循环的动画只改颜色、阴影、透明度，不改元素位置大小，免得点的时候按钮在动。 */
@@ -14,11 +14,11 @@
 }
 :root[data-theme='dark'] { --primary-deep: #164a35; --line-deep: #31453b; --gold-deep: #8d6d27; }
 
-/* ---------- 1. 换页：内容从上到下依次浮现；往里走从右边滑入，返回从左边，换标签按标签方向 ---------- */
-#app.is-enter .enter-i { animation: page-in 0.44s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
-#app.dir-right { --ex: 22px; --ey: 0px; }
-#app.dir-left { --ex: -22px; --ey: 0px; }
-@keyframes page-in { from { opacity: 0; transform: translate3d(var(--ex, 0px), var(--ey, 14px), 0); } to { opacity: 1; transform: none; } }
+/* ---------- 1. 换页约 200 毫秒：卡片从上到下依次淡入、轻轻上浮；往里走从右边滑入，返回从左边，换标签按标签方向 ---------- */
+#app.is-enter .enter-i { animation: page-in 0.22s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 30ms); }
+#app.dir-right { --ex: 16px; --ey: 0px; }
+#app.dir-left { --ex: -16px; --ey: 0px; }
+@keyframes page-in { from { opacity: 0; transform: translate3d(var(--ex, 0px), var(--ey, 10px), 0); } to { opacity: 1; transform: none; } }
 
 /* ---------- 2. 按钮：有厚度，按下去会"陷"下去（多邻国式） ---------- */
 .btn { transition: transform 0.14s var(--ease-out), box-shadow 0.14s var(--ease-out), background 0.15s, filter 0.15s; -webkit-tap-highlight-color: transparent; }
@@ -55,13 +55,17 @@
 @keyframes dot-in { from { transform: scale(0); opacity: 0; } }
 
 /* ---------- 4. 首页的小细节 ---------- */
-/* 现在这一番：一圈柔和的光慢慢呼吸 */
-.prow.is-current { animation: now-glow 2.8s ease-in-out infinite; }
-@keyframes now-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(15, 89, 64, 0); } 50% { box-shadow: 0 0 0 4px rgba(15, 89, 64, 0.14); } }
-/* 倒计时：变了的数字从上面落下来 */
-.count b { display: inline-block; }
-.count b.chg { animation: digit-in 0.34s var(--ease-out); }
-@keyframes digit-in { from { transform: translateY(-45%); opacity: 0.2; } }
+/* 现在这一番：一圈柔和的光慢慢呼吸（光圈是单独一层，只变透明度） */
+.prow.is-current::after { content: ''; position: absolute; top: -3px; right: -3px; bottom: -3px; left: -3px; border-radius: inherit; border: 3px solid rgba(15, 89, 64, 0.16); opacity: 0; animation: now-glow 2.8s ease-in-out infinite; pointer-events: none; }
+@keyframes now-glow { 50% { opacity: 1; } }
+/* 倒计时：数字一位一位，变了的那一位平滑滚过去（旧的往下滑出，新的从上面滑进来） */
+.count b { display: inline-flex; }
+.count .dg { position: relative; display: inline-block; overflow: hidden; height: 1.2em; line-height: 1.2; vertical-align: bottom; }
+.count .dg-n, .count .dg-o { display: block; }
+.count .dg.is-roll .dg-n { animation: dg-in 0.42s var(--ease-out); }
+.count .dg.is-roll .dg-o { position: absolute; top: 0; left: 0; right: 0; animation: dg-out 0.42s var(--ease-out) forwards; }
+@keyframes dg-in { from { transform: translateY(-100%); opacity: 0; } }
+@keyframes dg-out { to { transform: translateY(100%); opacity: 0; } }
 /* 点亮的灯：火苗轻轻闪 */
 .streak-lamp.is-lit .lamp-flame, .hero-lamp.is-lit .lamp-flame, .me-hero .streak-lamp.is-lit .lamp-flame { animation: flicker 3.4s ease-in-out infinite; }
 @keyframes flicker { 0%, 100% { opacity: 1; } 30% { opacity: 0.82; } 55% { opacity: 0.95; } 72% { opacity: 0.78; } }
@@ -81,15 +85,15 @@
 @keyframes pop-in { from { transform: scale(0.85); opacity: 0; } }
 /* 得到的徽章：偶尔有一道光掠过 */
 .badge.is-got .badge-medal { position: relative; overflow: hidden; }
-.badge.is-got .badge-medal::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent); transform: skewX(-18deg); animation: sheen 5s 1s ease-in-out infinite; }
-@keyframes sheen { 0%, 70% { left: -60%; } 85%, 100% { left: 130%; } }
+.badge.is-got .badge-medal::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent); transform: translateX(-150%) skewX(-18deg); animation: sheen 5s 1s ease-in-out infinite; }
+@keyframes sheen { 0%, 70% { transform: translateX(-150%) skewX(-18deg); } 85%, 100% { transform: translateX(330%) skewX(-18deg); } }
 
 /* ---------- 6. 一步一步跟着做：往下一步从右边滑入，往回从左边 ---------- */
 .slide-next { animation: step-next 0.34s var(--ease-out); }
 .slide-prev { animation: step-prev 0.34s var(--ease-out); }
 @keyframes step-next { from { opacity: 0; transform: translate3d(28px, 0, 0); } }
 @keyframes step-prev { from { opacity: 0; transform: translate3d(-28px, 0, 0); } }
-.progress span { transition: width 0.4s var(--ease-out); }
+.progress span { transition: transform 0.4s var(--ease-out); }
 
 /* ---------- 7. 赞念：点一下，数字跳一下，圆环顺滑地走 ---------- */
 .tb-ring { transition: stroke-dashoffset 0.35s var(--ease-out); }
@@ -99,7 +103,7 @@
 .tb-tap:active { transform: scale(0.96); }
 .tb-tap .tb-star { transition: transform 0.6s var(--ease-out); transform-origin: center; }
 .tb-done .tb-ring { animation: ring-done 0.7s var(--ease-out); }
-@keyframes ring-done { 0% { stroke-width: 10; } 40% { stroke-width: 16; } 100% { stroke-width: 10; } }
+@keyframes ring-done { 40% { opacity: 0.55; } }
 
 /* ---------- 8. 其他 ---------- */
 details[open] > :not(summary) { animation: fold-open 0.3s var(--ease-out) backwards; }
@@ -109,15 +113,16 @@ details[open] > :not(summary) { animation: fold-open 0.3s var(--ease-out) backwa
 .ayah.is-target { animation: target-flash 1.8s ease-out; }
 @keyframes target-flash { 0% { background: var(--gold); } 100% { background: var(--gold-soft); } }
 .compass-card.is-aligned .dial { animation: aligned-glow 1.6s ease-in-out infinite; border-radius: 50%; }
-@keyframes aligned-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(15, 89, 64, 0)); } 50% { filter: drop-shadow(0 0 12px rgba(15, 89, 64, 0.45)); } }
+@keyframes aligned-glow { 50% { transform: scale(1.025); } }
 
 /* 加载中：闪光的占位条，不是干巴巴的"加载中" */
 .skel { display: grid; gap: 12px; padding: 20px 0; }
-.skel i { display: block; height: 18px; border-radius: 9px; background: linear-gradient(90deg, var(--bg-2) 25%, var(--card) 50%, var(--bg-2) 75%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+.skel i { position: relative; overflow: hidden; display: block; height: 18px; border-radius: 9px; background: var(--bg-2); }
+.skel i::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 100%; background: linear-gradient(90deg, transparent, var(--card), transparent); transform: translateX(-100%); animation: shimmer 1.2s linear infinite; }
 .skel i.tall { height: 140px; border-radius: 18px; }
 .skel i:nth-child(3) { width: 82%; }
 .skel i:nth-child(4) { width: 64%; }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes shimmer { to { transform: translateX(100%); } }
 
 /* 设置里的开关：滑动的小圆钮（代替系统的小方框） */
 .switch-row input[type='checkbox'] { -webkit-appearance: none; appearance: none; position: relative; width: 52px; height: 32px; border-radius: 16px; background: var(--line); cursor: pointer; transition: background 0.25s; margin: 0; }
@@ -127,13 +132,10 @@ details[open] > :not(summary) { animation: fold-open 0.3s var(--ease-out) backwa
 .switch-row input[type='checkbox']:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 
 /* ---------- 9. 轻轻招呼一下：该做的事轻轻亮一亮（只改阴影和透明度，不挪位置） ---------- */
-/* 首页"跟着做"主按钮：每隔几秒有一道光掠过 */
-.hero .btn-primary { position: relative; overflow: hidden; }
-.hero .btn-primary::after { content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent); transform: skewX(-18deg); animation: btn-sheen 6s 2s ease-in-out infinite; pointer-events: none; }
-@keyframes btn-sheen { 0%, 78% { left: -40%; } 92%, 100% { left: 120%; } }
-/* 本周今天还没打卡的圆点、现在这一番还没打勾的圈：一圈光向外扩 */
-.sw-today .sw-dot, .prow.is-current .prow-check:not(.is-on) { animation: invite 2.2s ease-out infinite; }
-@keyframes invite { 0% { box-shadow: 0 0 0 0 rgba(15, 89, 64, 0.35); } 70%, 100% { box-shadow: 0 0 0 9px rgba(15, 89, 64, 0); } }
+/* 本周今天还没打卡的圆点、现在这一番还没打勾的圈：一圈光向外扩（光圈单独一层，只放大、变淡） */
+.sw-today .sw-dot { position: relative; }
+.sw-today .sw-dot::before, .prow.is-current .prow-check:not(.is-on)::before { content: ''; position: absolute; top: -2px; right: -2px; bottom: -2px; left: -2px; border-radius: 50%; border: 2px solid rgba(15, 89, 64, 0.35); opacity: 0; animation: invite 2.2s ease-out infinite; pointer-events: none; }
+@keyframes invite { 0% { transform: scale(1); opacity: 1; } 70%, 100% { transform: scale(1.45); opacity: 0; } }
 /* "继续读"的箭头轻轻往前点一点 */
 .q-continue .r-link-go { display: inline-block; animation: nudge 2.6s ease-in-out infinite; }
 @keyframes nudge { 0%, 60%, 100% { transform: none; } 75% { transform: translateX(5px); } }

@@ -1,7 +1,7 @@
 // 提醒排程测试
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSchedule, notifId, DEFAULT_NOTIFY, SAHUR_WARN_MIN } from '../src/core/notify.js';
+import { buildSchedule, notifId, soonId, DEFAULT_NOTIFY, SAHUR_WARN_MIN, SOON_MIN, SOON_DAYS } from '../src/core/notify.js';
 import { getCity } from '../src/core/cities.js';
 import { timesFor } from '../src/core/prayer-times.js';
 import { fastTimes } from '../src/core/ramadan.js';
@@ -26,13 +26,31 @@ test('7 天 × 5 番拜 = 35 条；已过去的不排', () => {
 });
 
 test('时间与礼拜时间一致；提前 10 分钟', () => {
-  const list = buildSchedule(city, at(2026, 12, 1, 3, 0), base);
+  const list = buildSchedule(city, at(2026, 12, 1, 3, 0), base).filter((x) => x.kind === 'prayer');
   const t = timesFor(city, { y: 2026, m: 12, d: 1 });
   assert.equal(list[0].prayer, 'fajr');
   assert.equal(list[0].at.getTime(), t.fajr.getTime());
   const adv = buildSchedule(city, at(2026, 12, 1, 3, 0), { ...base, notify: { ...DEFAULT_NOTIFY, advance: 10 } });
   assert.equal(adv[0].at.getTime(), t.fajr.getTime() - 10 * 60000);
   assert.match(adv[0].title, /10/);
+  // 自己设了提前 10 分钟：不再另外排"还有 10 分钟"那一条
+  assert.equal(adv.filter((x) => x.kind === 'soon').length, 0);
+});
+
+test('到点前 10 分钟轻声说一句：只排最近 3 天，可以关掉', () => {
+  const now = at(2026, 12, 1, 3, 0);
+  const list = buildSchedule(city, now, base);
+  const soon = list.filter((x) => x.kind === 'soon');
+  assert.equal(soon.length, 5 * SOON_DAYS);
+  const t = timesFor(city, { y: 2026, m: 12, d: 1 });
+  assert.equal(soon[0].prayer, 'fajr');
+  assert.equal(soon[0].at.getTime(), t.fajr.getTime() - SOON_MIN * 60000);
+  assert.match(soon[0].title, /10 分钟/);
+  assert.match(soon[0].body, /收个尾/);
+  assert.equal(soon[0].id, soonId({ y: 2026, m: 12, d: 1 }, 0));
+  assert.equal(new Set(list.map((x) => x.id)).size, list.length);
+  assert.ok(soonId({ y: 2099, m: 12, d: 31 }, 4) < 2 ** 31);
+  assert.equal(buildSchedule(city, now, { ...base, notify: { ...DEFAULT_NOTIFY, soon: false } }).filter((x) => x.kind === 'soon').length, 0);
 });
 
 test('关掉的番拜不提醒；总开关关掉一条都不排', () => {
@@ -122,6 +140,7 @@ test('手机应用：排 14 天；最后加一条"打开一下就能续上"；�
   assert.ok(ios.length <= 64, '苹果最多 64 条');
   assert.equal(ios[ios.length - 1].kind, 'renew');
   assert.ok(ios.filter((x) => x.kind === 'prayer').length >= 45, '苹果也能排 9 天以上的礼拜提醒');
+  assert.ok(ios.filter((x) => x.kind === 'soon').length >= 5, '苹果：今天的"还有 10 分钟"也排上了');
   // 不开提醒：什么都不排，也没有续排提醒
   assert.equal(buildSchedule(city, now, { ...base, remind: false, days: APP_DAYS, renew: true }).length, 0);
 });
