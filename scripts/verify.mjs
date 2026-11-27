@@ -612,7 +612,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
     await page.goto(base + q);
     users.push({ ctx, page });
   }
-  await users[2].page.waitForFunction(() => /此刻在大殿 3 人/.test(document.querySelector('[data-count]').textContent), null, { timeout: 5000 }).catch(() => {});
+  await users[2].page.waitForFunction(() => /此刻在大殿 3 人/.test((document.querySelector('[data-count]') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
   check('大殿显示真实在线人数', /此刻在大殿 3 人/.test(await users[2].page.textContent('[data-count]')), await users[2].page.textContent('[data-count]'));
   await users[0].page.click('[data-mat="0"]');
   await users[1].page.waitForSelector('[data-mat="1"].is-free');
@@ -620,19 +620,19 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await users[2].page.waitForSelector('[data-queue]', { timeout: 5000 }).catch(() => {});
   check('垫子坐满后提示排队', (await users[2].page.locator('[data-queue]').count()) === 1);
   await users[2].page.click('[data-queue]');
-  await users[2].page.waitForFunction(() => /你排在第 1 位/.test(document.querySelector('[data-panel]').textContent), null, { timeout: 5000 }).catch(() => {});
+  await users[2].page.waitForFunction(() => /你排在第 1 位/.test((document.querySelector('[data-panel]') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
   check('排队位置', /你排在第 1 位/.test(await users[2].page.textContent('[data-panel]')));
   await users[0].page.click('[data-stand]');
-  await users[2].page.waitForFunction(() => /你坐在第 1 排第 1 张/.test(document.querySelector('[data-panel]').textContent), null, { timeout: 5000 }).catch(() => {});
+  await users[2].page.waitForFunction(() => /你坐在第 1 排第 1 张/.test((document.querySelector('[data-panel]') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
   const toastText = (await users[2].page.locator('.toast').textContent().catch(() => '')) || '';
   check('有人起身，垫子自动给排队的人', /你坐在第 1 排第 1 张/.test(await users[2].page.textContent('[data-panel]')) && /轮到你了/.test(toastText), toastText.trim());
   await users[2].page.screenshot({ path: join(shots, 'verify-hall-queue.png'), animations: 'disabled' });
   await users[1].ctx.close();
-  await users[0].page.waitForFunction(() => /此刻在大殿 2 人/.test(document.querySelector('[data-count]').textContent), null, { timeout: 5000 }).catch(() => {});
+  await users[0].page.waitForFunction(() => /此刻在大殿 2 人/.test((document.querySelector('[data-count]') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
   check('有人离开，人数实时减少', /此刻在大殿 2 人/.test(await users[0].page.textContent('[data-count]')));
   await users[0].page.goto(base + q.replace('#/masjid/hall', '#/masjid'));
   // 离开大殿的那条连接断开要一点时间：等人数稳定下来，只读一次
-  await users[0].page.waitForFunction(() => /此刻 1 人 · 垫子 1\/2/.test(document.querySelector('[data-count="hall"]').textContent), null, { timeout: 15000 }).catch(() => {});
+  await users[0].page.waitForFunction(() => /此刻 1 人 · 垫子 1\/2/.test((document.querySelector('[data-count="hall"]') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
   const entry = await users[0].page.textContent('[data-count="hall"]');
   // 没读到时把原因打出来（直接请求一次人数、看页面地址）
   const diag = /此刻/.test(entry)
