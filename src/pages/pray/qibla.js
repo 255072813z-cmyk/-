@@ -1,4 +1,5 @@
 // 朝向：手机上用罗盘指向麦加；电脑上看地图和角度。
+import { isOffline } from '../../ui/load-failed.js';
 import { qiblaBearing, distanceKm, compassPoint, startCompass, greatCirclePoints, KAABA } from '../../core/qibla.js';
 import { ICONS, star8 } from '../../ui/art.js';
 import { kaaba } from '../../ui/art-scenes.js';
@@ -93,6 +94,13 @@ export function qiblaPage(ctx) {
   </div>`;
 
   let stop = null;
+  // 罗盘读不到时的两个计时：3 秒还没数据先提示怎么拿手机，8 秒还没有就说明原因、给出办法（不能一直停在"正在读取"）
+  let slowTimer = 0;
+  let giveUpTimer = 0;
+  const clearWait = () => {
+    clearTimeout(slowTimer);
+    clearTimeout(giveUpTimer);
+  };
   return {
     html,
     mount(el) {
@@ -103,7 +111,7 @@ export function qiblaPage(ctx) {
         })
         .catch(() => {
           const m = el.querySelector('[data-map]');
-          if (m) m.innerHTML = `<p class="note">${t('common.offlineMissing')}</p>`;
+          if (m) m.innerHTML = `<p class="note">${t(isOffline() ? 'common.offlineMissing' : 'common.loadFailed')}</p>`;
         });
       const btn = el.querySelector('[data-start]');
       if (!btn) return;
@@ -116,8 +124,28 @@ export function qiblaPage(ctx) {
         turn.textContent = t('qibla.reading');
         if (stop) stop(); // 出错后再点一次：先停掉上一次的监听，不重复
         const hint = el.querySelector('[data-portrait]');
+        let got = false;
+        const fail = (msg) => {
+          clearWait();
+          btn.hidden = false;
+          btn.textContent = t('common.retry');
+          turn.textContent = msg;
+        };
+        // 有的手机（特别是苹果手机请求"运动与方向"权限时）既不答应也不拒绝，罗盘一直没有数据：到时间就说明办法
+        clearWait();
+        slowTimer = setTimeout(() => {
+          if (!got) turn.textContent = t('qibla.readingSlow');
+        }, 3000);
+        // 到时间先说明办法；监听不停，之后罗盘有了数据照样会转起来
+        giveUpTimer = setTimeout(() => {
+          if (!got) fail(t('qibla.timeout'));
+        }, 8000);
         stop = startCompass({
           onHeading(mag, screenAngle) {
+            if (!got) {
+              got = true;
+              clearWait();
+            }
             // 横屏时各家手机、浏览器对方向的修正不一致，请用户竖着拿（竖屏最准）
             if (hint) hint.hidden = !screenAngle;
             const heading = (mag + c.declination + 360) % 360; // 磁北 → 真北
@@ -138,14 +166,14 @@ export function qiblaPage(ctx) {
             aligned = ok;
           },
           onError(why) {
-            btn.hidden = false;
-            turn.textContent =
-              why === 'denied' ? t('qibla.denied') : t('qibla.noData');
+            if (got) return;
+            fail(why === 'denied' ? t('qibla.denied') : t('qibla.noData'));
           },
         });
       });
     },
     unmount() {
+      clearWait();
       if (stop) stop();
     },
   };

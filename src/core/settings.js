@@ -28,7 +28,7 @@ const DEFAULTS = {
   hijriManual: false, // false：跟随当地宣布（后台发布的调整）；true：用户自己调
   stats: true, // 匿名使用统计（可关闭）
   autoLoc: false, // 自动定位：用"我的位置"时，每次打开应用自动更新位置和时区（位置只在手机上用）
-  lang: 'zh', // zh 中文（开发用）/ tg 塔吉克语 / ru 俄语；第一次打开按手机语言选
+  lang: 'tg', // tg 塔吉克语 / ru 俄语 / uz 乌兹别克语 / ky 吉尔吉斯语 / zh 中文；第一次打开按手机语言选，都不是就用塔吉克语
 };
 
 const listeners = new Set();

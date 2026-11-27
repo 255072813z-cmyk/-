@@ -11,6 +11,7 @@ import { replay } from '../../ui/motion.js';
 import { t, L, TR, getLang } from '../../i18n/index.js';
 import { esc } from '../../i18n/format.js';
 import { trHTML } from '../quran/read.js';
+import { loadFailed } from '../../ui/load-failed.js';
 
 const surahName = (s) => s[getLang()] || s.ru;
 
@@ -98,10 +99,9 @@ export function adhkarPage(ctx, which) {
                     <p class="tr" lang="${x.lang}">${x.text}</p><p class="zh">${trHTML(tr[i]).html}</p></div>`;
                 })
                 .join('');
-          })
-          .catch(() => {
+          }, () => {
             const skel = box.querySelector('.skel');
-            if (skel) skel.outerHTML = `<p class="note">${t('common.offlineMissing')}</p>`;
+            if (skel) loadFailed(skel);
           });
       });
       // 点一下记一遍；念满打勾，整组念完显示一句

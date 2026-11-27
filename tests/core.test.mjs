@@ -95,7 +95,9 @@ test('设置：存储里的数据坏了也能正常打开（数据异常检查�
   assert.equal(bad.notify.advance, 0);
   assert.equal(bad.notify.prayers.fajr, true);
   assert.equal(bad.hijriAdjust, 0);
-  assert.equal(bad.lang, 'zh');
+  // 语言坏了：按手机语言猜；测试环境的语言不是五种之一，就用默认的塔吉克语
+  assert.equal(bad.lang, 'tg');
+  assert.equal((await import('../src/i18n/index.js')).DEFAULT_LANG, 'tg');
   assert.equal(bad.loc, null);
   assert.equal(bad.stats, true);
   assert.equal(normalizeSettings(null).city, 'dushanbe');

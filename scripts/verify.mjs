@@ -129,7 +129,8 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
         if (ios) {
           delete Window.prototype.ondeviceorientationabsolute;
           delete window.ondeviceorientationabsolute;
-          window.DeviceOrientationEvent.requestPermission = () => Promise.resolve(perm);
+          // perm 为 hang：模拟有的苹果手机请求权限时既不答应也不拒绝
+          window.DeviceOrientationEvent.requestPermission = () => (perm === 'hang' ? new Promise(() => {}) : Promise.resolve(perm));
         }
         if (angle) Object.defineProperty(screen, 'orientation', { configurable: true, get: () => ({ angle, type: 'landscape-primary', addEventListener() {}, removeEventListener() {} }) });
       },
@@ -235,6 +236,17 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
     check('罗盘：出错后再点一次能正常用', r.aligned, r.turn);
     await a.ctx.close();
     await b2.ctx.close();
+  }
+  // 苹果请求权限一直没有回音：不能一直停在"正在读取"——3 秒先提示怎么拿手机，8 秒说明办法、按钮变"再试一次"
+  {
+    const h = await openCompass({ ios: true, perm: 'hang' });
+    await h.page.waitForTimeout(3400);
+    const slow = (await h.page.textContent('[data-turn]')).trim();
+    await h.page.waitForTimeout(5000);
+    const out = (await h.page.textContent('[data-turn]')).trim();
+    const retry = ((await h.page.locator('[data-start]:visible').textContent().catch(() => '')) || '').trim();
+    check('罗盘：权限请求一直没回音时，3 秒提示"慢慢转一圈"，8 秒说明办法（画"8"字、允许"运动与方向"、按角度和地图找）并可以再试', /慢慢转一圈/.test(slow) && /一直没有反应/.test(out) && /8/.test(out) && /运动与方向/.test(out) && retry === '再试一次', `${slow.slice(0, 14)}… → ${out.slice(0, 14)}…；按钮"${retry}"`);
+    await h.ctx.close();
   }
 }
 
@@ -622,7 +634,20 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   // 离开大殿的那条连接断开要一点时间：等人数稳定下来，只读一次
   await users[0].page.waitForFunction(() => /此刻 1 人 · 垫子 1\/2/.test(document.querySelector('[data-count="hall"]').textContent), null, { timeout: 15000 }).catch(() => {});
   const entry = await users[0].page.textContent('[data-count="hall"]');
-  check('入口页只读人数（看人数不算人头）', /此刻 1 人 · 垫子 1\/2/.test(entry), entry);
+  // 没读到时把原因打出来（直接请求一次人数、看页面地址）
+  const diag = /此刻/.test(entry)
+    ? ''
+    : await users[0].page.evaluate(async (port) => {
+        let r = '';
+        try {
+          const x = await fetch(`http://127.0.0.1:${port}/counts`, { cache: 'no-store' });
+          r = x.status + ' ' + (await x.text()).slice(0, 80);
+        } catch (e) {
+          r = 'ERR ' + e.message;
+        }
+        return `${location.href.split('?')[1]} | ${r}`;
+      }, ps.port);
+  check('入口页只读人数（看人数不算人头）', /此刻 1 人 · 垫子 1\/2/.test(entry), entry + (diag ? '  ' + diag : ''));
   for (const u of users) await u.ctx.close().catch(() => {});
   await ps.close();
 }
@@ -1062,6 +1087,77 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('[data-hero] .hero-band');
   check('设置里可以改回"年轻人"', (await page.evaluate(() => document.documentElement.dataset.mode)) === 'young' && (await page.locator('.hadith-card').count()) === 1);
   check('首页改版以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 16. 第一批 bug：古兰经首次打开误报"没有网络"、默认语言塔吉克语
+{
+  // 手机语言不是五种之一（英语、法语）：默认塔吉克语，启动画面、界面都是塔吉克语
+  const ctx = await browser.newContext({ ...phone, locale: 'en-US' });
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40');
+  await page.waitForSelector('[data-hero]');
+  const st = await page.evaluate(() => ({ lang: document.documentElement.lang, w: window.__lang, set: JSON.parse(localStorage.getItem('masjid:settings') || '{}').lang }));
+  const tabs = (await page.textContent('.tabbar')).replace(/\s+/g, ' ');
+  check('手机语言是英语时默认塔吉克语（启动画面、界面、设置）', st.w === 'tg' && /^tg/.test(st.lang) && /Имрӯз/.test(tabs) && (st.set === undefined || st.set === 'tg'), `${st.lang}，${tabs.trim().slice(0, 30)}`);
+  await ctx.close();
+}
+{
+  // 网站刚更新、旧页面要的文件已经没了（这里让古兰经页面的文件第一次 404）：有网就自动刷新一次，刷新后正常显示，不说"没有网络"
+  const ctx = await browser.newContext(phone);
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' }));
+  });
+  const page = await ctx.newPage();
+  let failOnce = true;
+  const PAGE_CHUNK = /\/assets\/quran-(?!files)[\w-]+\.js$/; // 古兰经页面的文件
+  await page.route(PAGE_CHUNK, (route) => {
+    if (failOnce) {
+      failOnce = false;
+      return route.fulfill({ status: 404, body: '' });
+    }
+    return route.continue();
+  });
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40#/quran/1');
+  await page.waitForSelector('.ayah', { timeout: 15000 }).catch(() => {});
+  const ayahs = await page.locator('.ayah').count();
+  const txt = (await page.textContent('#app')).replace(/\s+/g, ' ');
+  check('古兰经：文件第一次没下载下来（网站刚更新）时自动刷新一次，经文照常出来，不说"没有网络"', !failOnce && ayahs === 7 && !/没有网络/.test(txt), `第一章 ${ayahs} 节`);
+  await ctx.close();
+}
+{
+  // 一直下载不下来（网络不稳）：说"没下载下来"并给"再试一次"，不说"没有网络"（关掉离线缓存，免得缓存先把文件给了）
+  const ctx = await browser.newContext({ ...phone, serviceWorkers: 'block' });
+  await ctx.addInitScript(() => {
+    localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' }));
+    sessionStorage.setItem('masjid:reloaded', String(Date.now())); // 刚自动刷新过：这次不再刷新，直接说明
+  });
+  const page = await ctx.newPage();
+  await page.route(/\/assets\/(ar|zh)-\d-[\w-]+\.js$/, (route) => route.fulfill({ status: 404, body: '' })); // 经文数据一直下载不下来
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40#/quran/2');
+  await page.waitForSelector('.load-failed', { timeout: 15000 }).catch(() => {});
+  const msg = ((await page.textContent('.load-failed').catch(() => '')) || '').trim();
+  const retry = await page.locator('[data-retry]').count();
+  check('古兰经：有网但一直没下载下来时说"没下载下来"、给"再试一次"，不说"没有网络"', /没下载下来/.test(msg) && !/没有网络/.test(msg) && retry === 1, msg.slice(0, 20));
+  await ctx.close();
+}
+{
+  // 真的断网：才说"没有网络"（先联网打开过一次，离线缓存里有应用本身，但没有第 114 章的经文）
+  const ctx = await browser.newContext(phone);
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' }));
+  });
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40#/quran/1');
+  await page.waitForSelector('.ayah', { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 10000 }).catch(() => {});
+  await page.reload();
+  await page.waitForSelector('.ayah', { timeout: 15000 }).catch(() => {});
+  await ctx.setOffline(true);
+  await page.evaluate(() => (location.hash = '#/quran/114'));
+  await page.waitForSelector('.load-failed', { timeout: 15000 }).catch(() => {});
+  const off = ((await page.textContent('.load-failed').catch(() => '')) || '').trim();
+  check('古兰经：真的断网时才说"没有网络"', /没有网络/.test(off), off.slice(0, 20));
   await ctx.close();
 }
 

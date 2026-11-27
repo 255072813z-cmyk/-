@@ -27,6 +27,7 @@ import { homePage } from "./pages/home.js";
 import { t, getLang } from "./i18n/index.js";
 import { flagOn } from "./core/remote.js";
 import { ICONS } from "./ui/art.js";
+import { loadFailed } from "./ui/load-failed.js";
 
 const LAZY = {
   hub: () => import("./pages/pray/hub.js").then((m) => m.hubPage),
@@ -61,20 +62,20 @@ function lazy(name, ctx, args) {
   return {
     html: `<div class="page"><div class="loading skel" role="status" aria-label="${t("common.loading")}"><i class="tall"></i><i></i><i></i><i></i></div></div>`,
     mount() {
-      LAZY[name]()
-        .then((fn) => {
+      LAZY[name]().then(
+        (fn) => {
           loaded[name] = fn;
-          ctx.rerender({ enter: true }); // 真正的页面出来时再放一次"依次浮现"
-        })
-        .catch((e) => {
+          ctx.rerender({ enter: true }); // 真正的页面出来时再放一次"依次浮现"（这里出错照常报出来，不当成断网）
+        },
+        () => {
+          // 没下载下来：真断网才说"没有网络"；有网（多半是网站刚更新、旧页面要的文件换了名字）先自动刷新一次
           const el = document.querySelector(".loading");
-          if (el) el.textContent = t("common.offlineMissing");
-          // 不是断网而是页面自己出错时，要让错误报告看得到（不能悄悄吞掉）
-          if (e && !/fetch|import|load/i.test(String(e.message)))
-            setTimeout(() => {
-              throw e;
-            });
-        });
+          if (el) {
+            el.classList.remove("skel");
+            loadFailed(el);
+          }
+        },
+      );
     },
   };
 }

@@ -11,6 +11,7 @@ import { replay } from '../../ui/motion.js';
 import { t, getLang } from '../../i18n/index.js';
 import { surahName } from './index.js';
 import { esc } from '../../i18n/format.js';
+import { loadFailed } from '../../ui/load-failed.js';
 
 const SIZES = ['q-s0', 'q-s1', 'q-s2', 'q-s3'];
 
@@ -202,10 +203,7 @@ export function quranRead(ctx, n, startAyah) {
           });
           end.observe(el.querySelector('[data-q-end]'));
           observers = [where, read, end];
-        })
-        .catch(() => {
-          box.innerHTML = `<p class="note">${t('common.offlineMissing')}</p>`;
-        });
+        }, () => loadFailed(box)); // 只有下载失败才走这里；页面自己出错不算"没有网络"，照常报出来
     },
     unmount() {
       clearTimeout(timer);

@@ -45,15 +45,18 @@ export function spacesPage(ctx) {
       <p class="note">${t('spaces.quiet')}</p>
     </section>
   </div>`;
-  // 门上的人数：停在这一页时每 10 秒刷新一次（这次没取到，下次再取）
+  // 门上的人数：停在这一页时每 10 秒刷新一次；这次没取到，3 秒后再取（不让门上一直是"…"）
   let timer = 0;
+  let stopped = false; // 离开这一页后，还在路上的那次请求回来也不再排下一次
   return {
     html,
     mount(el) {
       if (!live) return;
       const load = () =>
         fetchCounts().then((c) => {
-          if (!c || !el.isConnected) return;
+          if (stopped || !el.isConnected) return;
+          timer = setTimeout(load, c ? 10000 : 3000);
+          if (!c) return;
           const set = (room, text) => {
             const n = el.querySelector(`[data-count="${room}"]`);
             if (n) n.textContent = text;
@@ -63,10 +66,10 @@ export function spacesPage(ctx) {
           set('poetry', open ? t('spaces.count', { n: c.poetry.online }) : '');
         });
       load();
-      timer = setInterval(load, 10000);
     },
     unmount() {
-      clearInterval(timer);
+      stopped = true;
+      clearTimeout(timer);
     },
   };
 }

@@ -15,8 +15,9 @@ export const LANGS = {
 };
 // 内容（念词意思、圣训、诗句）还没有某种语言时退到哪种语言：乌兹别克语、吉尔吉斯语用户大多看得懂俄语
 const FALLBACK = { uz: 'ru', ky: 'ru', tg: 'ru' };
-// 手机语言既不是塔吉克语、俄语也不是中文时用哪种。开发阶段为中文；上线前改成 'tg'（或 'ru'）。
-export const DEFAULT_LANG = 'zh';
+// 手机语言不是这五种（塔吉克语、俄语、乌兹别克语、吉尔吉斯语、中文）时用塔吉克语——应用主要是给塔吉克斯坦的穆斯林用的。
+// 启动画面里的默认语言（index.html）构建时自动跟着这里走（见 vite.config.js）。
+export const DEFAULT_LANG = 'tg';
 
 const DICTS = {};
 // 每种语言的词典都按需下载：只下载用户用的那一种（中文是开发用语言，正式用户不用下载它）
