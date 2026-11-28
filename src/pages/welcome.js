@@ -10,6 +10,8 @@ import { isNativeApp } from '../core/api.js';
 import { markFeature } from '../core/usage.js';
 import { ymdKey } from '../core/clock.js';
 import { star8 } from '../ui/art.js';
+import { isOffline, locateError } from '../ui/load-failed.js';
+import { locate } from '../core/location.js';
 
 const STEPS = 3;
 // 现在在第几步、刚才往哪个方向走（换语言、选城市回来时页面会重画，步骤不能丢）
@@ -124,9 +126,9 @@ export function welcomePage(ctx) {
         auto.addEventListener('click', async () => {
           const msg = el.querySelector('[data-ob-msg]');
           auto.disabled = true;
-          msg.textContent = t('city.locating');
+          msg.textContent = t(isOffline() ? 'city.locatingLong' : 'city.locating');
           try {
-            const { locate } = await import('../core/location.js');
+            // 定位程序直接打包在这一页里：断网时点也不用再下载
             const loc = await locate();
             markFeature('here', ymdKey(ctx.sched.today));
             dir = 'next';
@@ -134,7 +136,7 @@ export function welcomePage(ctx) {
             setSettings({ city: 'here', loc, cityConfirmed: true, autoLoc: true });
           } catch (e) {
             auto.disabled = false;
-            msg.textContent = t(e && e.code === 1 ? 'city.denied' : e && e.message === 'unsupported' ? 'city.unsupported' : 'city.failed');
+            msg.textContent = locateError(e);
           }
         });
       const notify = el.querySelector('[data-ob-notify]');

@@ -4,6 +4,10 @@
 //   2) 网络不稳，这一次没下载完 → 给一个"再试一次"
 // 只有手机真的断网（navigator.onLine 为 false）时才说"没有网络"。
 import { t } from '../i18n/index.js';
+import { guessCity, getCity } from '../core/cities.js';
+import { cityName } from '../i18n/format.js';
+
+const guessedCityName = () => cityName(getCity(guessCity()));
 
 const KEY = 'masjid:reloaded';
 
@@ -30,4 +34,12 @@ export function loadFailed(el) {
   el.innerHTML = `<p class="note load-failed">${t(offline ? 'common.offlineMissing' : 'common.loadFailed')}</p>
     <div class="step-btns"><button type="button" class="btn btn-ghost btn-sm" data-retry>${t('common.retry')}</button></div>`;
   el.querySelector('[data-retry]').addEventListener('click', () => location.reload());
+}
+
+/** 自动定位没成功时说什么：没给权限 / 设备不支持 / 没有网络（给出按手机时区猜的城市）/ 一般的取不到 */
+export function locateError(e) {
+  if (e && e.code === 1) return t('city.denied');
+  if (e && e.message === 'unsupported') return t('city.unsupported');
+  if (isOffline()) return t('city.failedOffline', { city: guessedCityName() });
+  return t('city.failed');
 }

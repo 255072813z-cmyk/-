@@ -144,3 +144,37 @@ test('手机应用：排 14 天；最后加一条"打开一下就能续上"；�
   // 不开提醒：什么都不排，也没有续排提醒
   assert.equal(buildSchedule(city, now, { ...base, remind: false, days: APP_DAYS, renew: true }).length, 0);
 });
+
+test('时区：城市和手机不在一个时区时，提醒里写明"杜尚别时间"；同一个时区不写', () => {
+  const now = at(2026, 12, 1, 3, 0);
+  const away = buildSchedule(city, now, { ...base, deviceOffset: 8 });
+  const home = buildSchedule(city, now, { ...base, deviceOffset: 5 });
+  const a = away.find((x) => x.kind === 'prayer');
+  const h = home.find((x) => x.kind === 'prayer');
+  assert.match(a.body, /杜尚别时间/);
+  assert.doesNotMatch(h.body, /杜尚别时间/);
+  assert.equal(a.at.getTime(), h.at.getTime(), '提醒的时刻一样，只是写法不同');
+});
+
+test('时区："我的位置"在有夏令时的地方，每一天按那一天的偏移算', async () => {
+  const { tzOffsetAt, offsetAt, utcLabel } = await import('../src/core/clock.js');
+  assert.equal(tzOffsetAt('Europe/Berlin', new Date(Date.UTC(2026, 0, 15, 12))), 1);
+  assert.equal(tzOffsetAt('Europe/Berlin', new Date(Date.UTC(2026, 6, 15, 12))), 2);
+  assert.equal(tzOffsetAt('Asia/Dushanbe', new Date(Date.UTC(2026, 6, 15, 12))), 5);
+  assert.equal(tzOffsetAt('Asia/Kolkata', new Date(Date.UTC(2026, 6, 15, 12))), 5.5);
+  assert.equal(tzOffsetAt('Not/AZone', new Date()), null);
+  const here = { id: 'here', utcOffset: 1, tz: 'Europe/Berlin' };
+  assert.equal(offsetAt(here, new Date(Date.UTC(2026, 6, 15, 12))), 2, '夏天按 +2');
+  assert.equal(offsetAt({ utcOffset: 5 }, new Date()), 5, '城市用固定偏移');
+  assert.equal(utcLabel(5), 'UTC+5');
+  assert.equal(utcLabel(5.5), 'UTC+5:30');
+  assert.equal(utcLabel(-3), 'UTC−3');
+  // 跨过夏令时那天（2027-03-28）：提醒的时刻和写的时间都对
+  const { getCity } = await import('../src/core/cities.js');
+  const berlin = getCity('here', { lat: 52.52, lon: 13.4, utcOffset: 1, tz: 'Europe/Berlin' });
+  const list = buildSchedule(berlin, new Date(Date.UTC(2027, 2, 25, 0)), { ...base, deviceOffset: 1, days: 6 });
+  const dhuhr = list.filter((x) => x.prayer === 'dhuhr' && x.kind === 'prayer');
+  const shown = dhuhr.map((x) => x.body.match(/\d\d:\d\d/)[0]);
+  const real = dhuhr.map((x) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(x.at));
+  assert.deepEqual(shown, real, '每一天写的时间都和柏林当地的钟一致（夏令时前后）');
+});

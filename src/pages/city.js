@@ -9,6 +9,7 @@ import { ymdKey } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t, getLang } from '../i18n/index.js';
 import { cityName, esc } from '../i18n/format.js';
+import { isOffline, locateError } from '../ui/load-failed.js';
 
 // 搜索时不看大小写、空格、连字符和乌兹别克语的 ʻ ʼ '（Qoʻqon = Qo'qon = Qoqon）
 const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[\s\-·.ʻʼ\u0027‘’\u0060]/g, '');
@@ -96,7 +97,7 @@ export function cityPage(ctx) {
       const msg = el.querySelector('[data-locate-msg]');
       btn.addEventListener('click', () => {
         btn.disabled = true;
-        msg.textContent = t('city.locating');
+        msg.textContent = t(isOffline() ? 'city.locatingLong' : 'city.locating');
         locate()
           .then((loc) => {
             markFeature('here', ymdKey(ctx.sched.today));
@@ -105,7 +106,7 @@ export function cityPage(ctx) {
           })
           .catch((e) => {
             btn.disabled = false;
-            msg.textContent = t(e && e.code === 1 ? 'city.denied' : e && e.message === 'unsupported' ? 'city.unsupported' : 'city.failed');
+            msg.textContent = locateError(e);
           });
       });
     },

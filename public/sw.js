@@ -1,15 +1,30 @@
-// 离线缓存：第一次打开后，没有网络也能打开网站、看礼拜时间（时间本来就在手机上计算）。
-// 页面本身"先联网、失败再用缓存"，带哈希的静态文件"先用缓存"。天气等外站请求不缓存。
-const CACHE = 'masjid-v2'; // 改了缓存规则就换个名字，旧缓存会被清掉
+// 离线缓存：第一次打开时就把整个应用（页面、脚本、样式、字体）预先存好，之后没有网络也能打开每一页、
+// 看礼拜时间（时间本来就在手机上算）、自动定位（卫星定位不需要网络）。
+// 古兰经各章经文比较大，不预先存，读到哪一章存哪一章（存在单独的缓存里，网站更新也不会丢）。
+// 页面本身"先联网、失败再用缓存"；带哈希的静态文件"先用缓存"。天气等外站请求不缓存。
+const BUILD = '__BUILD__'; // 构建时换成这一版的编号
+const PRECACHE = []; /* __PRECACHE__ */ // 构建时换成这一版的文件清单
+const APP = 'masjid-app-' + BUILD; // 应用文件：每一版一个，旧版的在新版装好后删掉
+const DATA = 'masjid-data'; // 读过的古兰经章节等：一直保留
+
 self.addEventListener('install', (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './icon.svg', './manifest.webmanifest'])));
+  e.waitUntil(
+    caches.open(APP).then((c) =>
+      // 一个一个存：某个文件这次没下载下来，不影响其他文件
+      Promise.all(['./', './index.html', './icon.svg', './manifest.webmanifest', ...PRECACHE].map((u) => c.add(u).catch(() => {}))),
+    ),
+  );
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== APP && k !== DATA).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
   );
 });
+const isData = (url) => /\/assets\/(ar|zh|tg|ru|uz|ky)-\d-[\w-]+\.js$/.test(url.pathname);
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -23,7 +38,7 @@ self.addEventListener('fetch', (e) => {
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(isApp ? './index.html' : req, copy));
+            caches.open(APP).then((c) => c.put(isApp ? './index.html' : req, copy));
           }
           return res;
         })
@@ -38,7 +53,7 @@ self.addEventListener('fetch', (e) => {
         fetch(req).then((res) => {
           if (res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
+            caches.open(isData(url) ? DATA : APP).then((c) => c.put(req, copy));
           }
           return res;
         }),

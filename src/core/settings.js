@@ -47,12 +47,17 @@ export function normalizeSettings(saved) {
   out.city = typeof s.city === 'string' ? s.city : guessCity(); // 第一次打开：按手机时区猜
   // 城市确认过没有（第一次打开时首页请用户确认一下）；老用户存过城市的算确认过
   out.cityConfirmed = bool(s.cityConfirmed, typeof s.city === 'string');
-  // 引导：存过城市、确认过城市或回答过显示方式的老用户，不再走引导
-  out.onboarded = bool(s.onboarded, out.cityConfirmed || s.modeAsked === true);
+  // 引导：确认过城市的老用户不再走引导；没确认过的走一次（城市只在引导里确认这一次，以后首页不再出现）
+  out.onboarded = bool(s.onboarded, out.cityConfirmed);
   const loc = s.loc;
   out.loc =
     loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lon) <= 180
-      ? { lat: loc.lat, lon: loc.lon, utcOffset: Number.isFinite(loc.utcOffset) && Math.abs(loc.utcOffset) <= 14 ? loc.utcOffset : undefined }
+      ? {
+          lat: loc.lat,
+          lon: loc.lon,
+          utcOffset: Number.isFinite(loc.utcOffset) && Math.abs(loc.utcOffset) <= 14 ? loc.utcOffset : undefined,
+          tz: typeof loc.tz === 'string' && /^[A-Za-z]+(\/[A-Za-z0-9_+-]+){0,2}$/.test(loc.tz) && loc.tz.length <= 40 ? loc.tz : undefined,
+        }
       : null;
   if (!CITIES[out.city] && !(out.city === 'here' && out.loc)) out.city = DEFAULT_CITY;
   out.fontScale = int(s.fontScale, -1, 2, 0);

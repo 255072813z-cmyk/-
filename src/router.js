@@ -157,6 +157,8 @@ export function prefetchPages() {
           f().then((fn) => (loaded[k] = loaded[k] || fn)),
     ),
     () => import("./content/hadith.js"), // 今日圣训、在家礼拜的依据
+    () => import("./content/daily-ayah.js"), // 今日一节
+    () => import("./core/location.js"), // 自动定位（断网时也要能点）
     () => import("./content/region-map.js"), // 朝向页的地图
     () => import("./content/wide-map.js"),
     // 古兰经"继续读"的那一章：先下载好，断网也能接着读（只这一块，不整本下载，省流量）

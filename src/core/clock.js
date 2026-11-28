@@ -67,3 +67,54 @@ export function splitDuration(ms) {
 }
 
 export { pad, HOUR, DAY };
+
+// ---- 时区：避免歧义 ----
+// 城市用固定的 UTC 偏移（塔吉克斯坦、乌兹别克斯坦、吉尔吉斯斯坦、俄罗斯、中国都没有夏令时）。
+// "我的位置"另外记着手机的时区名（如 Europe/Berlin）：出门到有夏令时的地方，每一天按那一天的偏移算，月表、提醒都不会差一小时。
+
+/** 手机现在的时区名（取不到返回 ''） */
+export function deviceTz() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+/** 手机现在相对 UTC 的小时数（北京 8、杜尚别 5） */
+export const deviceOffsetNow = () => -new Date().getTimezoneOffset() / 60;
+
+const FMT = new Map();
+/** 某个时区在某一时刻的 UTC 偏移（小时）；时区名不认识时返回 null */
+export function tzOffsetAt(tz, date) {
+  try {
+    let f = FMT.get(tz);
+    if (!f) {
+      f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      FMT.set(tz, f);
+    }
+    const p = Object.fromEntries(f.formatToParts(date).map((x) => [x.type, x.value]));
+    const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+    return Math.round((asUtc - Math.floor(date.getTime() / 1000) * 1000) / 60000) / 60;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** 城市在某一时刻用的 UTC 偏移：记了时区名的（"我的位置"）按那一天算，其余用城市的固定偏移 */
+export function offsetAt(city, date) {
+  if (city && city.tz) {
+    const o = tzOffsetAt(city.tz, date);
+    if (o != null) return o;
+  }
+  return city ? city.utcOffset : displayOffset;
+}
+
+/** UTC 偏移写成 "UTC+5"、"UTC+5:30"、"UTC−3" */
+export function utcLabel(h) {
+  const sign = h < 0 ? '−' : '+';
+  const a = Math.abs(h);
+  const hh = Math.floor(a);
+  const mm = Math.round((a - hh) * 60);
+  return `UTC${sign}${hh}${mm ? ':' + pad(mm) : ''}`;
+}

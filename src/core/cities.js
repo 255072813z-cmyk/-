@@ -38,6 +38,7 @@ export function getCity(id, loc) {
       lat: loc.lat,
       lon: loc.lon,
       utcOffset: isFinite(loc.utcOffset) ? loc.utcOffset : near.utcOffset,
+      tz: typeof loc.tz === 'string' ? loc.tz : '', // 手机的时区名（每一天按那一天的偏移算，见 clock.js offsetAt）
       weatherLat: near.lat,
       weatherLon: near.lon,
     };

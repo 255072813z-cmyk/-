@@ -8,7 +8,7 @@
 //   年轻人：精致简洁；年纪大的人：大字极简，首页只有时间和下一番。
 import { t, L, getLang } from '../i18n/index.js';
 import { dateLine, hijriLine, durHTML, cityName, remoteText, esc } from '../i18n/format.js';
-import { fmtHM, splitDuration, addDays, ymdKey } from '../core/clock.js';
+import { fmtHM, splitDuration, addDays, ymdKey, offsetAt, deviceOffsetNow, utcLabel } from '../core/clock.js';
 import { PRAYERS, skyPhase, highLatitudeDay, METHODS } from '../core/prayer-times.js';
 import { toHijri } from '../core/hijri.js';
 import { setSettings, getSettings } from '../core/settings.js';
@@ -23,7 +23,6 @@ import { isNativeApp, platform } from '../core/api.js';
 import { activeNotices, dismissNotice, updateLink } from '../core/remote.js';
 import { prayedOn, togglePrayed, prayedDays } from '../core/prayed.js';
 import { adhkarCard } from '../ui/adhkar-card.js';
-import { markFeature } from '../core/usage.js';
 import { softToast } from '../core/reminder.js';
 import { setCount } from '../ui/motion.js';
 // 分享按需下载（点了才用到）
@@ -247,34 +246,6 @@ function bindNotifyCard(root) {
     });
 }
 
-/** 第一次打开：先问一句"你是年轻人还是年纪大的人？"（页面里的卡片，不弹窗；设置里随时可改） */
-function modeHTML(ctx) {
-  if (ctx.settings.modeAsked) return '';
-  return `<section class="card welcome-card mode-card">
-    <p class="notify-card-t">${t('mode.ask')}</p>
-    <p class="note">${t('mode.askNote')}</p>
-    <div class="mode-pick">
-      <button type="button" class="mode-opt" data-set-mode="young"><b>${t('mode.young')}</b><small>${t('mode.youngSub')}</small></button>
-      <button type="button" class="mode-opt is-elder" data-set-mode="elder"><b>${t('mode.elder')}</b><small>${t('mode.elderSub')}</small></button>
-    </div>
-  </section>`;
-}
-
-/** 第一次打开：请用户确认城市（按手机时区猜的，可能不对）。先问显示方式，问完再问城市，一次只一张卡片 */
-function welcomeHTML(ctx) {
-  if (ctx.settings.cityConfirmed || !ctx.settings.modeAsked) return '';
-  return `<section class="card welcome-card">
-    <p class="notify-card-t">${t('home.welcomeTitle')}</p>
-    <p>${t('home.welcomeText', { city: cityName(ctx.city) })}</p>
-    <div class="step-btns">
-      <button type="button" class="btn btn-primary" data-city-auto>${t('home.welcomeAuto')}</button>
-      <button type="button" class="btn btn-ghost" data-city-ok>${t('home.welcomeOk', { city: cityName(ctx.city) })}</button>
-      <a class="btn btn-ghost" href="#/city">${t('home.welcomeChoose')}</a>
-    </div>
-    <p class="note" data-auto-msg aria-live="polite">${t('home.welcomeAutoNote')}</p>
-  </section>`;
-}
-
 /** 后台发布的公告（纯文字）和"请更新应用"提示 */
 function noticesHTML(ctx) {
   const list = activeNotices(ctx.remote, ymdKey(ctx.sched.today));
@@ -315,21 +286,31 @@ function dateHTML(ctx) {
     ${hn ? `<span class="date-eve">${t('home.hijriEve', { d: hn.d })}</span>` : ''}`;
 }
 
-/** 选的城市和手机不在同一个时区时，提一句"当地时间"（时间都按城市当地算） */
-function otherZone(ctx) {
-  const dev = -new Date().getTimezoneOffset() / 60;
-  return Math.abs(dev - ctx.city.utcOffset) > 0.01;
+/**
+ * 时区说明：所选城市和手机不在一个时区时，写清楚"时间按哪里算、和手机差几小时"。
+ * 只是一行说明，不是选项（城市只在第一次打开时确认一次，以后在设置、"我的"里改）。
+ */
+function zoneDiff(ctx) {
+  const dev = deviceOffsetNow();
+  const city = offsetAt(ctx.city, ctx.now);
+  return Math.abs(dev - city) > 0.01 ? { dev, city } : null;
+}
+function zoneLine(ctx) {
+  const z = zoneDiff(ctx);
+  if (!z) return '';
+  const h = Math.abs(z.city - z.dev);
+  return `<p class="tz-note" data-tz-note>${t('home.tzNote', {
+    city: cityName(ctx.city),
+    zone: utcLabel(z.city),
+    phone: fmtHM(ctx.now, z.dev),
+    phoneZone: utcLabel(z.dev),
+    diff: Number.isInteger(h) ? h : h.toFixed(1),
+  })}</p>`;
 }
 
 function topHTML(ctx) {
   return `<header class="home-top">
     <div class="date" data-date>${dateHTML(ctx)}</div>
-    <div class="city-row">
-      <a class="city-btn" href="#/city" aria-label="${t('city.choose', { name: cityName(ctx.city) })}">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="10" r="2.6"/></svg>
-        <span>${cityName(ctx.city)}</span><span class="city-caret" aria-hidden="true">▾</span></a>
-      ${otherZone(ctx) ? `<span class="city-note">${t('home.localTime', { time: fmtHM(ctx.now) })}</span>` : ''}
-    </div>
   </header>`;
 }
 
@@ -367,6 +348,7 @@ function heroBody(ctx, elder) {
     <p class="hero-label">${t('home.next')}</p>
     <p class="hero-next"><span class="hero-name">${name}</span><span class="hero-ar" lang="ar" dir="rtl">${info.ar}</span></p>
     <p class="hero-time">${s.nextTomorrow ? `<small>${t('home.tomorrow')}</small>` : ''}${fmtHM(s.nextTime)}</p>
+    ${zoneDiff(ctx) ? `<p class="hero-zone">${t('home.cityTimeShort', { city: cityName(ctx.city) })}</p>` : ''}
     <p class="hero-count" aria-hidden="true">${t('home.left')} <span class="count">${countdownText(s.nextTime - ctx.now)}</span></p>
     <span class="sr-only" data-sr-count></span>
     <p class="hero-soon" data-soon aria-live="polite">${soonText(ctx)}</p>
@@ -435,7 +417,8 @@ function timesCard(ctx, elder) {
   const highLat = highLatitudeDay(ctx.city, s.today);
   const adjusted = Object.values(ctx.settings.offsets).some((v) => Number(v));
   return `<section class="card list-card">
-    <h2 class="card-title">${star8(16)} ${t('home.today')}</h2>
+    <h2 class="card-title">${star8(16)} ${t('home.today')}<span class="list-city">${cityName(ctx.city)} · ${utcLabel(offsetAt(ctx.city, ctx.now))}</span></h2>
+    ${zoneLine(ctx)}
     <ul class="plist" data-list>${listHTML(ctx, elder)}</ul>
     ${elder ? '' : `<p class="sunline">${t('prayer.sunrise')} ${fmtHM(s.times.sunrise)} · ${t('prayer.sunset')} ${fmtHM(s.times.sunset)}</p>`}
     ${highLat ? `<p class="hero-warn high-lat">${t('home.highLat')}</p>` : ''}
@@ -500,7 +483,7 @@ export function homePage(ctx) {
     ? `
   <div class="page home is-elder">
     ${topHTML(ctx)}
-    <div class="notice-slot">${modeHTML(ctx)}${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
+    <div class="notice-slot">${noticesHTML(ctx)}</div>
     ${heroHTML(ctx, true)}
     <div class="ramadan-slot" data-ramadan>${ramadanOn ? homeRamadanCard(ctx) : ''}</div>
     ${timesCard(ctx, true)}
@@ -509,7 +492,7 @@ export function homePage(ctx) {
     : `
   <div class="page home">
     ${topHTML(ctx)}
-    <div class="notice-slot">${modeHTML(ctx)}${welcomeHTML(ctx)}${noticesHTML(ctx)}</div>
+    <div class="notice-slot">${noticesHTML(ctx)}</div>
     ${heroHTML(ctx, false)}
     <div data-winter>${weatherCard(ctx)}</div>
     <h2 class="sec home-sec">${t('home.todo')}</h2>
@@ -534,12 +517,6 @@ export function homePage(ctx) {
         fillHadith(el, ctx);
         fillAyah(el, ctx);
       }
-      el.querySelectorAll('[data-set-mode]').forEach((b) =>
-        b.addEventListener('click', () => {
-          setSettings({ mode: b.dataset.setMode, modeAsked: true });
-          markFeature('settings', ymdKey(ctx.sched.today));
-        }),
-      );
       el.querySelectorAll('[data-prayed]').forEach((b) =>
         b.addEventListener('click', () => {
           const on = b.getAttribute('aria-pressed') !== 'true';
@@ -565,25 +542,6 @@ export function homePage(ctx) {
           }
         }),
       );
-      const ok = el.querySelector('[data-city-ok]');
-      if (ok) ok.addEventListener('click', () => setSettings({ cityConfirmed: true }));
-      // 自动定位：位置只在手机上算礼拜时间和朝向，不上传；时区用手机的
-      const auto = el.querySelector('[data-city-auto]');
-      if (auto)
-        auto.addEventListener('click', async () => {
-          const msg = el.querySelector('[data-auto-msg]');
-          auto.disabled = true;
-          msg.textContent = t('city.locating');
-          try {
-            const { locate } = await import('../core/location.js');
-            const loc = await locate();
-            markFeature('here', ymdKey(ctx.sched.today));
-            setSettings({ city: 'here', loc, cityConfirmed: true, autoLoc: true });
-          } catch (e) {
-            auto.disabled = false;
-            msg.textContent = t(e && e.code === 1 ? 'city.denied' : e && e.message === 'unsupported' ? 'city.unsupported' : 'city.failed');
-          }
-        });
     },
     onNotify(r) {
       const box = document.querySelector('[data-notify-card]');
@@ -609,8 +567,8 @@ export function homePage(ctx) {
         el.querySelector('[data-sr-count]').textContent = t('home.srCount', { h, m: mm });
         const soon = el.querySelector('[data-soon]');
         if (soon) soon.textContent = soonText(c);
-        const note = document.querySelector('.city-note');
-        if (note) note.textContent = t('home.localTime', { time: fmtHM(c.now) });
+        const tz = document.querySelector('[data-tz-note]');
+        if (tz) tz.outerHTML = zoneLine(c);
         const d = document.querySelector('[data-date]');
         if (d) d.innerHTML = dateHTML(c);
         const r = document.querySelector('[data-ramadan]');

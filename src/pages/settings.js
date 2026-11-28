@@ -12,6 +12,8 @@ import { getCity } from '../core/cities.js';
 import { shareFile } from '../core/share.js';
 import { ymdKey } from '../core/clock.js';
 import { isNativeApp, notifyStatus, askNotifyPermission, openExactSetting, testNotification } from '../core/notify.js';
+import { isOffline, locateError } from '../ui/load-failed.js';
+import { locate } from '../core/location.js';
 
 const signed = (v) => (v > 0 ? '+' : '') + v;
 
@@ -251,14 +253,14 @@ export function settingsPage(ctx) {
       al.addEventListener('change', async () => {
         const msg = el.querySelector('[data-autoloc-msg]');
         if (!al.checked) return setSettings({ autoLoc: false });
-        msg.textContent = t('city.locating');
+        msg.textContent = t(isOffline() ? 'city.locatingLong' : 'city.locating');
         try {
-          const { locate } = await import('../core/location.js');
+          // 定位程序直接打包在这一页里：断网时点也不用再下载
           const loc = await locate();
           setSettings({ city: 'here', loc, cityConfirmed: true, autoLoc: true });
         } catch (e) {
           al.checked = false;
-          msg.textContent = t(e && e.code === 1 ? 'city.denied' : e && e.message === 'unsupported' ? 'city.unsupported' : 'city.failed');
+          msg.textContent = locateError(e);
         }
       });
       el.querySelectorAll('[data-lang]:not([disabled])').forEach((b) => b.addEventListener('click', () => setSettings({ lang: b.dataset.lang })));

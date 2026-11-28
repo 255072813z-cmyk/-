@@ -6,7 +6,7 @@
 import { timesFor, PRAYERS } from './prayer-times.js';
 import { fastTimes } from './ramadan.js';
 import { toHijri } from './hijri.js';
-import { addDays, localParts, fmtHM, ymdKey } from './clock.js';
+import { addDays, localParts, fmtHM, ymdKey, offsetAt } from './clock.js';
 import { t } from '../i18n/index.js';
 import { platform, isNativeApp } from './api.js';
 
@@ -45,6 +45,14 @@ export function buildSchedule(city, now, settings) {
   const n = { ...DEFAULT_NOTIFY, ...(settings.notify || {}) };
   n.prayers = { ...DEFAULT_NOTIFY.prayers, ...(n.prayers || {}) };
   const today = localParts(now, city.utcOffset);
+  // 城市和手机不在一个时区：提醒里的时间写明"××时间"，免得和手机上的钟对不上
+  const dev = Number.isFinite(settings.deviceOffset) ? settings.deviceOffset : -now.getTimezoneOffset() / 60;
+  const cityLabel = city.id === 'here' ? '' : t('city.' + city.id);
+  const hm = (d) => {
+    const off = offsetAt(city, d);
+    const s = fmtHM(d, off);
+    return Math.abs(off - dev) > 0.01 && cityLabel ? t('notify.cityTime', { time: s, city: cityLabel }) : s;
+  };
   for (let i = 0; i < days; i++) {
     const ymd = addDays(today, i);
     const times = timesFor(city, ymd, settings.offsets);
@@ -53,7 +61,7 @@ export function buildSchedule(city, now, settings) {
       const at = new Date(times[p].getTime() - (Number(n.advance) || 0) * 60000);
       if (at <= now) return;
       const name = t(ymd.wd === 5 && p === 'dhuhr' ? 'prayer.jumuah' : 'prayer.' + p);
-      const time = fmtHM(times[p], city.utcOffset);
+      const time = hm(times[p]);
       out.push({
         id: notifId(ymd, idx),
         at,
@@ -78,14 +86,14 @@ export function buildSchedule(city, now, settings) {
     }
     if (n.jumuah && ymd.wd === 5) {
       const at = new Date(times.dhuhr.getTime() - JUMUAH_WARN_MIN * 60000);
-      if (at > now) out.push({ id: notifId(ymd, 8), at, title: t('notify.jumuahTitle'), body: t('notify.jumuahBody', { time: fmtHM(times.dhuhr, city.utcOffset) }), kind: 'jumuah', route: '#/pray' });
+      if (at > now) out.push({ id: notifId(ymd, 8), at, title: t('notify.jumuahTitle'), body: t('notify.jumuahBody', { time: hm(times.dhuhr) }), kind: 'jumuah', route: '#/pray' });
     }
     const planned = Array.isArray(settings.fastDays) && settings.fastDays.includes(ymdKey(ymd));
     if (n.ramadan && (planned || toHijri(ymd, settings.hijriAdjust).m === 9)) {
       const f = fastTimes(city, ymd, settings.offsets);
       const warn = new Date(f.sahurEnd.getTime() - SAHUR_WARN_MIN * 60000);
       if (warn > now)
-        out.push({ id: notifId(ymd, 6), at: warn, title: t('notify.sahurTitle'), body: t('notify.sahurBody', { time: fmtHM(f.sahurEnd, city.utcOffset), n: SAHUR_WARN_MIN }), kind: 'sahur', route: '#/ramadan' });
+        out.push({ id: notifId(ymd, 6), at: warn, title: t('notify.sahurTitle'), body: t('notify.sahurBody', { time: hm(f.sahurEnd), n: SAHUR_WARN_MIN }), kind: 'sahur', route: '#/ramadan' });
       if (f.iftar > now) out.push({ id: notifId(ymd, 7), at: f.iftar, title: t('notify.iftarTitle'), body: t('notify.iftarBody'), kind: 'iftar', route: '#/ramadan' });
     }
   }

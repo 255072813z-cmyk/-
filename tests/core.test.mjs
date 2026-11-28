@@ -280,3 +280,13 @@ test('平时封斋：圣行斋日、不能封斋的五天、补斋天数、计�
     delete globalThis.window;
   }
 });
+
+test('引导：确认过城市的老用户不再走引导；没确认过的走一次', async () => {
+  const { normalizeSettings } = await import('../src/core/settings.js');
+  assert.equal(normalizeSettings({ city: 'dushanbe', cityConfirmed: true }).onboarded, true);
+  assert.equal(normalizeSettings({ city: 'dushanbe', cityConfirmed: false, modeAsked: true }).onboarded, false);
+  assert.equal(normalizeSettings({}).onboarded, false);
+  // 我的位置：时区名只收合法的
+  assert.equal(normalizeSettings({ city: 'here', loc: { lat: 52.5, lon: 13.4, utcOffset: 1, tz: 'Europe/Berlin' } }).loc.tz, 'Europe/Berlin');
+  assert.equal(normalizeSettings({ city: 'here', loc: { lat: 52.5, lon: 13.4, utcOffset: 1, tz: '<script>' } }).loc.tz, undefined);
+});

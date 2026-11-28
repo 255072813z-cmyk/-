@@ -399,3 +399,8 @@ body.is-onboarding .tabbar, body.is-onboarding .topnav, body.is-onboarding .topb
 .ayah-card .ayah-no { color: var(--gold-ink); font-size: 0.8em; }
 .ayah-tr { margin: 0 0 var(--sp-2); font-family: var(--font-zh-serif); line-height: 1.8; }
 .ayah-card .src { margin: 0; }
+
+/* 时区说明：城市和手机不在一个时区时才出现；只是说明，不能点 */
+.hero-zone { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+.list-city { margin-inline-start: auto; font-family: var(--font-zh); font-size: var(--fs-xs); font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%; }
+.tz-note { margin: -4px 0 var(--sp-3); padding: 8px 12px; border-radius: var(--r-sm); background: var(--bg-2); color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.55; }

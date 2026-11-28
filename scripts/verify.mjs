@@ -798,7 +798,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const back = await page.evaluate(() => location.hash); // 回到进来之前的页面
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/');
   await page.waitForTimeout(400);
-  const cityBtn = await page.textContent('.city-btn');
+  const cityBtn = await page.textContent('.list-city');
   check('搜索城市、选中后回到原来的页面，首页换成新城市', visible === 1 && back === '#/times' && /喀山/.test(cityBtn), `${visible} 个结果，回到 ${back}，${cityBtn.trim()}`);
   // 切换语言
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/settings');
@@ -1015,7 +1015,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.click('[data-ob-finish]');
   await page.waitForSelector('[data-hero]');
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem('masjid:settings')));
-  const cityBtn = (await page.textContent('.city-btn')).trim();
+  const cityBtn = (await page.textContent('.list-city')).trim();
   const dhuhr = (await page.locator('.prow').nth(2).locator('.prow-time').textContent()).trim();
   check('中国：中文手机、北京时间默认选北京；首页"自动定位"后用我的位置（喀什附近）、北京时间，晌礼在下午两点多，自动定位打开', /北京/.test(guessed) && /自动定位/.test(welcome) && st.city === 'here' && st.autoLoc === true && st.loc.utcOffset === 8 && /喀什/.test(cityBtn) && /^14:/.test(dhuhr), `猜的 ${guessed}；定位后 ${cityBtn}，晌礼 ${dhuhr}，时区 +${st.loc.utcOffset}`);
   // 人到了乌鲁木齐：重新打开应用，位置悄悄更新（不弹窗）
@@ -1024,7 +1024,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForFunction(() => /"lat":43\.8/.test(localStorage.getItem('masjid:settings') || ''), null, { timeout: 10000 }).catch(() => {});
   const st2 = await page.evaluate(() => JSON.parse(localStorage.getItem('masjid:settings')));
   await page.waitForTimeout(300);
-  const cityBtn2 = (await page.textContent('.city-btn')).trim();
+  const cityBtn2 = (await page.textContent('.list-city')).trim();
   check('开了自动定位：换了地方再打开，位置自己更新到乌鲁木齐附近', st2.loc.lat === 43.8 && /乌鲁木齐/.test(cityBtn2), `${st2.loc.lat}, ${st2.loc.lon}，${cityBtn2}`);
   // 城市列表里有中国，中文界面排在前面
   await page.goto(base + q + '&r=3#/city');
@@ -1242,6 +1242,81 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const first = (await page.textContent('.name-cell .name-ar-sm')).trim();
   check('真主的 99 个尊名：99 个，第一个是"الله"，今天的那个高亮', cells === 99 && todayCell === 1 && first.replace(/[\u064B-\u0652\u0670]/g, '') === 'الله', `${cells} 个`);
   check('新内容以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
+// 18. 城市只确认一次；离线定位；时区说清楚
+{
+  // 首页不再有城市按钮和确认卡片；城市在"设置"和"我的"里改
+  const ctx = await browser.newContext({ ...phone, timezoneId: 'Asia/Dushanbe' });
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' }));
+  });
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40');
+  await page.waitForSelector('[data-hero]');
+  const onHome = await page.locator('.page.home a[href="#/city"], .page.home .city-btn, .page.home [data-city-ok], .page.home [data-city-auto], .page.home .welcome-card').count();
+  const tzHere = await page.locator('[data-tz-note], .hero-zone').count();
+  await page.goto(base + '?weather=clear#/me');
+  await page.waitForSelector('.me-hero');
+  const inMe = await page.locator('a[href="#/city"]').count();
+  await page.goto(base + '?weather=clear#/settings');
+  await page.waitForSelector('.city-set');
+  check('首页不再出现城市选项和确认卡片（只在第一次打开的引导里确认一次）；"设置"和"我的"里随时可以改', onHome === 0 && inMe === 1 && (await page.locator('.city-set[href="#/city"]').count()) === 1 && tzHere === 0, `首页 ${onHome} 个，我的 ${inMe} 个`);
+  await ctx.close();
+}
+{
+  // 选的城市（杜尚别）和手机（北京时间）不在一个时区：首页写清楚按哪里的时间、手机现在几点、差几小时
+  const ctx = await browser.newContext({ ...phone, timezoneId: 'Asia/Shanghai' });
+  await ctx.addInitScript(() => localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' })));
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40');
+  await page.waitForSelector('[data-tz-note]');
+  const note = (await page.textContent('[data-tz-note]')).replace(/\s+/g, ' ');
+  const zone = ((await page.textContent('.hero-zone').catch(() => '')) || '').trim();
+  check('城市和手机不在一个时区：写明"按杜尚别当地时间（UTC+5）、手机现在 14:40（UTC+8）、相差 3 小时"', /杜尚别/.test(note) && /UTC\+5/.test(note) && /14:40/.test(note) && /UTC\+8/.test(note) && /3 小时/.test(note) && /杜尚别时间/.test(zone), note);
+  await ctx.close();
+}
+{
+  // 离线定位：网络定位取不到时改用卫星定位（不需要网络）
+  const ctx = await browser.newContext({ ...phone, fresh: true, timezoneId: 'Asia/Dushanbe' });
+  await ctx.addInitScript(() => {
+    window.__tries = [];
+    navigator.geolocation.getCurrentPosition = (ok, fail, opts) => {
+      window.__tries.push(opts);
+      if (!opts.enableHighAccuracy) setTimeout(() => fail({ code: 3, message: 'timeout' }), 50);
+      else setTimeout(() => ok({ coords: { latitude: 40.284, longitude: 69.622 } }), 50); // 胡占德
+    };
+  });
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40');
+  await page.waitForSelector('.ob-step');
+  await ctx.setOffline(true);
+  await page.click('[data-ob-mode="young"]');
+  await page.waitForSelector('[data-ob-auto]');
+  await page.click('[data-ob-auto]');
+  await page.waitForFunction(() => /"city":"here"/.test(localStorage.getItem('masjid:settings') || ''), null, { timeout: 8000 }).catch(() => {});
+  const st = await page.evaluate(() => ({ s: JSON.parse(localStorage.getItem('masjid:settings')), tries: window.__tries }));
+  check('断网时自动定位：网络定位没取到就改用卫星定位，位置、时区（UTC+5、Asia/Dushanbe）都记下', st.s.city === 'here' && st.s.loc.lat === 40.28 && st.s.loc.utcOffset === 5 && st.s.loc.tz === 'Asia/Dushanbe' && st.tries.length === 2 && st.tries[1].enableHighAccuracy === true, `${st.tries.length} 次，${st.s.loc && st.s.loc.tz}`);
+  await ctx.close();
+}
+{
+  // 断网又取不到位置：说清楚原因，给出按手机时区猜的城市（北京），可以直接用它
+  const ctx = await browser.newContext({ ...phone, fresh: true, timezoneId: 'Asia/Shanghai' });
+  await ctx.addInitScript(() => {
+    navigator.geolocation.getCurrentPosition = (ok, fail) => setTimeout(() => fail({ code: 2, message: 'unavailable' }), 30);
+  });
+  const page = await ctx.newPage();
+  await page.goto(base + '?weather=clear&now=2026-12-17T11:40');
+  await page.waitForSelector('.ob-step');
+  await ctx.setOffline(true);
+  await page.click('[data-ob-mode="young"]');
+  await page.waitForSelector('[data-ob-auto]');
+  await page.click('[data-ob-auto]');
+  await page.waitForFunction(() => /定位不到/.test((document.querySelector('[data-ob-msg]') || {}).textContent || ''), null, { timeout: 8000 }).catch(() => {});
+  const msg = (await page.textContent('[data-ob-msg]')).trim();
+  const okBtn = (await page.textContent('[data-ob-city-ok]')).trim();
+  check('断网又定位不到：说明"没有网络、室内可能定位不到"，给出按手机时区猜的北京，可以直接选', /没有网络/.test(msg) && /北京/.test(msg) && /北京/.test(okBtn) && (await page.locator('[data-ob-auto]:not([disabled])').count()) === 1, msg.slice(0, 30));
   await ctx.close();
 }
 

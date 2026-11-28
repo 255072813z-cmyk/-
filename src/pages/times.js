@@ -1,7 +1,7 @@
 // 本月时间表：一整个月的五番拜时间，可以分享给家人（发到 Telegram、WhatsApp 等）或打印贴在墙上。
 // 老人常常习惯看纸质的时间表；分享只用手机自带的分享功能，不经过我们的服务器。
 import { timesFor, PRAYERS } from '../core/prayer-times.js';
-import { fmtHM, addDays, ymdKey } from '../core/clock.js';
+import { fmtHM, addDays, ymdKey, offsetAt } from '../core/clock.js';
 import { ICONS, star8 } from '../ui/art.js';
 import { t } from '../i18n/index.js';
 import { cityName } from '../i18n/format.js';
@@ -32,10 +32,13 @@ export function timesPage(ctx, offset = 0) {
   for (let d = 1; d <= n; d++) {
     const ymd = addDays({ y, m, d }, 0);
     const T = timesFor(ctx.city, ymd, ctx.offsets);
+    // 每一天按那一天的时差显示（"我的位置"在有夏令时的地方，换时那天前后不差一小时）
+    const o = offsetAt(ctx.city, T.dhuhr);
+    const hm = (d) => fmtHM(d, o);
     const isToday = ymdKey(ymd) === ymdKey(today);
     rows.push(`<tr class="${isToday ? 'is-today' : ''} ${ymd.wd === 5 ? 'is-fri' : ''}">
       <th scope="row">${d} <small>${t('weekShort.' + ymd.wd)}</small></th>
-      <td>${fmtHM(T.fajr)}</td><td class="sun">${fmtHM(T.sunrise)}</td><td>${fmtHM(T.dhuhr)}</td><td>${fmtHM(T.asr)}</td><td>${fmtHM(T.maghrib)}</td><td>${fmtHM(T.isha)}</td></tr>`);
+      <td>${hm(T.fajr)}</td><td class="sun">${hm(T.sunrise)}</td><td>${hm(T.dhuhr)}</td><td>${hm(T.asr)}</td><td>${hm(T.maghrib)}</td><td>${hm(T.isha)}</td></tr>`);
   }
   const off = Number(offset) || 0;
   const html = `

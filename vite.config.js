@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import legacy, { cspHashes } from '@vitejs/plugin-legacy';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
@@ -74,6 +75,39 @@ function splashLang() {
   };
 }
 
+/**
+ * 离线缓存清单：构建完后把这一版的文件写进 sw.js，第一次打开就整个存好（断网也能打开每一页、自动定位）。
+ * 不预存：古兰经各章经文（大，读到哪章存哪章）、老手机兼容版（新手机用不到）、地图大底图以外的都存。
+ */
+function swPrecache() {
+  let outDir = 'dist';
+  const all = new Set();
+  return {
+    name: 'sw-precache',
+    apply: 'build',
+    configResolved(c) {
+      outDir = c.build.outDir;
+    },
+    // 新版和老手机兼容版各打包一次：两次的文件都记下，全部写完后再写进 sw.js
+    writeBundle(_, bundle) {
+      for (const f of Object.keys(bundle)) all.add(f);
+    },
+    closeBundle() {
+      const files = [...all]
+        .filter((f) => /^assets\//.test(f) && /\.(js|css|woff2)$/.test(f))
+        .filter((f) => !/-legacy|polyfills/.test(f))
+        .filter((f) => !/^assets\/(ar|zh|tg|ru|uz|ky)-\d-/.test(f))
+        .map((f) => './' + f)
+        .sort();
+      const p = join(outDir, 'sw.js');
+      if (!files.length || !existsSync(p)) return;
+      const id = createHash('sha256').update(files.join('\n')).digest('hex').slice(0, 12);
+      const src = readFileSync(p, 'utf8').replace("'__BUILD__'", JSON.stringify(id)).replace('[]; /* __PRECACHE__ */', JSON.stringify(files) + ';');
+      writeFileSync(p, src);
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env };
   return {
@@ -84,6 +118,7 @@ export default defineConfig(({ mode }) => {
       legacy({ targets: ['chrome >= 49', 'safari >= 10', 'ios >= 10', 'android >= 5'], modernPolyfills: false }),
       splashLang(),
       contentSecurityPolicy(env),
+      swPrecache(),
     ],
     build: {
       // 新版脚本的目标由兼容层决定（支持模块的浏览器）；样式按老一些的手机处理
