@@ -485,3 +485,23 @@
 .jm-t { margin: 2px 0 var(--sp-1); font-size: var(--fs-lg); }
 .jm-item p { margin: 0 0 var(--sp-1); }
 .jm-link { display: block; text-decoration: none; }
+
+/* 生活中的祈祷词 */
+.dua-cats { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-3) 0 var(--sp-2); }
+.dua-cats .chip { min-height: 40px; padding: 6px 14px; border: var(--hairline); border-radius: var(--r-pill); background: var(--card); color: var(--green); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.duas .sec { scroll-margin-top: 72px; }
+.dua-t { margin: 0 0 var(--sp-2); font-size: var(--fs-lg); color: var(--green); }
+.dua .ar { font-size: 1.5rem; }
+/* 真主的 99 个尊名 */
+.name-today { text-align: center; background: linear-gradient(180deg, var(--card) 40%, var(--gold-soft)); border-color: var(--gold); }
+.name-today-k { margin: 0; color: var(--gold-ink); font-weight: 700; font-size: var(--fs-sm); display: flex; justify-content: center; align-items: center; gap: 6px; }
+.name-ar { margin: var(--sp-2) 0 0; font-family: var(--font-ar); font-size: 2.6rem; line-height: 1.6; color: var(--green); }
+.name-today .tr { text-align: center; }
+.name-m { margin: var(--sp-1) 0 0; font-family: var(--font-zh-serif); font-size: var(--fs-lg); font-weight: 700; }
+.names-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-2); }
+.name-cell { position: relative; display: grid; justify-items: center; gap: 2px; padding: var(--sp-3) var(--sp-2) var(--sp-3); border: var(--hairline); border-radius: var(--r-md); background: var(--card); text-align: center; }
+.name-cell.is-today { border-color: var(--gold); background: var(--gold-soft); }
+.name-n { position: absolute; top: 6px; left: 8px; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.name-ar-sm { font-family: var(--font-ar); font-size: 1.45rem; line-height: 1.7; color: var(--ink); }
+.name-tr { font-size: var(--fs-xs); color: var(--ink-2); font-style: italic; }
+.name-mean { font-size: var(--fs-sm); font-weight: 600; color: var(--green); }

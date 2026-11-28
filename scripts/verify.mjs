@@ -1198,6 +1198,51 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await ctx.close();
 }
 
+// 17. 新内容：今日一节、主麻日、生活中的祈祷词、99 个尊名
+{
+  const ctx = await browser.newContext(phone);
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('masjid:settings')) localStorage.setItem('masjid:settings', JSON.stringify({ city: 'dushanbe', cityConfirmed: true, modeAsked: true, lang: 'zh' }));
+  });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  // 星期五：首页有"主麻日"一行，还有今日一节（原文 + 译文 + 出处）
+  await page.goto(base + '?weather=clear&now=2026-12-18T09:40');
+  await page.waitForSelector('[data-ayah-body] .ayah-ar', { timeout: 10000 }).catch(() => {});
+  const ay = (await page.textContent('[data-daily-ayah]').catch(() => '')) || '';
+  const jmRow = await page.locator('.jm-row').count();
+  check('首页：今日一节有阿拉伯原文、马坚译文和章节号；星期五多一行"主麻日"', /[\u0600-\u06FF]/.test(ay) && /马坚/.test(ay) && /\d+:\d+/.test(ay) && jmRow === 1, ay.replace(/\s+/g, ' ').slice(-40));
+  await page.goto(base + '?weather=clear&now=2026-12-17T09:40&r=1');
+  await page.waitForSelector('[data-hero]');
+  check('平常日子首页没有"主麻日"那一行', (await page.locator('.jm-row').count()) === 0);
+  // 主麻日页：7 条圣行，每条都有出处；山洞章能直接读
+  await page.goto(base + '?weather=clear&now=2026-12-18T09:40#/jumuah');
+  await page.waitForSelector('.jm-item');
+  const items = await page.locator('.jm-item').count();
+  const srcs = await page.locator('.jm-item .src').count();
+  const jm = (await page.textContent('.jm-page')).replace(/\s+/g, ' ');
+  check('主麻日页：7 条圣行都有出处（布哈里 877、881、883、934、935，艾布·达乌德 1047，哈基姆），今天显示晌礼时间，有"读山洞章"', items === 7 && srcs === 7 && /布哈里 877/.test(jm) && /穆斯林 854/.test(jm) && /艾布·达乌德 1067/.test(jm) && /晌礼时间 \d\d:\d\d/.test(jm) && (await page.locator('.jm-page a[href="#/quran/18"]').count()) === 1, `${items} 条`);
+  // 祈祷词：22 条，每条有阿拉伯文、译音、意思、出处；点分类跳到那一组
+  await page.goto(base + '?weather=clear#/duas');
+  await page.waitForSelector('.dua');
+  const duas = await page.locator('.dua').count();
+  const full = await page.evaluate(() => [...document.querySelectorAll('.dua')].every((d) => /[\u0600-\u06FF]/.test(d.querySelector('.ar').textContent) && d.querySelector('.tr').textContent.trim() && d.querySelector('.zh').textContent.trim() && /出处/.test(d.querySelector('.src').textContent)));
+  await page.click('[data-jump="heart"]');
+  await page.waitForTimeout(900);
+  const jumped = await page.evaluate(() => Math.abs(document.getElementById('dua-heart').getBoundingClientRect().top) < 140);
+  check('生活中的祈祷词：22 条都有阿拉伯原文、译音、意思和出处；点分类跳到那一组', duas === 22 && full && jumped, `${duas} 条`);
+  // 99 个尊名：99 个，今天的那个高亮
+  await page.goto(base + '?weather=clear#/names');
+  await page.waitForSelector('.name-cell');
+  const cells = await page.locator('.name-cell').count();
+  const todayCell = await page.locator('.name-cell.is-today').count();
+  const first = (await page.textContent('.name-cell .name-ar-sm')).trim();
+  check('真主的 99 个尊名：99 个，第一个是"الله"，今天的那个高亮', cells === 99 && todayCell === 1 && first.replace(/[\u064B-\u0652\u0670]/g, '') === 'الله', `${cells} 个`);
+  check('新内容以上操作没有页面错误', errs.length === 0, errs.join('; '));
+  await ctx.close();
+}
+
 await browser.close();
 server.close();
 const failed = results.filter((r) => !r.ok).length;

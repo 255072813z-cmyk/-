@@ -39,6 +39,8 @@ export function hubPage(ctx) {
       ${tile('#/qibla', ICONS.qibla, t('hub.qibla'), t('hub.qiblaSub'))}
       ${tile('#/tasbih', ICONS.tasbih, t('guide.tasbih'), t('hub.tasbihSub'))}
       ${tile('#/pray/qada', ICONS.qada, t('hub.qada'), t('hub.qadaSub'))}
+      ${tile('#/duas', ICONS.adhkar, t('duas.title'), t('duas.tile'))}
+      ${tile('#/names', star8(24), t('names.title'), t('names.tile'))}
     </div>
 
     <section class="card">
