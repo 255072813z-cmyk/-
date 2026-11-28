@@ -236,6 +236,17 @@ ok('圈主移出成员', (await circ('remove', { ...userA, code: ccode, to: bVie
 ok('退出亲友圈', (await circ('leave', { ...userA, code: ccode })).status === 200);
 ok('别的网站来源不能用亲友圈', (await get('/circle/state', { method: 'POST', headers: { Origin: 'https://evil.example' }, body: JSON.stringify({ ...userA, code: ccode }) })).status === 403);
 
+// ---- 安全加强 ----
+const { originOk } = await import('./worker.js');
+ok('没填网站地址时，网页来的请求一律拒绝（手机应用照常）', !originOk({}, 'https://evil.example') && !originOk({}, null) && originOk({}, 'capacitor://localhost') && originOk({ DEV_ALLOW_ANY_ORIGIN: '1' }, 'http://localhost:5173'));
+// 用下一个 30 秒时段的数字（上面登录已经用掉了当前这个）：第一次能登录，第二次不行
+const code2 = await totpAt(TOTP, Math.floor(Date.now() / 30000) + 1);
+const first = await login(TOKEN, code2, '10.9.0.1');
+const again = await login(TOKEN, code2, '10.9.0.2');
+ok('同一个 6 位数字只能登录一次', first.status === 200 && again.status === 401 && (await again.json()).error === 'totp-used', `${first.status} → ${again.status}`);
+const c1 = await get('/counts');
+ok('只读人数缓存 5 秒（不被大量请求刷掉额度）', /max-age=5/.test(c1.headers.get('cache-control') || ''));
+
 console.log(out.join('\n'));
 console.log(process.exitCode ? '有失败项' : `全部 ${out.length} 项通过`);
 await mf.dispose();

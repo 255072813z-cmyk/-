@@ -26,7 +26,7 @@ import { parseHit, parseErr, addHit, addErr, mergeDay, emptyDay } from '../share
 import { CITY_DATA } from '../src/content/cities-data.js';
 import { ASSETS } from './admin-assets.js';
 import { Circle, parseCircleReq, newCode, isCode } from './circle.js';
-import { verifyTotp, makeSession, checkSession } from './totp.js';
+import { totpStep, makeSession, checkSession } from './totp.js';
 export { Circle };
 
 const CITY_IDS = CITY_DATA.map((c) => c.id);
@@ -82,10 +82,14 @@ async function limited(env, kind, ip) {
 function allowedOrigins(env) {
   return (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
 }
-/** 来源检查：没配置网站地址时（本机开发）不限制 */
-function originOk(env, origin) {
+/**
+ * 来源检查：只认 ALLOWED_ORIGINS 里的网站和手机应用自己的页面。
+ * 没填网站地址时一律拒绝网页来的请求（不会因为部署时忘了填就对所有网站敞开）；
+ * 本机开发要放开，设 DEV_ALLOW_ANY_ORIGIN = "1"（只用于自己电脑上）。
+ */
+export function originOk(env, origin) {
   const list = allowedOrigins(env);
-  if (!list.length) return true;
+  if (!list.length && env.DEV_ALLOW_ANY_ORIGIN === '1') return true;
   return !!origin && (list.includes(origin) || APP_ORIGINS.includes(origin));
 }
 function cors(env, origin) {
@@ -158,7 +162,11 @@ async function admin(request, env, url, ip) {
   if (url.pathname === '/admin/api/login' && request.method === 'POST') {
     const body = await readLimited(request, 256);
     if (!sameBytes(await sha256(got), await sha256(want))) return fail();
-    if (!(await verifyTotp(env.ADMIN_TOTP, body && body.totp))) return fail('bad-totp');
+    const step = await totpStep(env.ADMIN_TOTP, body && body.totp);
+    if (step == null) return fail('bad-totp');
+    // 同一个 6 位数字只能用一次（被人看到了也不能拿去再登录）
+    const used = await (await hubCall(env, '/totp', { step })).json();
+    if (!used.ok) return fail('totp-used');
     return respond({ session: await makeSession(serverKey) }, 200, { 'cache-control': 'no-store' });
   }
   // 其余接口：只认登录后拿到的会话（光有口令不够）
@@ -207,9 +215,14 @@ export default {
     }
 
     // 只读人数：GET /counts → {hall:{online,capacity,taken}, courtyard:{online}, poetry:{online}}（不进房间、不算人头）
+    // 结果缓存 5 秒：门口每 10 秒取一次，很多人同时看也只唤醒房间一次（也防止被大量请求刷掉免费额度）
     if (path === '/counts' && request.method === 'GET') {
       if (await limited(env, 'counts', ip)) return respond({ error: 'too-many' }, 429);
-      return respond(await roomCounts(env), 200, { 'access-control-allow-origin': '*', 'cache-control': 'no-store' });
+      const key = new Request(url.origin + '/counts');
+      const hit = await caches.default.match(key).catch(() => null);
+      const body = hit ? await hit.text() : JSON.stringify(await roomCounts(env));
+      if (!hit) await caches.default.put(key, new Response(body, { headers: { 'cache-control': 'public, max-age=5' } })).catch(() => {});
+      return respond(body, 200, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=5' });
     }
 
     if (path === '/config' && request.method === 'GET') {
@@ -434,6 +447,13 @@ export class Hub {
       }
       case '/auth':
         return new Response(JSON.stringify(this.auth(input)));
+      case '/totp': {
+        // 记住最后用过的那一个 30 秒时段：同一个或更早的数字不能再用
+        const last = (await store.get('totpLast')) || 0;
+        if (!Number.isInteger(input.step) || input.step <= last) return new Response(JSON.stringify({ ok: false }));
+        await store.put('totpLast', input.step);
+        return new Response(JSON.stringify({ ok: true }));
+      }
       default:
         return new Response('not found', { status: 404 });
     }

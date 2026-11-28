@@ -48,8 +48,9 @@ namespace_id = "1002"
 
 [vars]
 # 只接受这些网站页面发来的请求（手机应用自带的 https://localhost、capacitor://localhost 总是允许）。
-# 上线时填网站地址，多个用英文逗号隔开，例如 "https://example.github.io"。留空表示不限制（只用于本机开发）。
-ALLOWED_ORIGINS = ""
+# 填网站地址，多个用英文逗号隔开。留空时网页来的请求一律拒绝（手机应用照常）；
+# 只在自己电脑上开发时才加 DEV_ALLOW_ANY_ORIGIN = "1" 放开。
+ALLOWED_ORIGINS = "https://255072813z-cmyk.github.io"
 
 # 机密（不要写在这里，用命令设置）：
 #   npx wrangler secret put ADMIN_TOKEN         管理口令，至少 24 位随机字符

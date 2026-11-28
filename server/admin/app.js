@@ -81,6 +81,8 @@ $('[data-login-form]').addEventListener('submit', async (e) => {
   }
 });
 $('[data-logout]').addEventListener('click', () => logout());
+// 第一次部署：还没法登录时，也能打开"密钥"页生成两步验证密钥和配置签名密钥（都在浏览器里生成，不经过服务器）
+$('[data-first-setup]').addEventListener('click', () => show('keys'));
 
 function show(tab) {
   $$('.tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));

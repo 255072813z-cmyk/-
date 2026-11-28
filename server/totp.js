@@ -33,6 +33,14 @@ export async function totpAt(secretB32, counter) {
 }
 
 /** 验证 6 位数字：允许前后各差 30 秒（手机时间稍有误差） */
+/** 对得上的那个 30 秒时段编号（对不上返回 null）；登录时用它防止同一个数字被用两次 */
+export async function totpStep(secretB32, code, now = Date.now()) {
+  if (!/^\d{6}$/.test(String(code || '')) || base32Decode(secretB32).length < 10) return null;
+  const c = Math.floor(now / 30000);
+  for (const d of [-1, 0, 1]) if ((await totpAt(secretB32, c + d)) === code) return c + d;
+  return null;
+}
+
 export async function verifyTotp(secretB32, code, now = Date.now()) {
   if (!/^\d{6}$/.test(String(code || '')) || base32Decode(secretB32).length < 10) return false;
   const c = Math.floor(now / 30000);
