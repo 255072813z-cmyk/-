@@ -20,6 +20,7 @@ const DEFAULTS = {
   fontScale: 0, // -1 小 / 0 标准（默认）/ 1 大 / 2 特大
   mode: 'young', // 显示方式：young 年轻人（精致简洁）/ elder 年纪大的人（大字极简，首页只有时间和下一番）
   modeAsked: false, // 第一次打开时在首页问一句（问过就不再问，设置里随时可改）
+  onboarded: false, // 第一次打开的三步引导走完了没有（老用户视为走完）
   remind: true, // 按时提醒（网页：页面开着时提示；手机应用：系统通知）
   notify: DEFAULT_NOTIFY, // 提醒哪几番、提前几分钟、斋月提醒
   sound: false, // 提示时是否响一声（默认静音）
@@ -46,6 +47,8 @@ export function normalizeSettings(saved) {
   out.city = typeof s.city === 'string' ? s.city : guessCity(); // 第一次打开：按手机时区猜
   // 城市确认过没有（第一次打开时首页请用户确认一下）；老用户存过城市的算确认过
   out.cityConfirmed = bool(s.cityConfirmed, typeof s.city === 'string');
+  // 引导：存过城市、确认过城市或回答过显示方式的老用户，不再走引导
+  out.onboarded = bool(s.onboarded, out.cityConfirmed || s.modeAsked === true);
   const loc = s.loc;
   out.loc =
     loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lon) <= 180

@@ -11,6 +11,8 @@ const WINDOW = 10 * 60 * 1000;
 export function checkReminder(ctx) {
   const s = ctx.settings;
   if (!s.remind || !ctx.sched) return;
+  // 第一次打开、还在走引导时先不提示（会挡住引导的按钮）；走完回到首页时，还在 10 分钟内就照常提示
+  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('is-onboarding')) return;
   const times = ctx.sched.times;
   const n = ctx.now.getTime();
   const on = (s.notify && s.notify.prayers) || {};

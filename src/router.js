@@ -24,6 +24,7 @@
 //   #/masjid/poetry          诗歌夜
 // 只有首页随首屏一起加载；其余页面第一次打开时才下载，空闲时也会预先下载好（首屏更快，之后断网也能开）。
 import { homePage } from "./pages/home.js";
+import { welcomePage } from "./pages/welcome.js";
 import { t, getLang } from "./i18n/index.js";
 import { flagOn } from "./core/remote.js";
 import { ICONS } from "./ui/art.js";
@@ -84,7 +85,8 @@ export function resolveRoute(path, ctx) {
   const parts = path.split("/").filter(Boolean);
   switch (parts[0]) {
     case undefined:
-      return homePage(ctx);
+      // 第一次打开：先走三步引导
+      return ctx.settings.onboarded ? homePage(ctx) : welcomePage(ctx);
     case "pray":
       if (parts[1] === "wudu") return lazy("wudu", ctx, []);
       if (parts[1] === "qada") return lazy("qada", ctx, []);

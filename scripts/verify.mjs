@@ -49,6 +49,31 @@ const check = (name, ok, detail = '') => {
 };
 
 const browser = await chromium.launch();
+// 新用户第一次打开先走三步引导。大多数检查要的是"已经用过的人"：每个浏览器环境开第一页时，
+// 在别的预设之后把"引导走完了"补进设置（只补这一项，不动其他设置）。专门检查第一次打开的环境传 fresh: true。
+{
+  const raw = browser.newContext.bind(browser);
+  browser.newContext = async (opts = {}) => {
+    const { fresh, ...rest } = opts;
+    const ctx = await raw(rest);
+    if (fresh) return ctx;
+    const rawPage = ctx.newPage.bind(ctx);
+    let added = false;
+    ctx.newPage = async () => {
+      if (!added) {
+        added = true;
+        await ctx.addInitScript(() => {
+          try {
+            const st = JSON.parse(localStorage.getItem('masjid:settings') || '{}');
+            if (st.onboarded === undefined) localStorage.setItem('masjid:settings', JSON.stringify({ ...st, onboarded: true }));
+          } catch (e) {}
+        });
+      }
+      return rawPage();
+    };
+    return ctx;
+  };
+}
 const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, locale: 'zh-CN' };
 
 // 1. 慢速 3G 首屏
@@ -267,6 +292,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.goto(base + '?weather=clear&now=2027-02-20T12:00#/ramadan');
   await page.click('[data-today]');
   await page.reload();
+  await page.waitForSelector('.day.is-today'); // 斋月页是按需下载的：等它出来再数
   const yes = await page.locator('.day.is-today.is-yes').count();
   check('刷新后封斋记录还在（斋月第 13 天）', yes === 1);
   await ctx.close();
@@ -691,24 +717,29 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
 
 // 10. 基本操作：新功能都能用、能保存
 {
-  const ctx = await browser.newContext(phone);
+  const ctx = await browser.newContext({ ...phone, fresh: true });
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
   await page.goto(base + '?weather=snow&now=2026-12-18T15:20');
   await page.waitForTimeout(800);
-  // 第一次打开：先问一句"你是年轻人还是年纪大的人？"（页面里的卡片，不弹窗），选了再请用户确认城市；确认后都不再出现
-  const ask = (await page.locator('.mode-card [data-set-mode]').count()) === 2 && (await page.locator('[data-city-ok]').count()) === 0;
-  const askText = (await page.textContent('.mode-card')).replace(/\s+/g, ' ');
-  await page.click('[data-set-mode="young"]');
-  await page.waitForTimeout(200);
-  const welcome = await page.locator('[data-city-ok]').count();
-  await page.click('[data-city-ok]');
-  await page.waitForTimeout(200);
+  // 第一次打开：三步引导（一整页，不弹窗；底部导航先藏起来）——语言和显示方式 → 城市 → 提醒，走完进首页，以后不再出现
+  await page.waitForSelector('.ob-step');
+  const s1 = (await page.textContent('.ob-step')).replace(/\s+/g, ' ');
+  const langs = await page.locator('[data-ob-lang]').count();
+  const tabHidden = await page.evaluate(() => getComputedStyle(document.querySelector('.tabbar')).display === 'none');
+  await page.click('[data-ob-mode="young"]');
+  await page.waitForSelector('.ob-step[data-ob-step="2"]');
+  const s2 = (await page.textContent('.ob-step')).replace(/\s+/g, ' ');
+  await page.click('[data-ob-city-ok]');
+  await page.waitForSelector('.ob-step[data-ob-step="3"]');
+  await page.click('[data-ob-finish]');
+  await page.waitForSelector('[data-hero]');
+  const tabBack = await page.evaluate(() => getComputedStyle(document.querySelector('.tabbar')).display !== 'none');
   await page.reload();
   await page.waitForTimeout(500);
   const popups = await page.locator('[role="dialog"], dialog[open], .celebrate, .cheer-sheet').count();
-  check('第一次打开先问"年轻人还是年纪大的人"（页面里的卡片，不弹窗），再确认城市；之后都不再出现', ask && /年轻人/.test(askText) && /年纪大的人/.test(askText) && welcome === 1 && (await page.locator('[data-city-ok], .mode-card').count()) === 0 && popups === 0);
+  check('第一次打开走三步引导：选语言（5 种）和"年轻人还是年纪大的人" → 确认城市 → 提醒，走完进首页；之后不再出现，不弹窗', langs === 5 && /年轻人/.test(s1) && /年纪大的人/.test(s1) && /杜尚别/.test(s2) && tabHidden && tabBack && (await page.locator('.ob-step, .mode-card, [data-city-ok]').count()) === 0 && (await page.locator('[data-hero]').count()) === 1 && popups === 0, `${s1.slice(0, 20)}… → ${s2.slice(0, 16)}…`);
   // 已礼打勾：只有已到时间的拜能点；刷新后还在
   const checks = await page.locator('[data-prayed]').count();
   await page.click('[data-prayed="dhuhr"]');
@@ -964,7 +995,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
 // 14. 中国大陆：中文手机、北京时间 → 默认北京；首页一键自动定位（喀什）→ 用"我的位置"、北京时间；
 //     手机换了位置（到乌鲁木齐），下次打开悄悄更新，不弹窗
 {
-  const ctx = await browser.newContext({ ...phone, locale: 'zh-CN', timezoneId: 'Asia/Shanghai', geolocation: { latitude: 39.4704, longitude: 75.9898 }, permissions: ['geolocation'] });
+  const ctx = await browser.newContext({ ...phone, fresh: true, locale: 'zh-CN', timezoneId: 'Asia/Shanghai', geolocation: { latitude: 39.4704, longitude: 75.9898 }, permissions: ['geolocation'] });
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
@@ -972,14 +1003,16 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.goto(base + q);
   await page.evaluate(() => localStorage.clear());
   await page.goto(base + q + '&r=1#/');
-  await page.waitForSelector('.mode-card');
-  await page.click('[data-set-mode="young"]');
-  await page.waitForSelector('[data-city-auto]');
-  const guessed = (await page.textContent('.city-btn')).trim();
-  const welcome = (await page.textContent('.welcome-card')).replace(/\s+/g, ' ');
-  await page.click('[data-city-auto]');
+  await page.waitForSelector('.ob-step');
+  await page.click('[data-ob-mode="young"]');
+  await page.waitForSelector('[data-ob-auto]');
+  const guessed = (await page.textContent('.ob-sub b')).trim();
+  const welcome = (await page.textContent('.ob-step')).replace(/\s+/g, ' ');
+  await page.click('[data-ob-auto]');
   await page.waitForFunction(() => /"city":"here"/.test(localStorage.getItem('masjid:settings') || ''), null, { timeout: 8000 });
-  await page.waitForSelector('.welcome-card', { state: 'detached' });
+  await page.waitForSelector('[data-ob-finish]');
+  await page.click('[data-ob-finish]');
+  await page.waitForSelector('[data-hero]');
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem('masjid:settings')));
   const cityBtn = (await page.textContent('.city-btn')).trim();
   const dhuhr = (await page.locator('.prow').nth(2).locator('.prow-time').textContent()).trim();
@@ -1096,13 +1129,14 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
 // 16. 第一批 bug：古兰经首次打开误报"没有网络"、默认语言塔吉克语
 {
   // 手机语言不是五种之一（英语、法语）：默认塔吉克语，启动画面、界面都是塔吉克语
-  const ctx = await browser.newContext({ ...phone, locale: 'en-US' });
+  const ctx = await browser.newContext({ ...phone, fresh: true, locale: 'en-US' });
   const page = await ctx.newPage();
   await page.goto(base + '?weather=clear&now=2026-12-17T11:40');
-  await page.waitForSelector('[data-hero]');
+  await page.waitForSelector('.ob-step');
   const st = await page.evaluate(() => ({ lang: document.documentElement.lang, w: window.__lang, set: JSON.parse(localStorage.getItem('masjid:settings') || '{}').lang }));
   const tabs = (await page.textContent('.tabbar')).replace(/\s+/g, ' ');
-  check('手机语言是英语时默认塔吉克语（启动画面、界面、设置）', st.w === 'tg' && /^tg/.test(st.lang) && /Имрӯз/.test(tabs) && (st.set === undefined || st.set === 'tg'), `${st.lang}，${tabs.trim().slice(0, 30)}`);
+  const ob = (await page.textContent('.ob-title')).trim();
+  check('手机语言是英语时默认塔吉克语（启动画面、引导、界面、设置）', st.w === 'tg' && /^tg/.test(st.lang) && /Имрӯз/.test(tabs) && /Хуш омадед/.test(ob) && (st.set === undefined || st.set === 'tg'), `${st.lang}，${ob}`);
   await ctx.close();
 }
 {
