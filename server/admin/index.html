@@ -38,6 +38,7 @@
       <label>范围 <select data-days><option value="7">最近 7 天</option><option value="30" selected>最近 30 天</option><option value="90">最近 90 天</option><option value="365">最近一年</option></select></label>
       <button type="button" class="ghost" data-refresh>刷新</button>
     </div>
+    <div class="card security"><h3>最近登录（成功和失败都记）</h3><p class="note">不认识的国家或一串失败，说明有人在试口令：去 GitHub 改 ADMIN_TOKEN，再运行"部署后台"，所有登录立即失效。</p><div data-logins></div></div>
     <div class="tiles" data-tiles></div>
     <div class="card"><h3>每天使用的设备数</h3><div class="chart" data-dau></div></div>
     <div class="card"><h3>每天新增的设备</h3><div class="chart" data-new></div></div>
@@ -98,7 +99,7 @@
 
       <div class="card publish">
         <h2>签名并发布</h2>
-        <p class="note">选择你电脑上的私钥文件（只在这个浏览器里读取、签名，不会上传）。发布后约 5 分钟内所有手机生效。</p>
+        <p class="note">选择你电脑上的私钥文件（只在这个浏览器里读取、签名，不会上传）。发布后服务器 5 分钟内更新；每台手机在打开应用时去取（最多每 6 小时取一次），所以全部手机收到最多要 6 小时左右。急事请同时在你们的群里通知。</p>
         <details><summary>预览将要发布的内容</summary><pre data-preview></pre></details>
         <p class="msg warn" data-check role="status"></p>
         <label>私钥文件 <input type="file" accept=".jwk,.json,application/json" data-key-file></label>

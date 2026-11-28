@@ -17,6 +17,10 @@ on:
       - '.github/workflows/app.yml'
   workflow_dispatch:
 
+# 只读代码，不能改仓库（最小权限）
+permissions:
+  contents: read
+
 concurrency:
   group: app-${{ github.ref }}
   cancel-in-progress: true

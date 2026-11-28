@@ -88,3 +88,7 @@ pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; 
 .err-m { word-break: break-word; }
 code { background: var(--bg); padding: 1px 4px; border-radius: 4px; }
 td button { white-space: nowrap; }
+
+.security table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.security td { padding: 4px 6px; border-bottom: 1px solid #e2d6bb; }
+.security tr.bad td { color: #9b3a26; }

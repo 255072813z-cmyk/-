@@ -92,7 +92,32 @@ function show(tab) {
 $$('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));
 
 // ---- 数据 ----
+const WHY = { login: '登录成功', unauthorized: '口令不对', 'bad-totp': '6 位数字不对', 'totp-used': '6 位数字已经用过' };
+async function loadLogins() {
+  const box = $('[data-logins]');
+  const r = await api('/admin/api/security');
+  if (!r.ok) return;
+  const { logins = [] } = await r.json();
+  box.textContent = '';
+  if (!logins.length) {
+    box.textContent = '还没有记录。';
+    return;
+  }
+  const table = document.createElement('table');
+  for (const x of logins.slice(0, 20)) {
+    const tr = document.createElement('tr');
+    if (!x.ok) tr.className = 'bad';
+    for (const v of [new Date(x.at).toLocaleString('zh-CN', { hour12: false }), x.country || '—', WHY[x.why] || x.why, x.ip ? 'IP ' + x.ip + '…' : '']) {
+      const td = document.createElement('td');
+      td.textContent = v; // 只当文字放进去
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  box.appendChild(table);
+}
 async function loadStats() {
+  loadLogins().catch(() => {});
   const days = $('[data-days]').value;
   const r = await api('/admin/api/stats?days=' + days);
   if (!r.ok) throw new Error('stats ' + r.status);

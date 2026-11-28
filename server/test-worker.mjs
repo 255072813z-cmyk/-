@@ -244,6 +244,10 @@ const code2 = await totpAt(TOTP, Math.floor(Date.now() / 30000) + 1);
 const first = await login(TOKEN, code2, '10.9.0.1');
 const again = await login(TOKEN, code2, '10.9.0.2');
 ok('同一个 6 位数字只能登录一次', first.status === 200 && again.status === 401 && (await again.json()).error === 'totp-used', `${first.status} → ${again.status}`);
+const sec = await get('/admin/api/security', { headers: adminH(SESSION, '10.0.0.1') });
+const logins = sec.status === 200 ? (await sec.json()).logins : [];
+ok('后台记下每次登录（成功、失败都记，只有时间、国家、IP 摘要前 6 位）', logins.some((x) => x.ok && x.why === 'login') && logins.some((x) => !x.ok && x.why === 'bad-totp') && logins.some((x) => x.why === 'totp-used') && logins.every((x) => /^[0-9a-f]{0,6}$/.test(x.ip) && !('token' in x)), `${logins.length} 条`);
+ok('登录记录只有登录后才能看', (await get('/admin/api/security', { headers: adminH(TOKEN, '10.0.0.2') })).status === 401);
 const c1 = await get('/counts');
 ok('只读人数缓存 5 秒（不被大量请求刷掉额度）', /max-age=5/.test(c1.headers.get('cache-control') || ''));
 

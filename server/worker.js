@@ -152,8 +152,12 @@ async function admin(request, env, url, ip) {
   const lock = await (await hubCall(env, '/auth', { ip: ipKey })).json();
   if (lock.locked) return respond({ error: 'locked' }, 429, { 'retry-after': '3600' });
   const got = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  // 登录记录：只记时间、国家（Cloudflare 给的两个字母）、IP 摘要的前 6 位、成功没有、原因——管理员用来发现有没有人在试
+  const country = (request.cf && typeof request.cf.country === 'string' ? request.cf.country : '').slice(0, 2);
+  const note = (ok, why) => hubCall(env, '/authlog', { ok, why, country, ip: ipKey.slice(0, 6) }).catch(() => {});
   const fail = async (error = 'unauthorized') => {
     await hubCall(env, '/auth', { ip: ipKey, fail: true });
+    if (url.pathname === '/admin/api/login') await note(false, error);
     return respond({ error }, 401);
   };
   const serverKey = 'admin:' + want + ':' + env.ADMIN_TOTP; // 会话签名用；换口令或两步验证密钥后，旧会话全部失效
@@ -167,6 +171,7 @@ async function admin(request, env, url, ip) {
     // 同一个 6 位数字只能用一次（被人看到了也不能拿去再登录）
     const used = await (await hubCall(env, '/totp', { step })).json();
     if (!used.ok) return fail('totp-used');
+    await note(true, 'login');
     return respond({ session: await makeSession(serverKey) }, 200, { 'cache-control': 'no-store' });
   }
   // 其余接口：只认登录后拿到的会话（光有口令不够）
@@ -176,6 +181,9 @@ async function admin(request, env, url, ip) {
     const days = Math.min(400, Math.max(1, Number(url.searchParams.get('days')) || 30));
     const stats = await (await hubCall(env, '/stats', { days, today: statDay() })).json();
     return respond({ ...stats, rooms: await roomCounts(env), today: statDay() }, 200, { 'cache-control': 'no-store' });
+  }
+  if (url.pathname === '/admin/api/security' && request.method === 'GET') {
+    return respond(await (await hubCall(env, '/authlog')).json(), 200, { 'cache-control': 'no-store' });
   }
   if (url.pathname === '/admin/api/history' && request.method === 'GET') {
     return respond(await (await hubCall(env, '/history', {})).json(), 200, { 'cache-control': 'no-store' });
@@ -447,6 +455,15 @@ export class Hub {
       }
       case '/auth':
         return new Response(JSON.stringify(this.auth(input)));
+      case '/authlog': {
+        // 最近 50 次登录（成功和失败都记）；GET 读，POST 记一条
+        const log = (await store.get('authlog')) || [];
+        if (!input) return new Response(JSON.stringify({ logins: log.slice().reverse() }));
+        const why = ['login', 'unauthorized', 'bad-totp', 'totp-used'].includes(input.why) ? input.why : 'unauthorized';
+        log.push({ at: new Date().toISOString(), ok: input.ok === true, why, country: /^[A-Z]{2}$/.test(input.country || '') ? input.country : '', ip: /^[0-9a-f]{6}$/.test(input.ip || '') ? input.ip : '' });
+        await store.put('authlog', log.slice(-50));
+        return new Response(null, { status: 204 });
+      }
       case '/totp': {
         // 记住最后用过的那一个 30 秒时段：同一个或更早的数字不能再用
         const last = (await store.get('totpLast')) || 0;
