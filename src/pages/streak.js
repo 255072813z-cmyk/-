@@ -31,7 +31,7 @@ export function streakPage(ctx) {
     <div class="page-head"><a class="back" href="#/me" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('streak.pageTitle')}</h1></div>
     <section class="card streak-hero ${s.today ? 'is-lit' : ''}">
       <span class="streak-lamp hero-lamp ${s.today ? 'is-lit' : ''}">${LAMP}</span>
-      <p class="streak-big" data-big>${n}</p>
+      <p class="streak-big" data-big data-count-up>${n}</p>
       <p>${n ? t('streak.days', { n }) : t('streak.zero')}${s.best ? ` · ${t('streak.best', { n: s.best })}` : ''}</p>
       ${top ? `<p class="streak-title">${titleName(top)}</p>` : ''}
       <p class="note" data-consistency></p>

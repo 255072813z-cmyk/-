@@ -27,6 +27,8 @@ export function enterPage(app, dir = 'up') {
     });
   void app.offsetWidth;
   app.classList.add('is-enter');
+  // 大数字从 0 数上来（多邻国式），只改文字，不改大小位置
+  app.querySelectorAll('[data-count-up]').forEach((e) => countUp(e));
   if (dir === 'right' || dir === 'left') app.classList.add('dir-' + dir);
   enterTimer = setTimeout(() => {
     app.classList.remove('is-enter', 'dir-right', 'dir-left');
@@ -70,4 +72,18 @@ export function replay(el, cls, other) {
   el.classList.remove(cls);
   void el.offsetWidth;
   el.classList.add(cls);
+}
+
+/** 数字从 0 数到现在的值（约 0.7 秒，先快后慢）；系统开了"减少动态效果"时直接显示 */
+export function countUp(el, ms = 700) {
+  const to = Number(el.textContent);
+  if (!Number.isFinite(to) || to <= 1 || calm()) return;
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / ms);
+    el.textContent = String(Math.round(to * (1 - Math.pow(1 - k, 3))));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  el.textContent = '0';
+  requestAnimationFrame(step);
 }

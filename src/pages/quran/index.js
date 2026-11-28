@@ -54,7 +54,7 @@ export function quranHome(ctx) {
   const recent = recentRead().filter((h) => !last || h.s !== last.s).slice(0, 4);
 
   const statsCard = `<section class="card q-stats">
-      <div class="q-today-big"><b>${todayN}</b><span>${todayN ? t('qr.todayN', { n: todayN }) : t('qr.todayZero')}</span></div>
+      <div class="q-today-big"><b data-count-up>${todayN}</b><span>${todayN ? t('qr.todayN', { n: todayN }) : t('qr.todayZero')}</span></div>
       <ol class="q-week" aria-label="${t('qr.week')}">${week
         .map((d, i) => {
           const wd = new Date(d.day + 'T00:00:00Z').getUTCDay();

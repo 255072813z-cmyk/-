@@ -145,7 +145,10 @@ function fillAyah(root, ctx) {
       const box = root.querySelector('[data-ayah-body]');
       if (!box) return;
       const x = ayahOfDay(list, ctx.sched.today);
-      if (box.querySelector('.skel')) box.innerHTML = ayahBody(x);
+      if (box.querySelector('.skel')) {
+        box.innerHTML = ayahBody(x);
+        box.classList.add('is-in'); // 内容到了轻轻浮现
+      }
       const read = root.querySelector('[data-ayah-read]');
       if (read) read.setAttribute('href', `#/quran/${x.s}/${x.a}`);
     })

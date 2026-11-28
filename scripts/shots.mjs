@@ -48,6 +48,9 @@ const PAGES = [
   ['adhkar', '#/adhkar/morning', 0, '?weather=clear&now=2026-12-18T08:30'],
   ['adhkar-evening', '#/adhkar/evening', 0, '?weather=clear&now=2026-12-18T16:30'],
   ['settings', '#/settings'],
+  ['duas', '#/duas'],
+  ['names', '#/names'],
+  ['jumuah', '#/jumuah', 0, '?weather=clear&now=2026-12-18T09:40'],
   ['ramadan-before', '#/ramadan'],
   ['ramadan', '#/ramadan', 0, '?weather=clear&now=2027-02-20T17:50'],
   ['ramadan-iftar', '#/ramadan', 0, '?weather=clear&now=2027-02-20T18:30'],
@@ -93,7 +96,8 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
   for (const [name, hash, clicks, q, clickSel, preset] of PAGES) {
     await page.goto(base + 'index.html?preset=1&weather=clear');
     const { streak, badges, ...rest } = preset || {};
-    const settings = preset || LANG ? { ...rest, ...(LANG ? { lang: LANG } : {}) } : null;
+    // 截的是"用过的人"看到的页面：引导算走完了（第一次打开的引导单独有检查）
+    const settings = { onboarded: true, ...rest, ...(LANG ? { lang: LANG } : {}) };
     await page.evaluate(([p, st, bd]) => {
       localStorage.clear();
       if (p) localStorage.setItem('masjid:settings', JSON.stringify(p));

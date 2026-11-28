@@ -552,6 +552,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.waitForSelector('.q-stats');
   const marks = (await page.textContent('[data-q-marklist]')).replace(/\s+/g, ' ');
   const done112 = await page.locator('.sura.is-done[href="#/quran/112"]').count();
+  await page.waitForTimeout(900); // 大数字从 0 数上来的动画约 0.7 秒
   const big = Number((await page.textContent('.q-today-big b')).trim());
   check('目录页：今天读的节数、书签"112:2"、第 112 章打勾；再开第 2 章提示"接着上次：第 N 节"', big >= 4 && /112:2/.test(marks) && done112 === 1 && /接着上次：第 (9\d|10\d) 节/.test(resume), `${resume}；书签 ${marks.trim().slice(0, 20)}`);
   // 去掉书签：原地删掉
@@ -770,7 +771,7 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   await page.goto(base + '?weather=snow&now=2026-12-18T15:20#/pray');
   await page.waitForSelector('.tools');
   const tools = await page.locator('.tools .tool').count();
-  check('"礼拜"标签：跟着做 + 工具格（小净、朝向、赞念、补礼），依据折叠起来', tools === 4 && (await page.locator('.hub-main').count()) === 1 && (await page.locator('details.excuse-card:not([open])').count()) === 1, `${tools} 个工具`);
+  check('"礼拜"标签：跟着做 + 工具格（小净、朝向、赞念、补礼、祈祷词、99 个尊名），依据折叠起来', tools === 6 && (await page.locator('.hub-main').count()) === 1 && (await page.locator('details.excuse-card:not([open])').count()) === 1, `${tools} 个工具`);
   // 补礼记录
   await page.goto(base + '?weather=clear&now=2026-12-18T15:20#/pray/qada');
   await page.waitForTimeout(500);
@@ -1229,8 +1230,9 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const duas = await page.locator('.dua').count();
   const full = await page.evaluate(() => [...document.querySelectorAll('.dua')].every((d) => /[\u0600-\u06FF]/.test(d.querySelector('.ar').textContent) && d.querySelector('.tr').textContent.trim() && d.querySelector('.zh').textContent.trim() && /出处/.test(d.querySelector('.src').textContent)));
   await page.click('[data-jump="heart"]');
-  await page.waitForTimeout(900);
-  const jumped = await page.evaluate(() => Math.abs(document.getElementById('dua-heart').getBoundingClientRect().top) < 140);
+  // 页面长，平滑滚动要一会儿：等它停下来再看
+  await page.waitForFunction(() => { const top = document.getElementById('dua-heart').getBoundingClientRect().top; return top > -5 && top < 160; }, null, { timeout: 4000 }).catch(() => {});
+  const jumped = await page.evaluate(() => { const top = document.getElementById('dua-heart').getBoundingClientRect().top; return top > -5 && top < 160; });
   check('生活中的祈祷词：22 条都有阿拉伯原文、译音、意思和出处；点分类跳到那一组', duas === 22 && full && jumped, `${duas} 条`);
   // 99 个尊名：99 个，今天的那个高亮
   await page.goto(base + '?weather=clear#/names');

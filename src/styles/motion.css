@@ -139,3 +139,27 @@ details[open] > :not(summary) { animation: fold-open 0.3s var(--ease-out) backwa
 /* "继续读"的箭头轻轻往前点一点 */
 .q-continue .r-link-go { display: inline-block; animation: nudge 2.6s ease-in-out infinite; }
 @keyframes nudge { 0%, 60%, 100% { transform: none; } 75% { transform: translateX(5px); } }
+
+/* ---------- 10. 细节（多邻国式）：列表依次弹出、正在进行的那番前面一个呼吸的小圆点、内容到了轻轻浮现 ---------- */
+.brand { min-height: 44px; }
+.hero-now::before { content: ''; flex: none; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: live 2s ease-in-out infinite; }
+@keyframes live { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.names-grid .name-cell, .jm-list .jm-item, .tools .tool, .dua-cats .chip { animation: pop-in 0.42s var(--ease-spring) backwards; }
+.names-grid .name-cell:nth-child(2), .jm-list .jm-item:nth-child(2), .tools .tool:nth-child(2), .dua-cats .chip:nth-child(2) { animation-delay: 0.035s; }
+.names-grid .name-cell:nth-child(3), .jm-list .jm-item:nth-child(3), .tools .tool:nth-child(3), .dua-cats .chip:nth-child(3) { animation-delay: 0.070s; }
+.names-grid .name-cell:nth-child(4), .jm-list .jm-item:nth-child(4), .tools .tool:nth-child(4), .dua-cats .chip:nth-child(4) { animation-delay: 0.105s; }
+.names-grid .name-cell:nth-child(5), .jm-list .jm-item:nth-child(5), .tools .tool:nth-child(5), .dua-cats .chip:nth-child(5) { animation-delay: 0.140s; }
+.names-grid .name-cell:nth-child(6), .jm-list .jm-item:nth-child(6), .tools .tool:nth-child(6), .dua-cats .chip:nth-child(6) { animation-delay: 0.175s; }
+.names-grid .name-cell:nth-child(7), .jm-list .jm-item:nth-child(7), .tools .tool:nth-child(7), .dua-cats .chip:nth-child(7) { animation-delay: 0.210s; }
+.names-grid .name-cell:nth-child(8), .jm-list .jm-item:nth-child(8), .tools .tool:nth-child(8), .dua-cats .chip:nth-child(8) { animation-delay: 0.245s; }
+.names-grid .name-cell:nth-child(9), .jm-list .jm-item:nth-child(9), .tools .tool:nth-child(9), .dua-cats .chip:nth-child(9) { animation-delay: 0.280s; }
+.names-grid .name-cell:nth-child(10), .jm-list .jm-item:nth-child(10), .tools .tool:nth-child(10), .dua-cats .chip:nth-child(10) { animation-delay: 0.315s; }
+.names-grid .name-cell:nth-child(11), .jm-list .jm-item:nth-child(11), .tools .tool:nth-child(11), .dua-cats .chip:nth-child(11) { animation-delay: 0.350s; }
+.names-grid .name-cell:nth-child(12), .jm-list .jm-item:nth-child(12), .tools .tool:nth-child(12), .dua-cats .chip:nth-child(12) { animation-delay: 0.385s; }
+.names-grid .name-cell:nth-child(n + 13) { animation: none; }
+.name-today .name-ar { animation: pop-soft 0.6s 0.1s var(--ease-spring) backwards; }
+[data-ayah-body].is-in > * { animation: rise-in 0.4s var(--ease-out) backwards; }
+[data-ayah-body].is-in > :nth-child(2) { animation-delay: 0.08s; }
+[data-ayah-body].is-in > :nth-child(3) { animation-delay: 0.16s; }
+.mode-opt.is-on { animation: pop-in 0.35s var(--ease-spring); }
+.chip:active, .text-btn:active { transform: scale(0.95); }
