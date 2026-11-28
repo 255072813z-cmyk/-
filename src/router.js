@@ -32,6 +32,7 @@ import { loadFailed } from "./ui/load-failed.js";
 
 const LAZY = {
   hub: () => import("./pages/pray/hub.js").then((m) => m.hubPage),
+  jumuah: () => import("./pages/pray/jumuah.js").then((m) => m.jumuahPage),
   wudu: () => import("./pages/pray/wudu.js").then((m) => m.wuduPage),
   guide: () => import("./pages/pray/guide.js").then((m) => m.guidePage),
   qibla: () => import("./pages/pray/qibla.js").then((m) => m.qiblaPage),
@@ -92,6 +93,8 @@ export function resolveRoute(path, ctx) {
       if (parts[1] === "qada") return lazy("qada", ctx, []);
       if (parts[1] === "guide") return lazy("guide", ctx, [parts[2], parts[3]]);
       return lazy("hub", ctx, []);
+    case "jumuah":
+      return lazy("jumuah", ctx, []);
     case "qibla":
       return lazy("qibla", ctx, []);
     case "tasbih":

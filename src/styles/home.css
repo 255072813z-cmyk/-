@@ -393,3 +393,9 @@ body.is-onboarding .tabbar, body.is-onboarding .topnav, body.is-onboarding .topb
 .ob-actions { width: 100%; display: grid; gap: var(--sp-3); margin-top: auto; padding-top: var(--sp-5); }
 .ob-actions .btn { margin-bottom: 0; }
 .ob-step .note { margin-top: var(--sp-3); }
+
+/* 今日一节 */
+.ayah-card .ayah-ar { font-size: 1.45rem; line-height: 2; text-align: right; margin: 0 0 var(--sp-2); }
+.ayah-card .ayah-no { color: var(--gold-ink); font-size: 0.8em; }
+.ayah-tr { margin: 0 0 var(--sp-2); font-family: var(--font-zh-serif); line-height: 1.8; }
+.ayah-card .src { margin: 0; }

@@ -6,7 +6,7 @@
 // 其他入口都在底部导航里。
 // 两种显示方式（第一次打开时问一句，设置里随时改）：
 //   年轻人：精致简洁；年纪大的人：大字极简，首页只有时间和下一番。
-import { t, L } from '../i18n/index.js';
+import { t, L, getLang } from '../i18n/index.js';
 import { dateLine, hijriLine, durHTML, cityName, remoteText, esc } from '../i18n/format.js';
 import { fmtHM, splitDuration, addDays, ymdKey } from '../core/clock.js';
 import { PRAYERS, skyPhase, highLatitudeDay, METHODS } from '../core/prayer-times.js';
@@ -113,6 +113,48 @@ function hadithQuote(h, cls = '') {
     <p class="hq-src">${t('common.source', { src: L(h.src) })}</p></blockquote>`;
 }
 
+// ---------- 每日一节古兰经（数据按需下载：摘自古兰经页同一个出版译本） ----------
+let AYAHS = null;
+const loadAyahs = () => (AYAHS ? Promise.resolve(AYAHS) : import('../content/daily-ayah.js').then((m) => (AYAHS = m.DAILY_AYAHS)));
+/** 今天是哪一节：按日期轮流（同一天打开几次都是同一节） */
+export function ayahOfDay(list, ymd) {
+  const n = Math.floor(Date.UTC(ymd.y, ymd.m - 1, ymd.d) / 864e5);
+  return list[((n % list.length) + list.length) % list.length];
+}
+const arNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+function ayahBody(x) {
+  return `<p class="ar ayah-ar" lang="ar" dir="rtl">${esc(x.ar)} <span class="ayah-no">﴿${arNum(x.a)}﴾</span></p>
+    <p class="ayah-tr">${esc(x.t[getLang()] || x.t.ru)}</p>
+    <p class="src">${t('ayah.src', { surah: x.n[getLang()] || x.n.ru, s: x.s, a: x.a, who: t('qr.translator') })}</p>`;
+}
+function ayahCard(ctx) {
+  const x = AYAHS ? ayahOfDay(AYAHS, ctx.sched.today) : null;
+  return `<section class="card ayah-card" data-daily-ayah>
+    <h2 class="card-title">${star8(16)} ${t('ayah.title')}</h2>
+    <div data-ayah-body>${x ? ayahBody(x) : '<div class="skel" aria-hidden="true"><i></i><i></i></div>'}</div>
+    <div class="card-foot">
+      <a class="text-btn" data-ayah-read href="${x ? `#/quran/${x.s}/${x.a}` : '#/quran'}">${ICONS.quran}${t('ayah.read')}</a>
+      <button type="button" class="text-btn" data-share-ayah>${ICONS.share}${t('ayah.share')}</button>
+      <span class="note" data-share-msg aria-live="polite"></span>
+    </div>
+  </section>`;
+}
+function fillAyah(root, ctx) {
+  loadAyahs()
+    .then((list) => {
+      const box = root.querySelector('[data-ayah-body]');
+      if (!box) return;
+      const x = ayahOfDay(list, ctx.sched.today);
+      if (box.querySelector('.skel')) box.innerHTML = ayahBody(x);
+      const read = root.querySelector('[data-ayah-read]');
+      if (read) read.setAttribute('href', `#/quran/${x.s}/${x.a}`);
+    })
+    .catch(() => {
+      const card = root.querySelector('[data-daily-ayah]');
+      if (card) card.remove(); // 没下载下来就先不显示这张卡片（不影响首页其他内容）
+    });
+}
+
 /** 今日圣训（每天一句，可以分享给亲友） */
 function hadithCard(ctx) {
   return `<section class="card hadith-card">
@@ -153,6 +195,24 @@ function bindShare(root, ctx) {
         say(img, 'failed');
       }
       img.disabled = false;
+    });
+  const ay = root.querySelector('[data-share-ayah]');
+  if (ay)
+    ay.addEventListener('click', async () => {
+      ay.disabled = true;
+      try {
+        const list = await loadAyahs();
+        const x = ayahOfDay(list, ctx.sched.today);
+        const tr = x.t[getLang()] || x.t.ru;
+        const ref = t('ayah.src', { surah: x.n[getLang()] || x.n.ru, s: x.s, a: x.a, who: t('qr.translator') });
+        const [{ drawAyahCard }, { shareImage, shareLink }] = await Promise.all([import('../ui/share-card.js'), share()]);
+        const cv = await drawAyahCard({ ar: x.ar, tr, ref });
+        const link = shareLink(ctx.remote);
+        say(ay, await shareImage(cv, `ayah-${x.s}-${x.a}.png`, `${tr}\n(${ref})\n\n${t('share.from', { app: t('app.name') })}${link ? ' ' + link : ''}`, day));
+      } catch (e) {
+        say(ay, 'failed');
+      }
+      ay.disabled = false;
     });
   const h = root.querySelector('[data-share-hadith]');
   if (h)
@@ -398,6 +458,16 @@ function timesCard(ctx, elder) {
   </section>`;
 }
 
+/** 星期五：主麻日的一行（洗大净、早去、读山洞章） */
+function jumuahRow() {
+  return `<a class="card card-link fast-row jm-row" href="#/jumuah">
+    <span class="tool-ico">${ICONS.masjid}</span>
+    <span class="fast-row-t">${t('jm.title')}</span>
+    <span class="fast-row-s">${t('jm.homeRow')}</span>
+    <span class="r-link-go" aria-hidden="true">→</span>
+  </a>`;
+}
+
 /** 封斋状态：斋月里、自己在封斋时是倒计时卡片；平时一行——明天是不是圣行斋日、斋月还有几天 */
 function fastHTML(ctx) {
   const card = homeRamadanCard(ctx);
@@ -442,7 +512,9 @@ export function homePage(ctx) {
     <h2 class="sec home-sec">${t('home.todo')}</h2>
     ${timesCard(ctx, false)}
     <div class="ramadan-slot" data-ramadan>${fastHTML(ctx)}</div>
+    ${s.today.wd === 5 ? jumuahRow() : ''}
     ${adhkarCard(ctx)}
+    ${ayahCard(ctx)}
     ${hadithCard(ctx)}
     <div class="notify-slot" data-notify-card>${notifyCard(ctx.notifyState)}</div>
   </div>`;
@@ -455,7 +527,10 @@ export function homePage(ctx) {
       bindNotifyCard(el);
       bindNotices(el);
       bindShare(el, ctx);
-      if (!elder) fillHadith(el, ctx);
+      if (!elder) {
+        fillHadith(el, ctx);
+        fillAyah(el, ctx);
+      }
       el.querySelectorAll('[data-set-mode]').forEach((b) =>
         b.addEventListener('click', () => {
           setSettings({ mode: b.dataset.setMode, modeAsked: true });

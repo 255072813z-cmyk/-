@@ -165,3 +165,118 @@ export async function drawTimesCard(ctx, ymd = ctx.sched.today) {
   cv.dataset.lang = getLang();
   return cv;
 }
+
+/** 把一段字按宽度折成几行（有空格的语言按词折，中文按字折） */
+function wrap(g, text, max) {
+  const words = /\s/.test(text) ? text.split(/(\s+)/) : [...text];
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const next = cur + w;
+    if (cur && g.measureText(next.trim()).width > max) {
+      lines.push(cur.trim());
+      cur = w.trimStart();
+    } else cur = next;
+  }
+  if (cur.trim()) lines.push(cur.trim());
+  return lines;
+}
+
+/** 今日一节做成图片（1080×1350）：阿拉伯原文、当前语言的译文、章节号和译者 */
+export async function drawAyahCard({ ar, tr, ref }) {
+  const title = t('app.name');
+  await fontsReady([title, tr, ref, t('ayah.title'), t('shareImg.footer')]);
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext('2d');
+  g.textBaseline = 'middle';
+  g.fillStyle = C.bg;
+  g.fillRect(0, 0, W, H);
+  // 上方绿色横幅：应用名 + "今日一节"
+  g.fillStyle = C.green;
+  g.fillRect(0, 0, W, 220);
+  g.save();
+  g.globalAlpha = 0.09;
+  g.strokeStyle = C.goldSoft;
+  g.lineWidth = 2;
+  for (let y = 30; y < 220; y += 90) for (let x = (y / 90) % 2 ? 0 : 45; x < W + 45; x += 90) (star(g, x, y, 26), g.stroke());
+  g.restore();
+  g.textAlign = 'center';
+  g.fillStyle = '#ffffff';
+  fit(g, title, W - 120, 60, 700, SERIF);
+  g.fillText(title, W / 2, 92);
+  g.fillStyle = C.goldSoft;
+  fit(g, t('ayah.title'), W - 120, 34, 400, SANS);
+  g.fillText(t('ayah.title'), W / 2, 158);
+  // 卡片
+  const left = 70;
+  const right = W - 70;
+  const top = 270;
+  const bottom = H - 170;
+  g.fillStyle = C.card;
+  g.strokeStyle = C.line;
+  g.lineWidth = 2;
+  g.beginPath();
+  if (g.roundRect) g.roundRect(left - 20, top, right - left + 40, bottom - top, 36);
+  else g.rect(left - 20, top, right - left + 40, bottom - top);
+  g.fill();
+  g.stroke();
+  // 原文：字号从大往小试，放得下为止
+  let y = top + 70;
+  let arSize = 54;
+  let arLines;
+  do {
+    g.font = `400 ${arSize}px ${AR}`;
+    arLines = wrap(g, ar, right - left - 40);
+    if (arLines.length * arSize * 1.75 <= 430) break;
+    arSize -= 4;
+  } while (arSize > 30);
+  g.fillStyle = C.ink;
+  g.direction = 'rtl';
+  for (const line of arLines) {
+    g.fillText(line, W / 2, y);
+    y += arSize * 1.75;
+  }
+  g.direction = 'ltr';
+  // 金色分隔小星
+  y += 10;
+  g.fillStyle = C.gold;
+  star(g, W / 2, y, 12);
+  g.fill();
+  y += 50;
+  // 译文
+  let trSize = 38;
+  let trLines;
+  const room = bottom - 90 - y;
+  do {
+    g.font = `400 ${trSize}px ${SERIF}`;
+    trLines = wrap(g, tr, right - left - 40);
+    if (trLines.length * trSize * 1.55 <= room) break;
+    trSize -= 2;
+  } while (trSize > 22);
+  g.fillStyle = C.ink;
+  for (const line of trLines) {
+    g.fillText(line, W / 2, y);
+    y += trSize * 1.55;
+  }
+  // 出处
+  g.fillStyle = C.muted;
+  fit(g, ref, right - left - 40, 28, 400, SANS);
+  g.fillText(ref, W / 2, bottom - 50);
+  // 页脚
+  g.fillStyle = C.green;
+  g.fillRect(0, H - 110, W, 110);
+  g.fillStyle = C.goldSoft;
+  star(g, 90, H - 55, 22);
+  g.fill();
+  g.fillStyle = '#ffffff';
+  g.textAlign = 'left';
+  fit(g, title, 380, 40, 700, SERIF);
+  g.fillText(title, 128, H - 55);
+  g.textAlign = 'right';
+  g.fillStyle = 'rgba(255,255,255,0.86)';
+  fit(g, t('shareImg.footer'), W - 560, 28, 400, SANS);
+  g.fillText(t('shareImg.footer'), W - 60, H - 55);
+  return cv;
+}

@@ -471,3 +471,17 @@
 .dk-tap-l { font-weight: 600; }
 .dk.is-done { border-color: var(--green); }
 .dk.is-done .dk-tap { background: var(--green-soft); color: var(--green); box-shadow: none; cursor: default; }
+
+/* 主麻日 */
+.jm-hero { text-align: center; background: linear-gradient(180deg, var(--card) 40%, var(--gold-soft)); border-color: var(--gold); }
+.jm-hero.is-today { border-width: 2px; }
+.jm-sub { margin: 0; color: var(--gold-ink); font-weight: 700; font-family: var(--font-zh-serif); font-size: var(--fs-lg); }
+.jm-best { margin: var(--sp-2) 0 0; font-family: var(--font-zh-serif); }
+.jm-when { margin: var(--sp-3) 0 var(--sp-4); font-weight: 600; color: var(--green); }
+.jm-hero .btn svg { width: 20px; height: 20px; fill: currentColor; }
+.jm-list { list-style: none; margin: 0; padding: 0; }
+.jm-item { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); align-items: start; }
+.jm-n { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--green-soft); color: var(--green); font-weight: 700; font-variant-numeric: tabular-nums; }
+.jm-t { margin: 2px 0 var(--sp-1); font-size: var(--fs-lg); }
+.jm-item p { margin: 0 0 var(--sp-1); }
+.jm-link { display: block; text-decoration: none; }

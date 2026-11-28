@@ -14,7 +14,7 @@ export function hubPage(ctx) {
   const name = t('prayer.' + target);
   const friday =
     s.today.wd === 5
-      ? `<p class="note friday">${t('hub.friday')}</p>`
+      ? `<a class="note friday jm-link" href="#/jumuah">${t('hub.friday')} →</a>`
       : '';
   const tile = (href, icon, title, sub) =>
     `<a class="card card-link tool" href="${href}"><span class="tool-ico">${icon}</span><span class="tool-t">${title}</span><span class="tool-s">${sub}</span></a>`;
@@ -54,6 +54,12 @@ export function hubPage(ctx) {
     </section>
 
     <h2 class="sec">${t('hub.secMore')}</h2>
+    <a class="card card-link fast-row" href="#/jumuah">
+      <span class="tool-ico">${ICONS.masjid}</span>
+      <span class="fast-row-t">${t('jm.title')}</span>
+      <span class="fast-row-s">${t('jm.sub')} · ${t('jm.kahf')}</span>
+      <span class="r-link-go" aria-hidden="true">→</span>
+    </a>
     <details class="card fold excuse-card">
       <summary>${t('hub.sickTitle')}</summary>
       <p>${t('hub.sickText')}</p>
