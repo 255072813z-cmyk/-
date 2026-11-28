@@ -865,7 +865,8 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   const isha = async () => (await page.locator('.prow').filter({ hasText: '宵礼' }).locator('.prow-time').textContent()).trim();
   const before = await isha();
   await page.goto(base + q + '&r=2#/settings');
-  await page.waitForSelector('[data-method]');
+  await page.waitForSelector('[data-method]', { state: 'attached' });
+  await page.click('[data-fold="method"] > summary'); // 计算方法收在可以展开的卡片里
   await page.click('[data-method="mwl"]');
   await page.goto(base + q + '&r=3#/');
   await page.waitForSelector('.prow');
@@ -875,13 +876,15 @@ const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
   check('设置里选"穆斯林世界联盟 18°/17°"：宵礼提前几分钟，"怎么算的"写明 18° 和 17°', after < before && /18°/.test(how) && /17°/.test(how), `宵礼 ${before} → ${after}`);
   // 导出备份
   await page.goto(base + q + '&r=4#/settings');
-  await page.waitForSelector('[data-backup-out]');
+  await page.waitForSelector('[data-backup-out]', { state: 'attached' });
+  await page.click('[data-fold="backup"] > summary'); // 备份收在可以展开的卡片里
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-backup-out]')]);
   const file = await dl.path();
   // "新手机"：清空后导入
   await page.evaluate(() => localStorage.clear());
   await page.goto(base + q + '&r=5#/settings');
   await page.waitForSelector('[data-backup-in]', { state: 'attached' });
+  await page.click('[data-fold="backup"] > summary');
   await page.setInputFiles('[data-backup-in]', file);
   await page.waitForSelector('[data-backup-confirm]:not([hidden])');
   const sum = await page.textContent('[data-backup-sum]');

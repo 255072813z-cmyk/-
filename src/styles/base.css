@@ -304,3 +304,13 @@ ul.dots li::marker { color: var(--gold); }
 .mode-list .method-opt small { flex: initial; font-variant-numeric: normal; line-height: 1.4; }
 .mode-list .method-opt[data-set-mode='elder'] b { font-size: var(--fs-lg); }
 .ph-date { margin: 2px 0 0; color: var(--muted); font-size: var(--fs-sm); display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+
+/* 收起的卡片（设置里的时间微调、计算方法、伊斯兰历、备份）：标题右边写着现在的值，点开看细节 */
+details.fold-card > summary { list-style: none; cursor: pointer; margin: 0; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+details.fold-card > summary::-webkit-details-marker { display: none; }
+details.fold-card > summary::after { content: ''; flex: none; width: 8px; height: 8px; margin-inline-start: 10px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); transition: transform 0.25s var(--ease-out); }
+details.fold-card[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+details.fold-card[open] > summary { margin-bottom: var(--sp-3); }
+.fold-val { margin-inline-start: auto; font-family: var(--font-zh); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); text-align: end; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 改了设置、页面重画时，原来打开着的卡片不再重放展开动画 */
+details[data-restored] > :not(summary) { animation: none !important; }

@@ -15,6 +15,10 @@ import { isNativeApp, notifyStatus, askNotifyPermission, openExactSetting, testN
 
 const signed = (v) => (v > 0 ? '+' : '') + v;
 
+// 收起的卡片（时间微调、计算方法、伊斯兰历、备份）：改了设置页面会重画，打开着的保持打开
+const openFolds = new Set();
+const foldAttr = (k) => (openFolds.has(k) ? 'open data-restored' : '');
+
 // 计算方法："自动"那一行显示这个城市默认算法的角度
 export function settingsPage(ctx) {
   const s = getSettings();
@@ -22,12 +26,14 @@ export function settingsPage(ctx) {
   const base = timesFor(ctx.city, ctx.sched.today, effectiveOffsets({}, ctx.remote, ctx.city).offsets);
   const h = toHijri(ctx.sched.today, ctx.hijriAdjust);
   const officialHijri = ctx.remote.hijri && ctx.remote.hijri[ctx.city.cc];
-  const fs = ['settings.fs0', 'settings.fs1', 'settings.fs2'];
+  const fs = ['settings.fsS', 'settings.fs0', 'settings.fs1', 'settings.fs2'];
   const app = isNativeApp();
+  const adjCount = PRAYERS.filter((p) => Number(s.offsets[p])).length;
   const html = `
   <div class="page settings">
     <div class="page-head"><a class="back" href="#/me" aria-label="${t('common.back')}">${ICONS.back}</a><h1>${t('nav.settings')}</h1></div>
 
+    <h2 class="sec">${t('settings.secCommon')}</h2>
     <a class="card card-link city-set" href="#/city">
       <span class="athome-t">${t('settings.cityIs', { name: cityName(ctx.city) })}</span>
       <span class="athome-s">${t('settings.cityChange')} →</span>
@@ -37,21 +43,30 @@ export function settingsPage(ctx) {
         <input type="checkbox" data-autoloc ${s.autoLoc ? 'checked' : ''}></label>
       <p class="note" data-autoloc-msg aria-live="polite"></p>
     </section>
+    <section class="card">
+      <h2 class="card-title">${star8(18)} ${t('settings.langTitle')}</h2>
+      <div class="segmented big lang-grid" role="group" aria-label="${t('settings.langTitle')}">
+        ${Object.entries(LANGS)
+          .map(
+            ([code, l]) =>
+              `<button type="button" class="seg ${s.lang === code ? 'is-on' : ''}" data-lang="${code}" lang="${l.locale}" aria-pressed="${s.lang === code}" ${l.ready ? '' : 'disabled'}>${l.name}${l.ready ? '' : `<small class="seg-sub">${t('settings.langSoon')}</small>`}</button>`,
+          )
+          .join('')}
+      </div>
+    </section>
 
     <section class="card">
       <h2 class="card-title">${star8(18)} ${t('mode.title')}</h2>
       <div class="method-list mode-list" role="radiogroup" aria-label="${t('mode.title')}">
         ${['young', 'elder'].map((m) => `<button type="button" class="method-opt ${s.mode === m ? 'is-on' : ''}" role="radio" aria-checked="${s.mode === m}" data-set-mode="${m}"><b>${t('mode.' + m)}</b><small>${t('mode.' + m + 'Sub')}</small></button>`).join('')}
       </div>
-    </section>
-
-    <section class="card">
-      <h2 class="card-title">${star8(18)} ${t('settings.fontTitle')}</h2>
+      <p class="sub-title">${t('settings.fontTitle')}</p>
       <div class="segmented big" role="group" aria-label="${t('settings.fontTitle')}">
-        ${fs.map((k, i) => `<button type="button" class="seg ${s.fontScale === i ? 'is-on' : ''}" data-fs="${i}" aria-pressed="${s.fontScale === i}" style="font-size:${1 + i * 0.12}em">${t(k)}</button>`).join('')}
+        ${fs.map((k, j) => { const i = j - 1; return `<button type="button" class="seg ${s.fontScale === i ? 'is-on' : ''}" data-fs="${i}" aria-pressed="${s.fontScale === i}" style="font-size:${1 + i * 0.12}em">${t(k)}</button>`; }).join('')}
       </div>
     </section>
 
+    <h2 class="sec">${t('settings.secRemind')}</h2>
     <section class="card" data-remind-card>
       <h2 class="card-title">${star8(18)} ${t('settings.remindTitle')}</h2>
       ${app ? `<p class="notify-status" data-notify-status aria-live="polite">${t('common.loading')}</p>` : ''}
@@ -82,8 +97,9 @@ export function settingsPage(ctx) {
       }
     </section>
 
-    <section class="card">
-      <h2 class="card-title">${star8(18)} ${t('home.adjust')}</h2>
+    <h2 class="sec">${t('settings.secTime')}</h2>
+    <details class="card fold-card" data-fold="adj" ${foldAttr('adj')}>
+      <summary class="card-title">${star8(18)} ${t('settings.adjustTitle')}<span class="fold-val">${adjCount ? t('home.adjusted') : t('settings.notAdjusted')}</span></summary>
       <p class="note">${t('settings.adjustNote', { city: cityName(ctx.city) })}</p>
       ${ctx.official ? `<p class="note">${t('settings.officialNote', { src: remoteText(ctx.official) })}</p>` : ''}
       <ul class="adj-list">
@@ -103,10 +119,10 @@ export function settingsPage(ctx) {
         }).join('')}
       </ul>
       <button type="button" class="btn btn-ghost btn-sm" data-adj-reset>${t('settings.adjustReset')}</button>
-    </section>
+    </details>
 
-    <section class="card">
-      <h2 class="card-title">${star8(18)} ${t('settings.methodTitle')}</h2>
+    <details class="card fold-card" data-fold="method" ${foldAttr('method')}>
+      <summary class="card-title">${star8(18)} ${t('settings.methodTitle')}<span class="fold-val">${t('settings.method.' + (s.method || 'auto'))}</span></summary>
       <div class="method-list" role="radiogroup" aria-label="${t('settings.methodTitle')}">
         ${['auto', ...Object.keys(METHODS)]
           .map((m) => {
@@ -118,10 +134,10 @@ export function settingsPage(ctx) {
           .join('')}
       </div>
       <p class="note">${t('settings.methodNote')}</p>
-    </section>
+    </details>
 
-    <section class="card">
-      <h2 class="card-title">${star8(18)} ${t('settings.hijriTitle')}</h2>
+    <details class="card fold-card" data-fold="hijri" ${foldAttr('hijri')}>
+      <summary class="card-title">${star8(18)} ${t('settings.hijriTitle')}<span class="fold-val">${s.hijriManual ? t('settings.days', { n: signed(s.hijriAdjust) }) : t('settings.hijriAuto')}</span></summary>
       <p>${t('settings.today')} ${hijriLine(h)}</p>
       <p class="note">${t('settings.hijriNote', { method: t(h.source === 'umalqura' ? 'settings.umalqura' : 'settings.tabular') })}</p>
       <div class="segmented" role="group" aria-label="${t('settings.hijriTitle')}">
@@ -138,16 +154,11 @@ export function settingsPage(ctx) {
             ? t('settings.hijriAutoOfficial', { src: remoteText(officialHijri.src), n: signed(officialHijri.adjust) })
             : t('settings.hijriAutoNote')
       }</p>
-    </section>
+    </details>
 
-    <section class="card">
-      <h2 class="card-title">${star8(18)} ${t('settings.statsTitle')}</h2>
-      <label class="switch-row"><span><b>${t('settings.stats')}</b><small>${t('settings.statsSub')}</small></span>
-        <input type="checkbox" data-stats ${s.stats !== false ? 'checked' : ''}></label>
-    </section>
-
-    <section class="card backup-card">
-      <h2 class="card-title">${star8(18)} ${t('settings.backupTitle')}</h2>
+    <h2 class="sec">${t('settings.secMore')}</h2>
+    <details class="card fold-card backup-card" data-fold="backup" ${foldAttr('backup')}>
+      <summary class="card-title">${star8(18)} ${t('settings.backupTitle')}<span class="fold-val"></span></summary>
       <p class="note">${t('settings.backupText')}</p>
       <div class="step-btns">
         <button type="button" class="btn btn-ghost btn-sm" data-backup-out>${t('settings.backupExport')}</button>
@@ -159,18 +170,12 @@ export function settingsPage(ctx) {
           <button type="button" class="btn btn-ghost btn-sm" data-backup-no>${t('settings.backupCancel')}</button></div>
       </div>
       <p class="note" data-backup-msg aria-live="polite"></p>
-    </section>
+    </details>
 
     <section class="card">
-      <h2 class="card-title">${star8(18)} ${t('settings.langTitle')}</h2>
-      <div class="segmented big lang-grid" role="group" aria-label="${t('settings.langTitle')}">
-        ${Object.entries(LANGS)
-          .map(
-            ([code, l]) =>
-              `<button type="button" class="seg ${s.lang === code ? 'is-on' : ''}" data-lang="${code}" lang="${l.locale}" aria-pressed="${s.lang === code}" ${l.ready ? '' : 'disabled'}>${l.name}${l.ready ? '' : `<small class="seg-sub">${t('settings.langSoon')}</small>`}</button>`,
-          )
-          .join('')}
-      </div>
+      <h2 class="card-title">${star8(18)} ${t('settings.statsTitle')}</h2>
+      <label class="switch-row"><span><b>${t('settings.stats')}</b><small>${t('settings.statsSub')}</small></span>
+        <input type="checkbox" data-stats ${s.stats !== false ? 'checked' : ''}></label>
     </section>
 
     <p class="privacy">${t('privacy')}</p>
@@ -183,6 +188,13 @@ export function settingsPage(ctx) {
       if (el) drawStatus(el, r);
     },
     mount(el) {
+      el.querySelectorAll('[data-fold]').forEach((d) =>
+        d.addEventListener('toggle', () => {
+          d.removeAttribute('data-restored');
+          if (d.open) openFolds.add(d.dataset.fold);
+          else openFolds.delete(d.dataset.fold);
+        }),
+      );
       el.querySelectorAll('[data-fs]').forEach((b) => b.addEventListener('click', () => setSettings({ fontScale: +b.dataset.fs })));
       el.querySelectorAll('[data-set-mode]').forEach((b) => b.addEventListener('click', () => setSettings({ mode: b.dataset.setMode, modeAsked: true })));
       el.querySelector('[data-remind]').addEventListener('change', async (e) => {

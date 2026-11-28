@@ -17,7 +17,7 @@ const DEFAULTS = {
   city: DEFAULT_CITY,
   cityConfirmed: false,
   loc: null, // "我的位置"：{ lat, lon, utcOffset }，只存本机
-  fontScale: 0, // 0 标准 / 1 大 / 2 特大
+  fontScale: 0, // -1 小 / 0 标准（默认）/ 1 大 / 2 特大
   mode: 'young', // 显示方式：young 年轻人（精致简洁）/ elder 年纪大的人（大字极简，首页只有时间和下一番）
   modeAsked: false, // 第一次打开时在首页问一句（问过就不再问，设置里随时可改）
   remind: true, // 按时提醒（网页：页面开着时提示；手机应用：系统通知）
@@ -52,7 +52,7 @@ export function normalizeSettings(saved) {
       ? { lat: loc.lat, lon: loc.lon, utcOffset: Number.isFinite(loc.utcOffset) && Math.abs(loc.utcOffset) <= 14 ? loc.utcOffset : undefined }
       : null;
   if (!CITIES[out.city] && !(out.city === 'here' && out.loc)) out.city = DEFAULT_CITY;
-  out.fontScale = int(s.fontScale, 0, 2, 0);
+  out.fontScale = int(s.fontScale, -1, 2, 0);
   out.mode = s.mode === 'elder' ? 'elder' : 'young';
   out.modeAsked = bool(s.modeAsked, false);
   out.remind = bool(s.remind, true);

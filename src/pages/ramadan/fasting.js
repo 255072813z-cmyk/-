@@ -69,8 +69,10 @@ export function fastingPage(ctx, st) {
           ? ''
           : `<button type="button" class="btn ${planned ? 'btn-ghost is-done' : 'btn-ghost'} btn-wide vf-plan" data-vf-plan="${tomorrowKey}" aria-pressed="${planned}">${planned ? t('vf.plannedTomorrow') : t('vf.planTomorrow')}${tmReasons.length ? ` <small>(${why(tmReasons)})</small>` : ''}</button>`
       }
-      <p class="note">${t('vf.niyyah')}</p>
-      <p class="fast-note">${t('fast.note', { n: SAHUR_MARGIN_MIN })}</p>
+      <details class="method"><summary>${t('vf.notes')}</summary>
+        <p class="note">${t('vf.niyyah')}</p>
+        <p class="fast-note">${t('fast.note', { n: SAHUR_MARGIN_MIN })}</p>
+      </details>
     </section>`;
   }
 
@@ -86,7 +88,7 @@ export function fastingPage(ctx, st) {
         <button type="button" class="btn-round" data-vf-owe="1" aria-label="${t('vf.more')}">+</button>
       </div>
       ${missed ? `<button type="button" class="btn btn-ghost btn-sm" data-vf-import>${t('vf.import', { n: missed })}</button>` : ''}
-      <p class="note">${t('vf.qadaNote')}</p>
+      <details class="method"><summary>${t('vf.whyTitle')}</summary><p class="note">${t('vf.qadaNote')}</p></details>
     </section>`;
   }
 
@@ -103,6 +105,7 @@ export function fastingPage(ctx, st) {
   function upcomingCard() {
     const { list, special } = upcomingSunnah(addDays(today, 1), adj, 21);
     const plan = new Set(fastPlan(todayKey));
+    // 先列最近 3 天，其余收在"更多"里
     const rows = list.slice(0, 7).map((d) => {
       const on = plan.has(d.key);
       return `<li class="vf-day"><span class="vf-date"><b>${dateShort(d)}</b><small>${inDays(d.inDays + 1)}</small></span>
@@ -114,7 +117,8 @@ export function fastingPage(ctx, st) {
       .join('');
     return `<section class="card" data-vf-up>
       <h2 class="card-title">${star8(18)} ${t('vf.upTitle')}</h2>
-      <ul class="vf-days">${rows.join('')}</ul>
+      <ul class="vf-days">${rows.slice(0, 3).join('')}</ul>
+      ${rows.length > 3 ? `<details class="method vf-more"><summary>${t('vf.moreDays', { n: rows.length - 3 })}</summary><ul class="vf-days">${rows.slice(3).join('')}</ul></details>` : ''}
       ${sp}
       <details class="method"><summary>${t('vf.whyTitle')}</summary>
         <ul class="dots">${['monthu', 'white', 'shawwal', 'arafah', 'ashura'].map((k) => `<li>${t('vf.src.' + k)}</li>`).join('')}</ul>
@@ -138,11 +142,13 @@ export function fastingPage(ctx, st) {
         <div class="fast-time"><span class="ft-label">${t('fast.sahurEnd')}</span><span class="ft-time">${fmtHM(ft.sahurEnd)}</span></div>
         <div class="fast-time"><span class="ft-label">${t('fast.iftar')}</span><span class="ft-time">${fmtHM(ft.iftar)}</span></div>
       </div>
-      <p class="note">${t('fast.head.preview', { date: dateShort(st.start) })} · ${t('fast.datesNote')}</p>
-      <p class="note">${t('vf.rLater')}</p>
+      <p class="note">${t('fast.head.preview', { date: dateShort(st.start) })}</p>
       ${holRow('fast.fitr', hol.fitr)}
       ${holRow('fast.adha', hol.adha)}
-      <p class="note">${t('fast.fitrNote')}</p>
+      <details class="method"><summary>${t('vf.notes')}</summary>
+        <p class="note">${t('vf.rLater')}</p>
+        <p class="note">${t('fast.fitrNote')}</p>
+      </details>
     </section>`;
   }
 

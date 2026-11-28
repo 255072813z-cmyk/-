@@ -53,7 +53,7 @@ export function parseHit(raw, cityIds, today) {
     nw: raw.nw === 1 ? 1 : 0,
     src: SOURCES.includes(raw.src) ? raw.src : null,
     ntf: raw.ntf === 1 ? 1 : raw.ntf === 0 ? 0 : null,
-    fs: int(raw.fs, 0, 2),
+    fs: int(raw.fs, -1, 2),
     ad: int(raw.ad, 1, 7),
     f: [],
     fd: null,
